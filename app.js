@@ -1433,3 +1433,88 @@ init();
   bindRecoveryFullscreen();
   window.addEventListener("load", bindRecoveryFullscreen);
 })();
+
+
+/* v42: external fullscreen button binding */
+(function () {
+  function qs(id) {
+    return document.getElementById(id);
+  }
+
+  function getMangaFullscreenSrcV42() {
+    const mangaImage = qs("mangaImage");
+    if (mangaImage && !mangaImage.hidden && mangaImage.src) {
+      return mangaImage.currentSrc || mangaImage.src;
+    }
+
+    const webtoonView = qs("webtoonView");
+    if (webtoonView) {
+      const imgs = Array.from(webtoonView.querySelectorAll("img"));
+      if (imgs.length) {
+        let best = imgs[0];
+        let bestDistance = Infinity;
+        const viewRect = webtoonView.getBoundingClientRect();
+
+        imgs.forEach(img => {
+          const rect = img.getBoundingClientRect();
+          const distance = Math.abs(rect.top - viewRect.top);
+          if (distance < bestDistance) {
+            best = img;
+            bestDistance = distance;
+          }
+        });
+
+        return best.currentSrc || best.src;
+      }
+    }
+
+    return "";
+  }
+
+  function openFsV42() {
+    const overlay = qs("mangaFullscreenOverlay");
+    const image = qs("mangaFullscreenImage");
+    const src = getMangaFullscreenSrcV42();
+
+    if (!overlay || !image || !src) return;
+
+    image.src = src;
+    overlay.hidden = false;
+  }
+
+  function closeFsV42() {
+    const overlay = qs("mangaFullscreenOverlay");
+    if (overlay) overlay.hidden = true;
+  }
+
+  function bindFsV42() {
+    const btn = qs("mangaOpenFullscreenButton");
+    const close = qs("mangaFullscreenClose");
+
+    if (btn && !btn.dataset.v42Bound) {
+      btn.dataset.v42Bound = "1";
+      ["click", "touchend", "pointerup"].forEach(type => {
+        btn.addEventListener(type, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openFsV42();
+        }, { passive: false });
+      });
+    }
+
+    if (close && !close.dataset.v42Bound) {
+      close.dataset.v42Bound = "1";
+      ["click", "touchend", "pointerup"].forEach(type => {
+        close.addEventListener(type, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeFsV42();
+        }, { passive: false });
+      });
+    }
+  }
+
+  bindFsV42();
+  window.addEventListener("load", bindFsV42);
+  document.addEventListener("DOMContentLoaded", bindFsV42);
+})();
