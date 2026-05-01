@@ -225,6 +225,7 @@ let data = {
 let wordIndex = 0;
 let glassIndex = 0;
 let pressTimer = null;
+const content = document.getElementById("content");
 
 const els = {
   body: document.body,
@@ -257,7 +258,11 @@ function render(animationClass = "flash") {
   els.translation.textContent = w.translations[g.id] || "このメガネでは、まだ翻訳されていない。";
   els.counter.textContent = `${wordIndex + 1} / ${data.words.length}　・　${glassIndex + 1} / ${data.glasses.length}`;
 
-  els.card.classList.remove("flash", "slide-left", "slide-right", "slide-up", "slide-down");
+  if (content) {
+    content.style.transform = "";
+    content.classList.remove("dragging", "snap-back");
+  }
+  els.card.classList.remove("flash", "slide-left", "slide-right", "slide-up", "slide-down", "peek-left", "peek-right", "peek-up", "peek-down", "snap-back");
   void els.card.offsetWidth;
   els.card.classList.add(animationClass);
 }
@@ -300,17 +305,26 @@ function bind() {
   document.getElementById("randomWord").onclick = randomWord;
   document.getElementById("closeDialog").onclick = () => els.dialog.close();
 
-  let startX = 0, startY = 0, isDragging = false;
+  let startX = 0, startY = 0, isDragging = false, lastDx = 0, lastDy = 0;
 
   els.card.addEventListener("pointerdown", (e) => {
     startX = e.clientX;
     startY = e.clientY;
+    lastDx = 0;
+    lastDy = 0;
     isDragging = true;
     els.card.setPointerCapture(e.pointerId);
+    if (content) {
+      content.classList.remove("snap-back");
+      content.style.transform = "";
+    }
     pressTimer = setTimeout(() => {
       isDragging = false;
-      els.card.classList.remove("dragging");
-      els.card.style.transform = "";
+      els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
+      if (content) {
+        content.classList.remove("dragging");
+        content.style.transform = "";
+      }
       els.dialog.showModal();
     }, 550);
   });
@@ -320,17 +334,32 @@ function bind() {
 
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
+    lastDx = dx;
+    lastDy = dy;
     const distance = Math.max(Math.abs(dx), Math.abs(dy));
 
     if (distance > 10) {
       clearTimeout(pressTimer);
       els.card.classList.add("dragging");
+      if (content) content.classList.add("dragging");
     }
 
-    const followX = Math.max(-48, Math.min(48, dx * 0.22));
-    const followY = Math.max(-34, Math.min(34, dy * 0.16));
-    const scale = 1 - Math.min(distance, 140) / 2800;
-    els.card.style.transform = `translate(${followX}px, ${followY}px) scale(${scale})`;
+    els.card.classList.remove("peek-left", "peek-right", "peek-up", "peek-down");
+
+    if (distance > 18) {
+      if (Math.abs(dx) > Math.abs(dy)) {
+        els.card.classList.add(dx < 0 ? "peek-left" : "peek-right");
+      } else {
+        els.card.classList.add(dy < 0 ? "peek-up" : "peek-down");
+      }
+    }
+
+    if (content) {
+      const followX = Math.max(-70, Math.min(70, dx * 0.34));
+      const followY = Math.max(-46, Math.min(46, dy * 0.24));
+      const scale = 1 - Math.min(distance, 150) / 5000;
+      content.style.transform = `translate(${followX}px, ${followY}px) scale(${scale})`;
+    }
   });
 
   els.card.addEventListener("pointerup", (e) => {
@@ -342,13 +371,29 @@ function bind() {
     const dy = e.clientY - startY;
     const distance = Math.max(Math.abs(dx), Math.abs(dy));
 
-    els.card.classList.remove("dragging");
-    els.card.style.transform = "";
+    els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
+    if (content) content.classList.remove("dragging");
 
-    if (distance < 44) {
-      render("flash");
+    if (distance < 58) {
+      if (content) {
+        const followX = Math.max(-70, Math.min(70, lastDx * 0.34));
+        const followY = Math.max(-46, Math.min(46, lastDy * 0.24));
+        const scale = 1 - Math.min(distance, 150) / 5000;
+
+        content.style.setProperty(
+          "--release-transform",
+          `translate(${followX}px, ${followY}px) scale(${scale})`
+        );
+
+        content.style.transform = "";
+        content.classList.remove("snap-back");
+        void content.offsetWidth;
+        content.classList.add("snap-back");
+      }
       return;
     }
+
+    if (content) content.style.transform = "";
 
     if (Math.abs(dx) > Math.abs(dy)) {
       moveWord(dx < 0 ? 1 : -1);
@@ -360,8 +405,14 @@ function bind() {
   els.card.addEventListener("pointercancel", () => {
     clearTimeout(pressTimer);
     isDragging = false;
-    els.card.classList.remove("dragging");
-    els.card.style.transform = "";
+    els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
+    if (content) {
+      content.classList.remove("dragging");
+      content.style.transform = "";
+      content.classList.remove("snap-back");
+      void content.offsetWidth;
+      content.classList.add("snap-back");
+    }
   });
 
   window.addEventListener("keydown", (e) => {

@@ -4,9 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>メガネ辞書 MVP</title>
-
-  <!-- ここを修正 -->
-  <link rel="stylesheet" href="./style.css?v=3" />
+  <link rel="stylesheet" href="./style.css?v=7" />
 </head>
 <body>
   <main id="app" class="app">
@@ -17,12 +15,14 @@
     </header>
 
     <section id="card" class="card" aria-live="polite">
+      <div id="content" class="content">
       <div class="hint">左右：単語 / 上下：メガネ / 長押し：一覧</div>
       <div id="glassName" class="glass-name"></div>
       <div id="character" class="character"></div>
       <h1 id="word" class="word"></h1>
       <p id="translation" class="translation"></p>
       <div id="counter" class="counter"></div>
+      </div>
     </section>
 
     <footer class="controls">
@@ -38,6 +38,6 @@
     </dialog>
   </main>
 
-<script src="./app.js?v=3"></script>
+  <script src="./app.js?v=7"></script>
 </body>
 </html>
