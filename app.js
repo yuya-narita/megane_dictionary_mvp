@@ -1094,15 +1094,10 @@ function bind() {
       content.style.transform = "";
     }
     pressTimer = setTimeout(() => {
-      if (appMode !== "dictionary") return; // 長押し一覧は辞書モードだけ
-      isDragging = false;
-      lockedDirection = null;
-      els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
-      if (content) {
-        content.classList.remove("dragging");
-        content.style.transform = "";
+      // v54: dictionary long-press no longer opens glass list.
+      if (appMode !== "dictionary") {
+        els.dialog.showModal();
       }
-      els.dialog.showModal();
     }, 550);
   });
 
@@ -2096,6 +2091,89 @@ init();
 
     // render後に元のラベルへ戻されることがあるため、軽く監視
     setInterval(patchLabels, 500);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+
+
+/* v54: prevent original long-press glass list in dictionary mode */
+(function () {
+  let v54PressTimer = null;
+  let v54LongPressHandled = false;
+
+  function isDictionaryMode() {
+    return typeof appMode !== "undefined" && appMode === "dictionary";
+  }
+
+  function cardEl() {
+    return document.querySelector(".card");
+  }
+
+  function bindV54Guard() {
+    const card = cardEl();
+    if (!card || card.dataset.v54GuardBound) return;
+    card.dataset.v54GuardBound = "1";
+
+    card.addEventListener("pointerdown", (e) => {
+      if (!isDictionaryMode()) return;
+
+      v54LongPressHandled = false;
+      clearTimeout(v54PressTimer);
+
+      v54PressTimer = setTimeout(() => {
+        v54LongPressHandled = true;
+      }, 500);
+    }, true);
+
+    card.addEventListener("pointerup", (e) => {
+      clearTimeout(v54PressTimer);
+
+      if (isDictionaryMode() && v54LongPressHandled) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+
+      v54LongPressHandled = false;
+    }, true);
+
+    card.addEventListener("pointercancel", () => {
+      clearTimeout(v54PressTimer);
+      v54LongPressHandled = false;
+    }, true);
+
+    card.addEventListener("pointerleave", () => {
+      clearTimeout(v54PressTimer);
+      v54LongPressHandled = false;
+    }, true);
+  }
+
+  // If the old dialog still opens, close it immediately only for dictionary long-press.
+  function bindDialogAutoCloseGuard() {
+    const dialog = document.getElementById("glassDialog");
+    if (!dialog || dialog.dataset.v54CloseGuard) return;
+    dialog.dataset.v54CloseGuard = "1";
+
+    const observer = new MutationObserver(() => {
+      if (
+        isDictionaryMode() &&
+        v54LongPressHandled &&
+        dialog.open
+      ) {
+        dialog.close();
+      }
+    });
+
+    observer.observe(dialog, { attributes: true, attributeFilter: ["open"] });
+  }
+
+  function boot() {
+    bindV54Guard();
+    bindDialogAutoCloseGuard();
   }
 
   if (document.readyState === "loading") {
