@@ -222,6 +222,9 @@ let data = {
     }
   ]
 };
+const cards = [{"title": "ダブルバインド", "subtitle": "DOUBLE BIND｜命令 → 矛盾", "image": "images/cards/double_bind.jpeg", "caption": "自由にしていい。でも間違えないで。"}, {"title": "白クマバグ", "subtitle": "WHITE BEAR BUG｜禁止 → 観測", "image": "images/cards/white_bear_bug.jpeg", "caption": "考えるな、と言われた瞬間に始まる。"}, {"title": "再帰", "subtitle": "RECURSION｜自己参照 → 終わらない", "image": "images/cards/recursion.jpeg", "caption": "終わったはずのものが、また始まっていた。"}, {"title": "教義", "subtitle": "DOCTRINE｜教え → 停止", "image": "images/cards/doctrine.jpeg", "caption": "最初はただの考え。気づけば守るべきものになった。"}, {"title": "H(x)バグ", "subtitle": "H(x)｜否定 → 存在", "image": "images/cards/hx_bug.jpeg", "caption": "これは意味がない。そう言った瞬間、意味が生まれる。"}];
+let appMode = "dictionary";
+let cardIndex = 0;
 let wordIndex = 0;
 let glassIndex = 0;
 let pressTimer = null;
@@ -235,6 +238,15 @@ const els = {
   word: document.getElementById("word"),
   translation: document.getElementById("translation"),
   counter: document.getElementById("counter"),
+  hint: document.getElementById("hint"),
+  dictionaryView: document.getElementById("dictionaryView"),
+  bugCardView: document.getElementById("bugCardView"),
+  cardImage: document.getElementById("cardImage"),
+  cardTitle: document.getElementById("cardTitle"),
+  cardSubtitle: document.getElementById("cardSubtitle"),
+  cardCaption: document.getElementById("cardCaption"),
+  dictionaryMode: document.getElementById("dictionaryMode"),
+  cardMode: document.getElementById("cardMode"),
   dialog: document.getElementById("glassDialog"),
   glassList: document.getElementById("glassList"),
 };
@@ -249,24 +261,49 @@ function currentWord() { return data.words[wordIndex]; }
 function currentGlass() { return data.glasses[glassIndex]; }
 
 function render(animationClass = "flash") {
-  const w = currentWord();
-  const g = currentGlass();
-  els.body.className = `theme-${g.id}`;
-  els.glassName.textContent = g.name;
-  els.character.textContent = `${g.character}｜${g.tagline}`;
-  els.word.textContent = w.word;
-  els.translation.textContent = w.translations[g.id] || "このメガネでは、まだ翻訳されていない。";
-  els.counter.textContent = `${wordIndex + 1} / ${data.words.length}　・　${glassIndex + 1} / ${data.glasses.length}`;
+  els.body.classList.toggle("mode-cards", appMode === "cards");
+  els.body.classList.toggle("mode-dictionary", appMode === "dictionary");
+
+  if (els.dictionaryMode && els.cardMode) {
+    els.dictionaryMode.classList.toggle("active", appMode === "dictionary");
+    els.cardMode.classList.toggle("active", appMode === "cards");
+  }
+
+  if (appMode === "cards") {
+    const c = cards[cardIndex];
+    els.cardImage.src = c.image;
+    els.cardImage.alt = c.title;
+    els.cardTitle.textContent = c.title;
+    els.cardSubtitle.textContent = c.subtitle;
+    els.cardCaption.textContent = c.caption;
+    els.counter.textContent = `${cardIndex + 1} / ${cards.length}`;
+    if (els.hint) els.hint.textContent = "左右：カード / 辞書に戻る";
+  } else {
+    const w = currentWord();
+    const g = currentGlass();
+
+    [...els.body.classList].forEach(cls => {
+      if (cls.startsWith("theme-")) els.body.classList.remove(cls);
+    });
+    els.body.classList.add(`theme-${g.id}`);
+
+    els.glassName.textContent = g.name;
+    els.character.textContent = `${g.character}｜${g.tagline}`;
+    els.word.textContent = w.word;
+    els.translation.textContent = w.translations[g.id] || "このメガネでは、まだ翻訳されていない。";
+    els.counter.textContent = `${wordIndex + 1} / ${data.words.length}　・　${glassIndex + 1} / ${data.glasses.length}`;
+    if (els.hint) els.hint.textContent = "左右：単語 / 上下：メガネ / 長押し：一覧";
+  }
 
   if (content) {
     content.style.transform = "";
     content.classList.remove("dragging", "snap-back");
   }
+  els.card.style.transform = "";
   els.card.classList.remove("flash", "slide-left", "slide-right", "slide-up", "slide-down", "peek-left", "peek-right", "peek-up", "peek-down", "snap-back");
   void els.card.offsetWidth;
   els.card.classList.add(animationClass);
 }
-
 function moveWord(step) {
   wordIndex = (wordIndex + step + data.words.length) % data.words.length;
   render(step > 0 ? "slide-left" : "slide-right");
@@ -277,8 +314,22 @@ function moveGlass(step) {
   render(step > 0 ? "slide-up" : "slide-down");
 }
 
+function moveCard(step) {
+  cardIndex = (cardIndex + step + cards.length) % cards.length;
+  render(step > 0 ? "slide-left" : "slide-right");
+}
+
 function randomWord() {
-  wordIndex = Math.floor(Math.random() * data.words.length);
+  if (appMode === "cards") {
+    cardIndex = Math.floor(Math.random() * cards.length);
+  } else {
+    wordIndex = Math.floor(Math.random() * data.words.length);
+  }
+  render("flash");
+}
+
+function setMode(mode) {
+  appMode = mode;
   render("flash");
 }
 
@@ -303,6 +354,8 @@ function bind() {
   document.getElementById("prevGlass").onclick = () => moveGlass(-1);
   document.getElementById("nextGlass").onclick = () => moveGlass(1);
   document.getElementById("randomWord").onclick = randomWord;
+  if (els.dictionaryMode) els.dictionaryMode.onclick = () => setMode("dictionary");
+  if (els.cardMode) els.cardMode.onclick = () => setMode("cards");
   document.getElementById("closeDialog").onclick = () => els.dialog.close();
 
   let startX = 0, startY = 0, isDragging = false, lastDx = 0, lastDy = 0, lockedDirection = null;
@@ -418,10 +471,18 @@ function bind() {
     lockedDirection = null;
     if (content) content.style.transform = "";
 
-    if (Math.abs(dx) > Math.abs(dy)) {
-      moveWord(dx < 0 ? 1 : -1);
+    if (appMode === "cards") {
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        moveCard(dx < 0 ? 1 : -1);
+      } else {
+        render("flash");
+      }
     } else {
-      moveGlass(dy < 0 ? 1 : -1);
+      if (Math.abs(dx) > Math.abs(dy)) {
+        moveWord(dx < 0 ? 1 : -1);
+      } else {
+        moveGlass(dy < 0 ? 1 : -1);
+      }
     }
   });
 
@@ -440,10 +501,15 @@ function bind() {
   });
 
   window.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowRight") moveWord(1);
-    if (e.key === "ArrowLeft") moveWord(-1);
-    if (e.key === "ArrowUp") moveGlass(1);
-    if (e.key === "ArrowDown") moveGlass(-1);
+    if (appMode === "cards") {
+      if (e.key === "ArrowRight") moveCard(1);
+      if (e.key === "ArrowLeft") moveCard(-1);
+    } else {
+      if (e.key === "ArrowRight") moveWord(1);
+      if (e.key === "ArrowLeft") moveWord(-1);
+      if (e.key === "ArrowUp") moveGlass(1);
+      if (e.key === "ArrowDown") moveGlass(-1);
+    }
   });
 }
 

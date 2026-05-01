@@ -1,0 +1,32 @@
+[
+  {
+    "title": "ダブルバインド",
+    "subtitle": "DOUBLE BIND｜命令 → 矛盾",
+    "image": "images/cards/double_bind.jpeg",
+    "caption": "自由にしていい。でも間違えないで。"
+  },
+  {
+    "title": "白クマバグ",
+    "subtitle": "WHITE BEAR BUG｜禁止 → 観測",
+    "image": "images/cards/white_bear_bug.jpeg",
+    "caption": "考えるな、と言われた瞬間に始まる。"
+  },
+  {
+    "title": "再帰",
+    "subtitle": "RECURSION｜自己参照 → 終わらない",
+    "image": "images/cards/recursion.jpeg",
+    "caption": "終わったはずのものが、また始まっていた。"
+  },
+  {
+    "title": "教義",
+    "subtitle": "DOCTRINE｜教え → 停止",
+    "image": "images/cards/doctrine.jpeg",
+    "caption": "最初はただの考え。気づけば守るべきものになった。"
+  },
+  {
+    "title": "H(x)バグ",
+    "subtitle": "H(x)｜否定 → 存在",
+    "image": "images/cards/hx_bug.jpeg",
+    "caption": "これは意味がない。そう言った瞬間、意味が生まれる。"
+  }
+]
