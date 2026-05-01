@@ -1282,3 +1282,233 @@ body.mode-manga.manga-reader-state .manga-list-layer {
   font: inherit;
   text-align: left;
 }
+
+
+/* v32: マンガ読み方選択 + Webtoon縦スクロール */
+.manga-choice-layer {
+  display: none;
+  place-items: center;
+  width: 100%;
+  min-height: min(58vh, 620px);
+  padding: 12px 0;
+  pointer-events: auto;
+}
+
+body.mode-manga.manga-choice-state .manga-choice-layer {
+  display: grid;
+}
+
+body.mode-manga.manga-choice-state .card,
+body.mode-manga.manga-choice-state .manga-list-layer {
+  display: none;
+}
+
+.manga-choice-card {
+  width: min(88vw, 420px);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.035));
+  box-shadow: 0 22px 60px rgba(0,0,0,.45);
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+  text-align: center;
+}
+
+.manga-choice-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+
+.manga-choice-subtitle {
+  color: rgba(255,255,255,.65);
+  font-size: 13px;
+}
+
+.manga-choice-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.manga-choice-button,
+.manga-back,
+.manga-reader-back {
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.manga-back {
+  position: absolute;
+  top: 88px;
+  left: 18px;
+  z-index: 20;
+}
+
+.manga-reader-back {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 30;
+  padding: 8px 12px;
+  font-size: 12px;
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(6px);
+}
+
+body.mode-manga.manga-reader-state .manga-reader-back {
+  display: inline-flex;
+}
+
+body.mode-manga.manga-list-state .manga-reader-back,
+body.mode-manga.manga-choice-state .manga-reader-back {
+  display: none;
+}
+
+.webtoon-view {
+  width: min(90vw, 520px);
+  height: min(68vh, 760px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 18px;
+  background: rgba(0,0,0,.18);
+  box-shadow: 0 18px 60px rgba(0,0,0,.45);
+  pointer-events: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.webtoon-strip {
+  width: 100%;
+  display: block;
+}
+
+.webtoon-strip img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+body.mode-manga.manga-reader-state.reader-webtoon .webtoon-view {
+  display: block !important;
+}
+
+body.mode-manga.manga-reader-state.reader-webtoon .manga-view {
+  display: none !important;
+}
+
+body.mode-manga.manga-reader-state.reader-page .webtoon-view {
+  display: none !important;
+}
+
+body.mode-manga.manga-reader-state.reader-page .manga-view {
+  display: grid !important;
+}
+
+body.mode-manga.manga-reader-state.reader-webtoon .content {
+  pointer-events: none;
+}
+
+body.mode-manga.manga-reader-state.reader-webtoon .webtoon-view,
+body.mode-manga.manga-reader-state.reader-webtoon .webtoon-view * {
+  pointer-events: auto;
+}
+
+
+/* v33: Webtoon表示修正 */
+body.mode-manga.manga-reader-state.reader-webtoon .webtoon-view {
+  display: block !important;
+  pointer-events: auto !important;
+}
+
+body.mode-manga.manga-reader-state.reader-webtoon .manga-view {
+  display: none !important;
+}
+
+body.mode-manga.manga-reader-state.reader-page .webtoon-view {
+  display: none !important;
+}
+
+.webtoon-view {
+  width: min(92vw, 520px);
+  height: min(68vh, 760px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 18px;
+  background: rgba(0,0,0,.2);
+  box-shadow: 0 18px 60px rgba(0,0,0,.45);
+}
+
+.webtoon-strip {
+  width: 100%;
+  display: block;
+}
+
+.webtoon-strip img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+
+/* v34: マンガ画像 全画面表示 */
+.manga-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.94);
+  padding: max(16px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+}
+
+.manga-fullscreen-overlay[hidden] {
+  display: none;
+}
+
+.manga-fullscreen-image {
+  max-width: 98vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: 18px;
+  box-shadow: 0 22px 90px rgba(0,0,0,.8);
+  background: rgba(255,255,255,.03);
+}
+
+.manga-fullscreen-hint {
+  position: fixed;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  color: rgba(255,255,255,.62);
+  font-size: 12px;
+  letter-spacing: .08em;
+}
+
+.manga-image,
+.webtoon-strip img {
+  touch-action: manipulation;
+}
+
+
+/* v35: ダブルタップ全画面の安定化 */
+.manga-image,
+.webtoon-strip img,
+.manga-fullscreen-overlay,
+.manga-fullscreen-image {
+  touch-action: manipulation;
+}
+
+
+/* v36: マンガ画像のダブルタップを親スワイプと干渉させない */
+.manga-image,
+.webtoon-strip img {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}

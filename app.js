@@ -378,8 +378,69 @@ let data = {
   ]
 };
 const cards = [{"title": "ダブルバインド", "subtitle": "DOUBLE BIND｜命令 → 矛盾", "image": "images/cards/double_bind.jpeg", "caption": "自由にしていい。でも間違えないで。", "back": "images/cards/card_back.png"}, {"title": "白クマバグ", "subtitle": "WHITE BEAR BUG｜禁止 → 観測", "image": "images/cards/white_bear_bug.jpeg", "caption": "考えるな、と言われた瞬間に始まる。", "back": "images/cards/card_back.png"}, {"title": "再帰", "subtitle": "RECURSION｜自己参照 → 終わらない", "image": "images/cards/recursion.jpeg", "caption": "終わったはずのものが、また始まっていた。", "back": "images/cards/card_back.png"}, {"title": "教義", "subtitle": "DOCTRINE｜教え → 停止", "image": "images/cards/doctrine.jpeg", "caption": "最初はただの考え。気づけば守るべきものになった。", "back": "images/cards/card_back.png"}, {"title": "H(x)バグ", "subtitle": "H(x)｜否定 → 存在", "image": "images/cards/hx_bug.jpeg", "caption": "これは意味がない。そう言った瞬間、意味が生まれる。", "back": "images/cards/card_back.png"}];
-const mangaStories = [{"id": "syntax_resonance_sample", "title": "Syntax Resonance Sample", "desc": "音が意味になる世界のサンプル", "thumb": "images/manga/syntax_resonance_sample/syntax_resonance_01.jpg", "type": "image", "pages": [{"image": "images/manga/syntax_resonance_sample/syntax_resonance_01.jpg", "caption": "", "text": ""}, {"image": "images/manga/syntax_resonance_sample/syntax_resonance_02.jpg", "caption": "", "text": ""}, {"image": "images/manga/syntax_resonance_sample/syntax_resonance_03.jpg", "caption": "", "text": ""}], "webtoon": ["images/manga/syntax_resonance_sample/syntax_resonance_01.jpg", "images/manga/syntax_resonance_sample/syntax_resonance_02.jpg", "images/manga/syntax_resonance_sample/syntax_resonance_03.jpg"]}, {"id": "silence", "title": "その沈黙", "desc": "沈黙が意味を生む話", "thumb": "", "type": "text", "pages": [{"caption": "会議室。誰かが話し終えた。", "text": "そのあと、誰もすぐには答えなかった。"}, {"caption": "時計の音だけが残る。", "text": "沈黙は、ただの空白ではなかった。"}, {"caption": "話した本人が、少しだけ周りを見る。", "text": "返事がない。その事実だけで、意味は増えはじめる。"}, {"caption": "誰かが小さく息を吐いた。", "text": "それは同意にも、拒否にも、疲れにも見えた。"}, {"caption": "……じゃあ、これで進めます。", "text": "沈黙は、決定になった。"}]}];
+const mangaStories = [
+  {
+    "id": "syntax_resonance_sample",
+    "title": "Syntax Resonance Sample",
+    "desc": "音が意味になる世界のサンプル",
+    "thumb": "images/manga/syntax_resonance_sample/syntax_resonance_01.jpg",
+    "type": "image",
+    "pages": [
+      {
+        "image": "images/manga/syntax_resonance_sample/syntax_resonance_01.jpg",
+        "caption": "",
+        "text": ""
+      },
+      {
+        "image": "images/manga/syntax_resonance_sample/syntax_resonance_02.jpg",
+        "caption": "",
+        "text": ""
+      },
+      {
+        "image": "images/manga/syntax_resonance_sample/syntax_resonance_03.jpg",
+        "caption": "",
+        "text": ""
+      }
+    ],
+    "webtoon": [
+      "images/manga/syntax_resonance_sample/syntax_resonance_01.jpg",
+      "images/manga/syntax_resonance_sample/syntax_resonance_02.jpg",
+      "images/manga/syntax_resonance_sample/syntax_resonance_03.jpg"
+    ]
+  },
+  {
+    "id": "silence",
+    "title": "その沈黙",
+    "desc": "沈黙が意味を生む話",
+    "thumb": "",
+    "type": "text",
+    "pages": [
+      {
+        "caption": "会議室。誰かが話し終えた。",
+        "text": "そのあと、誰もすぐには答えなかった。"
+      },
+      {
+        "caption": "時計の音だけが残る。",
+        "text": "沈黙は、ただの空白ではなかった。"
+      },
+      {
+        "caption": "話した本人が、少しだけ周りを見る。",
+        "text": "返事がない。その事実だけで、意味は増えはじめる。"
+      },
+      {
+        "caption": "誰かが小さく息を吐いた。",
+        "text": "それは同意にも、拒否にも、疲れにも見えた。"
+      },
+      {
+        "caption": "……じゃあ、これで進めます。",
+        "text": "沈黙は、決定になった。"
+      }
+    ]
+  }
+];
 let appMode = "dictionary"; let mangaState = "list";
+let mangaReadMode = "page";
+let selectedMangaIndex = 0;
 let cardIndex = 0;
 let mangaStoryIndex = 0;
 let mangaPageIndex = 0;
@@ -411,6 +472,17 @@ const els = {
   cardMode: document.getElementById("cardMode"),
   mangaMode: document.getElementById("mangaMode"),
   mangaListLayer: document.getElementById("mangaListLayer"),
+  mangaChoiceLayer: document.getElementById("mangaChoiceLayer"),
+  mangaChoiceTitle: document.getElementById("mangaChoiceTitle"),
+  mangaBackToList: document.getElementById("mangaBackToList"),
+  readPageMode: document.getElementById("readPageMode"),
+  readWebtoonMode: document.getElementById("readWebtoonMode"),
+  mangaReaderBack: document.getElementById("mangaReaderBack"),
+  webtoonView: document.getElementById("webtoonView"),
+  webtoonStrip: document.getElementById("webtoonStrip"),
+  mangaAudio: document.getElementById("mangaAudio"),
+  mangaFullscreenOverlay: document.getElementById("mangaFullscreenOverlay"),
+  mangaFullscreenImage: document.getElementById("mangaFullscreenImage"),
   mangaView: document.getElementById("mangaView"),
   mangaPage: document.getElementById("mangaPage"),
   mangaImage: document.getElementById("mangaImage"),
@@ -488,22 +560,121 @@ function renderMangaList() {
     item.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      mangaStoryIndex = Number(item.dataset.index || 0);
-      mangaPageIndex = 0;
-      mangaState = "reader";
+      selectedMangaIndex = Number(item.dataset.index || 0);
+      mangaState = "choice";
       setMode("manga");
     });
 
     item.addEventListener("pointerup", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      mangaStoryIndex = Number(item.dataset.index || 0);
-      mangaPageIndex = 0;
-      mangaState = "reader";
+      selectedMangaIndex = Number(item.dataset.index || 0);
+      mangaState = "choice";
       setMode("manga");
     });
   });
 }
+
+
+function getCurrentMangaStory() {
+  return mangaStories[mangaStoryIndex] || mangaStories[0];
+}
+
+function getStoryPagesAsImages(story) {
+  if (Array.isArray(story.webtoon) && story.webtoon.length > 0) {
+    return story.webtoon;
+  }
+  if (Array.isArray(story.pages)) {
+    return story.pages
+      .map(page => page.image)
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function renderWebtoon(story) {
+  if (!els.webtoonStrip) return;
+
+  const imagePages = getStoryPagesAsImages(story);
+
+  if (!imagePages.length) {
+    els.webtoonStrip.innerHTML = `
+      <div style="padding:24px; color:rgba(255,255,255,.7); line-height:1.8;">
+        Webtoon画像がまだ登録されていません。
+      </div>
+    `;
+    return;
+  }
+
+  els.webtoonStrip.innerHTML = imagePages
+    .map((src, index) => `<img src="${src}" alt="${story.title} ${index + 1}">`)
+    .join("");
+
+  if (els.webtoonView) {
+    els.webtoonView.scrollTop = 0;
+  }
+}
+
+function startMangaReader(mode) {
+  mangaStoryIndex = selectedMangaIndex;
+  mangaPageIndex = 0;
+  mangaReadMode = mode;
+  mangaState = "reader";
+
+  const story = getCurrentMangaStory();
+  if (mode === "webtoon") {
+    renderWebtoon(story);
+  }
+
+  setMode("manga");
+}
+
+function backToMangaChoice() {
+  mangaState = "choice";
+  setMode("manga");
+}
+
+function backToMangaList() {
+  mangaState = "list";
+  setMode("manga");
+}
+
+function toggleMangaAudio() {
+  if (!els.mangaAudio) return;
+  const story = getCurrentMangaStory();
+  if (!story.audio) {
+    render("flash");
+    return;
+  }
+  if (els.mangaAudio.src !== story.audio) {
+    els.mangaAudio.src = story.audio;
+  }
+  if (els.mangaAudio.paused) {
+    els.mangaAudio.play().catch(() => {});
+  } else {
+    els.mangaAudio.pause();
+  }
+}
+
+
+
+function updateControlLabels() {
+  const prev = document.getElementById("prevGlass");
+  const mid = document.getElementById("randomWord");
+  const next = document.getElementById("nextGlass");
+  if (!prev || !mid || !next) return;
+
+  if (appMode === "manga" && mangaState === "reader") {
+    prev.textContent = mangaReadMode === "page" ? "前ページ" : "上へ";
+    mid.textContent = "音声";
+    next.textContent = mangaReadMode === "page" ? "次ページ" : "下へ";
+  } else {
+    prev.textContent = "前のメガネ";
+    mid.textContent = "ランダム";
+    next.textContent = "次のメガネ";
+  }
+}
+
 
 function render(animationClass = "flash") {
   els.body.classList.toggle("mode-cards", appMode === "cards");
@@ -511,8 +682,17 @@ function render(animationClass = "flash") {
   els.body.classList.toggle("mode-manga", appMode === "manga");
   els.body.classList.toggle("manga-list-state", appMode === "manga" && mangaState === "list");
   els.body.classList.toggle("manga-reader-state", appMode === "manga" && mangaState === "reader");
+  els.body.classList.toggle("manga-choice-state", appMode === "manga" && mangaState === "choice");
+  els.body.classList.toggle("reader-page", appMode === "manga" && mangaState === "reader" && mangaReadMode === "page");
+  els.body.classList.toggle("reader-webtoon", appMode === "manga" && mangaState === "reader" && mangaReadMode === "webtoon");
   if (els.mangaListLayer) {
     els.mangaListLayer.hidden = !(appMode === "manga" && mangaState === "list");
+  }
+  if (els.mangaChoiceLayer) {
+    els.mangaChoiceLayer.hidden = !(appMode === "manga" && mangaState === "choice");
+  }
+  if (els.mangaReaderBack) {
+    els.mangaReaderBack.hidden = !(appMode === "manga" && mangaState === "reader");
   }
 
   if (els.dictionaryMode && els.cardMode) {
@@ -546,30 +726,38 @@ function render(animationClass = "flash") {
   } else if (appMode === "manga") {
     if (mangaState === "list") {
       els.counter.textContent = `${mangaStories.length} stories`;
-      if (els.hint) els.hint.textContent = "作品を選ぶ / 上：カードへ戻る";
+      if (els.hint) els.hint.textContent = "作品を選ぶ";
+    } else if (mangaState === "choice") {
+      const story = mangaStories[selectedMangaIndex];
+      if (els.mangaChoiceTitle) els.mangaChoiceTitle.textContent = story.title;
+      els.counter.textContent = "select mode";
+      if (els.hint) els.hint.textContent = "読み方を選ぶ";
     } else {
       const story = mangaStories[mangaStoryIndex];
-      const page = story.pages[mangaPageIndex];
-
-      const isImagePage = !!page.image;
-      if (els.mangaPage) els.mangaPage.classList.toggle("image-page", isImagePage);
-
-      if (els.mangaImage) {
-        if (isImagePage) {
-          els.mangaImage.src = page.image;
-          els.mangaImage.alt = `${story.title} ${mangaPageIndex + 1}`;
-          els.mangaImage.hidden = false;
-        } else {
-          els.mangaImage.hidden = true;
-          els.mangaImage.removeAttribute("src");
+      if (mangaReadMode === "webtoon") {
+        renderWebtoon(story);
+        els.counter.textContent = "Webtoon";
+        if (els.hint) els.hint.textContent = "縦スクロール / 戻るボタン";
+      } else {
+        const page = story.pages[mangaPageIndex];
+        const isImagePage = !!page.image;
+        if (els.mangaPage) els.mangaPage.classList.toggle("image-page", isImagePage);
+        if (els.mangaImage) {
+          if (isImagePage) {
+            els.mangaImage.src = page.image;
+            els.mangaImage.alt = `${story.title} ${mangaPageIndex + 1}`;
+            els.mangaImage.hidden = false;
+          } else {
+            els.mangaImage.hidden = true;
+            els.mangaImage.removeAttribute("src");
+          }
         }
+        els.mangaTitle.textContent = story.title;
+        els.mangaCaption.textContent = page.caption || "";
+        els.mangaText.textContent = page.text || "";
+        els.counter.textContent = `${mangaPageIndex + 1} / ${story.pages.length}`;
+        if (els.hint) els.hint.textContent = "左右：ページ / 戻るボタン";
       }
-
-      els.mangaTitle.textContent = story.title;
-      els.mangaCaption.textContent = page.caption || "";
-      els.mangaText.textContent = page.text || "";
-      els.counter.textContent = `${mangaPageIndex + 1} / ${story.pages.length}`;
-      if (els.hint) els.hint.textContent = "左右：ページ / 上：一覧へ戻る";
     }
   } else {
     const w = currentWord();
@@ -587,6 +775,8 @@ function render(animationClass = "flash") {
     els.counter.textContent = `${wordIndex + 1} / ${data.words.length}　・　${glassIndex + 1} / ${data.glasses.length}`;
     if (els.hint) els.hint.textContent = "左右：単語 / 上下：メガネ / 長押し：一覧";
   }
+
+  updateControlLabels();
 
   if (content) {
     content.style.transform = "";
@@ -675,7 +865,7 @@ function randomWord() {
 function setMode(mode) {
   appMode = mode;
   if (mode === "cards") cardFlipped = true;
-  if (mode === "manga" && mangaState !== "reader") mangaState = "list";
+  if (mode === "manga" && mangaState !== "reader" && mangaState !== "choice") mangaState = "list";
   render("flash");
 }
 
@@ -751,18 +941,134 @@ function buildGlassList() {
   });
 }
 
+
+function openMangaFullscreen(src, alt = "") {
+  if (!els.mangaFullscreenOverlay || !els.mangaFullscreenImage || !src) return;
+  els.mangaFullscreenImage.src = src;
+  els.mangaFullscreenImage.alt = alt;
+  els.mangaFullscreenOverlay.hidden = false;
+}
+
+function closeMangaFullscreen() {
+  if (els.mangaFullscreenOverlay) els.mangaFullscreenOverlay.hidden = true;
+}
+
+function bindMangaImageDoubleTap() {
+  if (window.__mangaDoubleTapBound) return;
+  window.__mangaDoubleTapBound = true;
+
+  let lastImageTap = 0;
+
+  function isMangaReaderImage(target) {
+    if (appMode !== "manga" || mangaState !== "reader") return false;
+    if (!target || target.tagName !== "IMG") return false;
+    return (
+      target.classList.contains("manga-image") ||
+      !!target.closest(".webtoon-strip")
+    );
+  }
+
+  function openFromTarget(target) {
+    openMangaFullscreen(target.currentSrc || target.src, target.alt || "");
+  }
+
+  // スマホ用：touchendでダブルタップ判定
+  document.addEventListener("touchend", (e) => {
+    const target = e.target;
+    if (!isMangaReaderImage(target)) return;
+
+    const now = Date.now();
+    if (now - lastImageTap < 320) {
+      e.preventDefault();
+      e.stopPropagation();
+      openFromTarget(target);
+      lastImageTap = 0;
+      return;
+    }
+
+    lastImageTap = now;
+  }, { passive: false });
+
+  // PC用：ダブルクリック
+  document.addEventListener("dblclick", (e) => {
+    const target = e.target;
+    if (!isMangaReaderImage(target)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    openFromTarget(target);
+  });
+
+  // 全画面を閉じる：スマホはダブルタップ
+  if (els.mangaFullscreenOverlay && !els.mangaFullscreenOverlay.dataset.doubleTapCloseBound) {
+    els.mangaFullscreenOverlay.dataset.doubleTapCloseBound = "1";
+
+    let lastCloseTap = 0;
+
+    els.mangaFullscreenOverlay.addEventListener("touchend", (e) => {
+      const now = Date.now();
+      if (now - lastCloseTap < 320) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeMangaFullscreen();
+        lastCloseTap = 0;
+        return;
+      }
+
+      lastCloseTap = now;
+    }, { passive: false });
+
+    // PC用：ダブルクリックで閉じる
+    els.mangaFullscreenOverlay.addEventListener("dblclick", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeMangaFullscreen();
+    });
+  }
+}
+
+
 function bind() {
+  bindMangaImageDoubleTap();
   document.getElementById("prevWord").onclick = () => moveWord(-1);
   document.getElementById("nextWord").onclick = () => moveWord(1);
-  document.getElementById("prevGlass").onclick = () => moveGlass(-1);
-  document.getElementById("nextGlass").onclick = () => moveGlass(1);
-  document.getElementById("randomWord").onclick = randomWord;
+  document.getElementById("prevGlass").onclick = () => {
+    if (appMode === "manga" && mangaState === "reader" && mangaReadMode === "page") {
+      moveMangaPage(-1);
+    } else if (appMode === "manga" && mangaState === "reader" && mangaReadMode === "webtoon" && els.webtoonView) {
+      els.webtoonView.scrollBy({ top: -Math.floor(els.webtoonView.clientHeight * 0.85), behavior: "smooth" });
+    } else {
+      moveGlass(-1);
+    }
+  };
+  document.getElementById("nextGlass").onclick = () => {
+    if (appMode === "manga" && mangaState === "reader" && mangaReadMode === "page") {
+      moveMangaPage(1);
+    } else if (appMode === "manga" && mangaState === "reader" && mangaReadMode === "webtoon" && els.webtoonView) {
+      els.webtoonView.scrollBy({ top: Math.floor(els.webtoonView.clientHeight * 0.85), behavior: "smooth" });
+    } else {
+      moveGlass(1);
+    }
+  };
+  document.getElementById("randomWord").onclick = () => {
+    if (appMode === "manga" && mangaState === "reader") {
+      toggleMangaAudio();
+    } else {
+      randomWord();
+    }
+  };
   if (els.dictionaryMode) els.dictionaryMode.onclick = () => setMode("dictionary");
   if (els.cardMode) els.cardMode.onclick = () => setMode("cards");
   if (els.mangaMode) els.mangaMode.onclick = () => {
     mangaState = "list";
     setMode("manga");
   };
+
+  if (els.mangaBackToList) els.mangaBackToList.onclick = backToMangaList;
+  if (els.mangaReaderBack) els.mangaReaderBack.onclick = backToMangaChoice;
+  if (els.readPageMode) els.readPageMode.onclick = () => startMangaReader("page");
+  if (els.readWebtoonMode) els.readWebtoonMode.onclick = () => startMangaReader("webtoon");
+
 
   const mangaListView = document.getElementById("mangaListView");
   if (mangaListView && !mangaListView.dataset.bound) {
@@ -771,9 +1077,8 @@ function bind() {
       const item = e.target.closest(".manga-item");
       if (!item) return;
 
-      mangaStoryIndex = Number(item.dataset.index || 0);
-      mangaPageIndex = 0;
-      mangaState = "reader";
+      selectedMangaIndex = Number(item.dataset.index || 0);
+      mangaState = "choice";
       setMode("manga");
     });
   }
@@ -836,6 +1141,17 @@ function bind() {
   let startX = 0, startY = 0, isDragging = false, lastDx = 0, lastDy = 0, lockedDirection = null;
 
   els.card.addEventListener("pointerdown", (e) => {
+    // v36: マンガ画像タップは親カードのスワイプ処理に渡さない
+    if (
+      appMode === "manga" &&
+      mangaState === "reader" &&
+      e.target &&
+      e.target.tagName === "IMG" &&
+      (e.target.classList.contains("manga-image") || e.target.closest(".webtoon-strip"))
+    ) {
+      return;
+    }
+
     startX = e.clientX;
     startY = e.clientY;
     lastDx = 0;
@@ -952,17 +1268,14 @@ function bind() {
     if (content) content.style.transform = "";
 
     if (appMode === "manga") {
-      if (mangaState === "list") {
-        render("flash");
-      } else {
+      if (mangaState === "reader" && mangaReadMode === "page") {
         if (Math.abs(dx) >= Math.abs(dy)) {
           moveMangaPage(dx < 0 ? 1 : -1);
-        } else if (dy < 0) {
-          mangaState = "list";
-          render("flash");
         } else {
           render("flash");
         }
+      } else {
+        render("flash");
       }
     } else if (appMode === "cards") {
       if (Math.abs(dy) > Math.abs(dx)) {
@@ -995,15 +1308,9 @@ function bind() {
 
   window.addEventListener("keydown", (e) => {
     if (appMode === "manga") {
-      if (mangaState === "reader") {
+      if (mangaState === "reader" && mangaReadMode === "page") {
         if (e.key === "ArrowRight") moveMangaPage(1);
         if (e.key === "ArrowLeft") moveMangaPage(-1);
-        if (e.key === "ArrowUp") {
-          mangaState = "list";
-          render("flash");
-        }
-      } else {
-        // no swipe/arrow exit from list
       }
     } else if (appMode === "cards") {
       if (e.key === "ArrowUp") moveCard(1);
