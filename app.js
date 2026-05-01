@@ -953,83 +953,94 @@ function closeMangaFullscreen() {
   if (els.mangaFullscreenOverlay) els.mangaFullscreenOverlay.hidden = true;
 }
 
-function bindMangaImageDoubleTap() {
-  if (window.__mangaDoubleTapBound) return;
-  window.__mangaDoubleTapBound = true;
 
-  let lastImageTap = 0;
 
-  function isMangaReaderImage(target) {
-    if (appMode !== "manga" || mangaState !== "reader") return false;
-    if (!target || target.tagName !== "IMG") return false;
+function bindImageGestureFix() {
+  if (window.__imageGestureFixBound) return;
+  window.__imageGestureFixBound = true;
+
+  let startX = 0;
+  let startY = 0;
+  let lastTap = 0;
+
+  function isTarget(img) {
     return (
-      target.classList.contains("manga-image") ||
-      !!target.closest(".webtoon-strip")
+      appMode === "manga" &&
+      mangaState === "reader" &&
+      img &&
+      img.tagName === "IMG" &&
+      (
+        img.classList.contains("manga-image") ||
+        !!img.closest(".webtoon-strip")
+      )
     );
   }
 
-  function openFromTarget(target) {
-    openMangaFullscreen(target.currentSrc || target.src, target.alt || "");
-  }
+  document.addEventListener("touchstart", (e) => {
+    const target = e.target;
+    if (!isTarget(target)) return;
 
-  // スマホ用：touchendでダブルタップ判定
+    const touch = e.touches && e.touches[0];
+    if (!touch) return;
+
+    startX = touch.clientX;
+    startY = touch.clientY;
+  }, { passive: true, capture: true });
+
   document.addEventListener("touchend", (e) => {
     const target = e.target;
-    if (!isMangaReaderImage(target)) return;
+    if (!isTarget(target)) return;
 
+    const touch = e.changedTouches && e.changedTouches[0];
+    if (!touch) return;
+
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    // ダブルタップで全画面
     const now = Date.now();
-    if (now - lastImageTap < 320) {
-      e.preventDefault();
-      e.stopPropagation();
-      openFromTarget(target);
-      lastImageTap = 0;
+    if (absX < 14 && absY < 14) {
+      if (now - lastTap < 330) {
+        e.preventDefault();
+        e.stopPropagation();
+        openMangaFullscreen(target.currentSrc || target.src, target.alt || "");
+        lastTap = 0;
+        return;
+      }
+      lastTap = now;
       return;
     }
 
-    lastImageTap = now;
-  }, { passive: false });
+    // ページ読みモード：画像上の横スワイプでページ送り
+    if (
+      mangaReadMode === "page" &&
+      absX > 38 &&
+      absX > absY * 1.1
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      moveMangaPage(dx < 0 ? 1 : -1);
+      return;
+    }
+  }, { passive: false, capture: true });
 
-  // PC用：ダブルクリック
+  // PC：画像上のダブルクリックで全画面
   document.addEventListener("dblclick", (e) => {
     const target = e.target;
-    if (!isMangaReaderImage(target)) return;
+    if (!isTarget(target)) return;
 
     e.preventDefault();
     e.stopPropagation();
-    openFromTarget(target);
-  });
-
-  // 全画面を閉じる：スマホはダブルタップ
-  if (els.mangaFullscreenOverlay && !els.mangaFullscreenOverlay.dataset.doubleTapCloseBound) {
-    els.mangaFullscreenOverlay.dataset.doubleTapCloseBound = "1";
-
-    let lastCloseTap = 0;
-
-    els.mangaFullscreenOverlay.addEventListener("touchend", (e) => {
-      const now = Date.now();
-      if (now - lastCloseTap < 320) {
-        e.preventDefault();
-        e.stopPropagation();
-        closeMangaFullscreen();
-        lastCloseTap = 0;
-        return;
-      }
-
-      lastCloseTap = now;
-    }, { passive: false });
-
-    // PC用：ダブルクリックで閉じる
-    els.mangaFullscreenOverlay.addEventListener("dblclick", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeMangaFullscreen();
-    });
-  }
+    openMangaFullscreen(target.currentSrc || target.src, target.alt || "");
+  }, true);
 }
 
 
 function bind() {
-  bindMangaImageDoubleTap();
+  bindImageGestureFix();
+  
   document.getElementById("prevWord").onclick = () => moveWord(-1);
   document.getElementById("nextWord").onclick = () => moveWord(1);
   document.getElementById("prevGlass").onclick = () => {
@@ -1330,3 +1341,95 @@ function bind() {
 init();
 
 
+
+
+/* v41 recovery: isolated fullscreen button. Does not override existing controls. */
+(function () {
+  function qs(id) {
+    return document.getElementById(id);
+  }
+
+  function getCurrentMangaImageForFullscreen() {
+    const mangaImage = qs("mangaImage");
+    if (mangaImage && !mangaImage.hidden && mangaImage.src) {
+      return mangaImage.currentSrc || mangaImage.src;
+    }
+
+    const webtoonView = qs("webtoonView");
+    if (webtoonView) {
+      const imgs = Array.from(webtoonView.querySelectorAll("img"));
+      if (imgs.length) {
+        // Pick the image closest to the top of the visible area
+        let best = imgs[0];
+        let bestDistance = Infinity;
+        const viewRect = webtoonView.getBoundingClientRect();
+
+        imgs.forEach(img => {
+          const rect = img.getBoundingClientRect();
+          const distance = Math.abs(rect.top - viewRect.top);
+          if (distance < bestDistance) {
+            best = img;
+            bestDistance = distance;
+          }
+        });
+
+        return best.currentSrc || best.src;
+      }
+    }
+
+    return "";
+  }
+
+  function openMangaFullscreenButton() {
+    const overlay = qs("mangaFullscreenOverlay");
+    const image = qs("mangaFullscreenImage");
+    if (!overlay || !image) return;
+
+    const src = getCurrentMangaImageForFullscreen();
+    if (!src) return;
+
+    image.src = src;
+    overlay.hidden = false;
+  }
+
+  function closeMangaFullscreenButton() {
+    const overlay = qs("mangaFullscreenOverlay");
+    if (overlay) overlay.hidden = true;
+  }
+
+  function bindRecoveryFullscreen() {
+    const openButton = qs("mangaOpenFullscreenButton");
+    const closeButton = qs("mangaFullscreenClose");
+
+    if (openButton && !openButton.dataset.bound) {
+      openButton.dataset.bound = "1";
+      openButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openMangaFullscreenButton();
+      });
+      openButton.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openMangaFullscreenButton();
+      }, { passive: false });
+    }
+
+    if (closeButton && !closeButton.dataset.bound) {
+      closeButton.dataset.bound = "1";
+      closeButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeMangaFullscreenButton();
+      });
+      closeButton.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeMangaFullscreenButton();
+      }, { passive: false });
+    }
+  }
+
+  bindRecoveryFullscreen();
+  window.addEventListener("load", bindRecoveryFullscreen);
+})();

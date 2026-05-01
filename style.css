@@ -1512,3 +1512,92 @@ body.mode-manga.manga-reader-state.reader-page .webtoon-view {
   user-select: none;
   -webkit-touch-callout: none;
 }
+
+
+/* v37: マンガ専用ジェスチャーを優先 */
+body.mode-manga.manga-reader-state .manga-view,
+body.mode-manga.manga-reader-state .manga-page,
+body.mode-manga.manga-reader-state .manga-image,
+body.mode-manga.manga-reader-state .webtoon-view,
+body.mode-manga.manga-reader-state .webtoon-strip,
+body.mode-manga.manga-reader-state .webtoon-strip img {
+  pointer-events: auto !important;
+}
+
+body.mode-manga.manga-reader-state.reader-page .manga-view {
+  touch-action: pan-y;
+}
+
+body.mode-manga.manga-reader-state.reader-webtoon .webtoon-view {
+  touch-action: pan-y;
+}
+
+
+/* v38: 画像自体にジェスチャーを持たせる */
+.manga-image,
+.webtoon-strip img {
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+
+/* v41: 安定版復旧 + 非侵襲の全画面ボタン */
+.manga-open-fullscreen {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 32;
+  padding: 8px 12px;
+  font-size: 12px;
+  background: rgba(0,0,0,.38);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,.18);
+}
+
+body.mode-manga.manga-reader-state .manga-open-fullscreen {
+  display: inline-flex;
+}
+
+body.mode-manga.manga-list-state .manga-open-fullscreen,
+body.mode-manga.manga-choice-state .manga-open-fullscreen {
+  display: none;
+}
+
+.manga-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.95);
+  padding: max(18px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom));
+}
+
+.manga-fullscreen-overlay[hidden] {
+  display: none !important;
+}
+
+.manga-fullscreen-image {
+  max-width: 98vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: 18px;
+  background: rgba(255,255,255,.03);
+  box-shadow: 0 22px 90px rgba(0,0,0,.8);
+}
+
+.manga-fullscreen-close {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  left: 14px;
+  z-index: 10001;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.52);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.2);
+  color: rgba(255,255,255,.92);
+}
