@@ -1094,15 +1094,10 @@ function bind() {
       content.style.transform = "";
     }
     pressTimer = setTimeout(() => {
-      if (appMode !== "dictionary") return; // 長押し一覧は辞書モードだけ
-      isDragging = false;
-      lockedDirection = null;
-      els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
-      if (content) {
-        content.classList.remove("dragging");
-        content.style.transform = "";
+      // v59: 辞書長押しではメガネ一覧を開かない
+      if (appMode !== "dictionary") {
+        els.dialog.showModal();
       }
-      els.dialog.showModal();
     }, 550);
   });
 
@@ -2105,61 +2100,111 @@ init();
   }
 })();
 
-
-/* v57: SAFE mobile audio + label fix (no event blocking) */
-(function(){
+/* v59: dictionary swipe-safe mobile audio + label fix */
+(function () {
   const isMobile = /iPhone|Android/i.test(navigator.userAgent);
 
-  function getWord(){
+  function mode() {
+    return typeof appMode !== "undefined" ? appMode : "";
+  }
+
+  function getWord() {
     const el = document.getElementById("word");
     return el ? el.textContent.trim() : "";
   }
 
-  function speak(text){
-    if(!text || !("speechSynthesis" in window)) return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang="ja-JP";
-    speechSynthesis.cancel();
-    speechSynthesis.speak(u);
+  function getVoiceLines() {
+    return window.dictionaryVoiceLines || dictionaryVoiceLines || {};
   }
 
-  const voiceLines = window.dictionaryVoiceLines || {};
+  function speak(text) {
+    if (!text || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ja-JP";
+    u.rate = 0.94;
+    u.pitch = 1.02;
+    window.speechSynthesis.speak(u);
+  }
 
-  function play(){
-    if(typeof appMode==="undefined" || appMode!=="dictionary") return;
-    const w = getWord();
-    const entry = voiceLines[w];
-    if(!entry) return;
+  function playCurrent() {
+    if (mode() !== "dictionary") return;
+
+    let lines = {};
+    try { lines = getVoiceLines(); } catch(e) { lines = {}; }
+
+    const entry = lines[getWord()];
+    if (!entry) return;
+
     const line = entry.nyx || Object.values(entry)[0];
     speak(line);
   }
 
-  function bind(){
+  function bindMobileTap() {
     const card = document.querySelector(".card");
-    if(!card || card.dataset.v57) return;
-    card.dataset.v57 = "1";
+    if (!card || card.dataset.v59TapBound) return;
+    card.dataset.v59TapBound = "1";
 
-    if(isMobile){
-      card.addEventListener("click", ()=>{
-        play();
-      });
+    let sx = 0;
+    let sy = 0;
+    let moved = false;
+
+    if (isMobile) {
+      card.addEventListener("touchstart", (e) => {
+        if (mode() !== "dictionary") return;
+        const t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+        sx = t.clientX;
+        sy = t.clientY;
+        moved = false;
+      }, { passive: true });
+
+      card.addEventListener("touchmove", (e) => {
+        const t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+        if (Math.abs(t.clientX - sx) > 12 || Math.abs(t.clientY - sy) > 12) {
+          moved = true;
+        }
+      }, { passive: true });
+
+      card.addEventListener("touchend", (e) => {
+        if (mode() !== "dictionary") return;
+        if (moved) return; // スワイプ時は喋らない
+        playCurrent();
+      }, { passive: true });
     }
   }
 
-  function fixLabel(){
+  function fixLabel() {
     const btn = document.getElementById("randomWord");
-    if(!btn) return;
-    if(typeof appMode!=="undefined" && appMode==="dictionary"){
+    if (!btn) return;
+    if (mode() === "dictionary" && btn.textContent !== "メガネ一覧") {
       btn.textContent = "メガネ一覧";
     }
   }
 
-  function boot(){
-    bind();
-    setInterval(fixLabel,300);
+  function bindMiddleButton() {
+    const btn = document.getElementById("randomWord");
+    const dialog = document.getElementById("glassDialog");
+    if (!btn || btn.dataset.v59MiddleBound) return;
+    btn.dataset.v59MiddleBound = "1";
+
+    btn.addEventListener("click", (e) => {
+      if (mode() !== "dictionary") return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+    }, true);
   }
 
-  if(document.readyState==="loading"){
+  function boot() {
+    bindMobileTap();
+    bindMiddleButton();
+    fixLabel();
+    setInterval(fixLabel, 250);
+  }
+
+  if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
   } else {
     boot();
