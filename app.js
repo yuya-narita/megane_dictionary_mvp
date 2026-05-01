@@ -245,11 +245,14 @@ const els = {
   cardImage: document.getElementById("cardImage"),
   cardBackImage: document.getElementById("cardBackImage"),
   flipCard: document.getElementById("flipCard"),
+  flowCard: document.getElementById("flowCard"),
   cardTitle: document.getElementById("cardTitle"),
   cardSubtitle: document.getElementById("cardSubtitle"),
   cardCaption: document.getElementById("cardCaption"),
   dictionaryMode: document.getElementById("dictionaryMode"),
   cardMode: document.getElementById("cardMode"),
+  fullscreenOverlay: document.getElementById("fullscreenOverlay"),
+  fullscreenImage: document.getElementById("fullscreenImage"),
   dialog: document.getElementById("glassDialog"),
   glassList: document.getElementById("glassList"),
 };
@@ -342,26 +345,35 @@ function moveGlass(step) {
 }
 
 function moveCard(step) {
-  cardFlipped = true; // シャッフル中も裏面固定
+  // シャッフル時は必ず裏面に戻す。表は絶対に見せない。
+  cardFlipped = true;
+  render(step > 0 ? "slide-up" : "slide-down");
 
   if (els.flipCard) {
-    els.flipCard.classList.remove("shuffle-next", "shuffle-prev", "deal-next", "deal-prev", "shuffling");
+    els.flipCard.classList.remove(
+      "shuffle-next", "shuffle-prev", "deal-next", "deal-prev", "shuffling",
+      "flow-up", "flow-down", "flow-in",
+      "flow-up-safe", "flow-down-safe", "flowing"
+    );
     void els.flipCard.offsetWidth;
-    els.flipCard.classList.add("shuffling");
-    els.flipCard.classList.add(step > 0 ? "deal-next" : "deal-prev");
+
+    // 演出用の裏面カードだけを流す
+    els.flipCard.classList.add("flowing");
+    els.flipCard.classList.add(step > 0 ? "flow-up-safe" : "flow-down-safe");
   }
 
-  // 配っている途中でカードの中身を入れ替える
+  // 流れている途中で中身だけ入れ替え。画面上は裏面なので表は見えない。
   setTimeout(() => {
     cardIndex = (cardIndex + step + cards.length) % cards.length;
+    cardFlipped = true;
     render(step > 0 ? "slide-up" : "slide-down");
   }, 230);
 
   setTimeout(() => {
     if (els.flipCard) {
-      els.flipCard.classList.remove("deal-next", "deal-prev", "shuffling");
+      els.flipCard.classList.remove("flow-up-safe", "flow-down-safe", "flowing");
     }
-  }, 560);
+  }, 520);
 }
 
 function flipCurrentCard() {
@@ -391,6 +403,19 @@ function setMode(mode) {
   render("flash");
 }
 
+function openFullscreenCard() {
+  if (appMode !== "cards" || !els.fullscreenOverlay || !els.fullscreenImage) return;
+  const c = cards[cardIndex];
+  els.fullscreenImage.src = cardFlipped ? (c.back || "images/cards/card_back.png") : c.image;
+  els.fullscreenImage.alt = cardFlipped ? `${c.title} 裏面` : c.title;
+  els.fullscreenOverlay.hidden = false;
+}
+
+function closeFullscreenCard() {
+  if (els.fullscreenOverlay) els.fullscreenOverlay.hidden = true;
+}
+
+
 function buildGlassList() {
   els.glassList.innerHTML = "";
   data.glasses.forEach((g, i) => {
@@ -415,6 +440,19 @@ function bind() {
   if (els.dictionaryMode) els.dictionaryMode.onclick = () => setMode("dictionary");
   if (els.cardMode) els.cardMode.onclick = () => setMode("cards");
   document.getElementById("closeDialog").onclick = () => els.dialog.close();
+  if (els.fullscreenOverlay) els.fullscreenOverlay.onclick = closeFullscreenCard;
+
+  let lastTapTime = 0;
+  els.card.addEventListener("click", () => {
+    if (appMode !== "cards") return;
+    const now = Date.now();
+    if (now - lastTapTime < 320) {
+      openFullscreenCard();
+      lastTapTime = 0;
+    } else {
+      lastTapTime = now;
+    }
+  });
 
   let startX = 0, startY = 0, isDragging = false, lastDx = 0, lastDy = 0, lockedDirection = null;
 
