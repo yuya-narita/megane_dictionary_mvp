@@ -957,91 +957,8 @@ function closeMangaFullscreen() {
 
 
 
-function bindImageGestureFix() {
-  if (window.__imageGestureFixBound) return;
-  window.__imageGestureFixBound = true;
-
-  let startX = 0;
-  let startY = 0;
-  let lastTap = 0;
-
-  function isTarget(img) {
-    return (
-      appMode === "manga" &&
-      mangaState === "reader" &&
-      img &&
-      img.tagName === "IMG" &&
-      (
-        img.classList.contains("manga-image") ||
-        !!img.closest(".webtoon-strip")
-      )
-    );
-  }
-
-  document.addEventListener("touchstart", (e) => {
-    const target = e.target;
-    if (!isTarget(target)) return;
-
-    const touch = e.touches && e.touches[0];
-    if (!touch) return;
-
-    startX = touch.clientX;
-    startY = touch.clientY;
-  }, { passive: true, capture: true });
-
-  document.addEventListener("touchend", (e) => {
-    const target = e.target;
-    if (!isTarget(target)) return;
-
-    const touch = e.changedTouches && e.changedTouches[0];
-    if (!touch) return;
-
-    const dx = touch.clientX - startX;
-    const dy = touch.clientY - startY;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
-
-    // ダブルタップで全画面
-    const now = Date.now();
-    if (absX < 14 && absY < 14) {
-      if (now - lastTap < 330) {
-        e.preventDefault();
-        e.stopPropagation();
-        openMangaFullscreen(target.currentSrc || target.src, target.alt || "");
-        lastTap = 0;
-        return;
-      }
-      lastTap = now;
-      return;
-    }
-
-    // ページ読みモード：画像上の横スワイプでページ送り
-    if (
-      mangaReadMode === "page" &&
-      absX > 38 &&
-      absX > absY * 1.1
-    ) {
-      e.preventDefault();
-      e.stopPropagation();
-      moveMangaPage(dx < 0 ? 1 : -1);
-      return;
-    }
-  }, { passive: false, capture: true });
-
-  // PC：画像上のダブルクリックで全画面
-  document.addEventListener("dblclick", (e) => {
-    const target = e.target;
-    if (!isTarget(target)) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    openMangaFullscreen(target.currentSrc || target.src, target.alt || "");
-  }, true);
-}
-
-
 function bind() {
-  bindImageGestureFix();
+  
   
   document.getElementById("prevWord").onclick = () => moveWord(-1);
   document.getElementById("nextWord").onclick = () => moveWord(1);
@@ -1800,7 +1717,10 @@ init();
 })();
 
 
-/* v50: normal page reader enhanced swipe */
+
+
+
+/* v51: normal page reader single swipe handler */
 (function () {
   function q(id) { return document.getElementById(id); }
 
@@ -1856,19 +1776,21 @@ init();
     incoming.style.transition = "transform .32s cubic-bezier(.22,.9,.3,1)";
   }
 
-  function bindNormalSlide() {
+  function bindNormalSlideV51() {
     const page = q("mangaPage");
     const cur = q("mangaImage");
     const incoming = q("mangaIncomingImage");
-    if (!page || !cur || !incoming || page.dataset.v50) return;
 
-    page.dataset.v50 = "1";
+    if (!page || !cur || !incoming || page.dataset.v51) return;
+    page.dataset.v51 = "1";
 
     let sx = 0;
     let sy = 0;
     let dx = 0;
     let dragging = false;
     let direction = 0;
+    let locked = false;
+    let pointerActive = false;
 
     function isActive() {
       return appMode === "manga" &&
@@ -1878,7 +1800,7 @@ init();
     }
 
     function start(x, y, e) {
-      if (!isActive()) return;
+      if (!isActive() || locked) return;
       sx = x;
       sy = y;
       dx = 0;
@@ -1889,12 +1811,13 @@ init();
       incoming.style.transition = "none";
 
       if (e) {
-        e.stopPropagation();
+        e.preventDefault();
+        e.stopImmediatePropagation();
       }
     }
 
     function move(x, y, e) {
-      if (!dragging || !isActive()) return;
+      if (!dragging || !isActive() || locked) return;
 
       dx = x - sx;
       const dy = y - sy;
@@ -1903,7 +1826,7 @@ init();
 
       if (e) {
         e.preventDefault();
-        e.stopPropagation();
+        e.stopImmediatePropagation();
       }
 
       const dir = dx < 0 ? 1 : -1;
@@ -1923,7 +1846,7 @@ init();
     }
 
     function end(x, y, e) {
-      if (!dragging || !isActive()) return;
+      if (!dragging || !isActive() || locked) return;
 
       dragging = false;
       dx = x - sx;
@@ -1934,7 +1857,7 @@ init();
 
       if (e) {
         e.preventDefault();
-        e.stopPropagation();
+        e.stopImmediatePropagation();
       }
 
       if (Math.abs(dx) > 72 && Math.abs(dx) > Math.abs(dy) * 1.05 && direction !== 0) {
@@ -1947,12 +1870,19 @@ init();
           return;
         }
 
+        locked = true;
+
         cur.style.transform = direction > 0 ? "translateX(-100%)" : "translateX(100%)";
         incoming.style.transform = "translateX(0)";
 
         setTimeout(() => {
           moveMangaPage(direction);
           resetNormalSlide();
+
+          // Prevent other late handlers from causing another page turn
+          setTimeout(() => {
+            locked = false;
+          }, 180);
         }, 320);
       } else {
         cur.style.transform = "translateX(0)";
@@ -1960,31 +1890,51 @@ init();
       }
     }
 
-    page.addEventListener("pointerdown", e => start(e.clientX, e.clientY, e), true);
-    page.addEventListener("pointermove", e => move(e.clientX, e.clientY, e), true);
-    page.addEventListener("pointerup", e => end(e.clientX, e.clientY, e), true);
-    page.addEventListener("pointercancel", () => {
-      dragging = false;
-      resetNormalSlide();
+    // Use pointer events as the primary path.
+    page.addEventListener("pointerdown", e => {
+      pointerActive = true;
+      start(e.clientX, e.clientY, e);
     }, true);
 
+    page.addEventListener("pointermove", e => {
+      if (!pointerActive) return;
+      move(e.clientX, e.clientY, e);
+    }, true);
+
+    page.addEventListener("pointerup", e => {
+      if (!pointerActive) return;
+      end(e.clientX, e.clientY, e);
+      pointerActive = false;
+    }, true);
+
+    page.addEventListener("pointercancel", e => {
+      dragging = false;
+      pointerActive = false;
+      resetNormalSlide();
+      if (e) e.stopImmediatePropagation();
+    }, true);
+
+    // Touch fallback only when pointer path is not active.
     page.addEventListener("touchstart", e => {
+      if (pointerActive) return;
       const t = e.changedTouches && e.changedTouches[0];
       if (t) start(t.clientX, t.clientY, e);
     }, { passive: false, capture: true });
 
     page.addEventListener("touchmove", e => {
+      if (pointerActive) return;
       const t = e.changedTouches && e.changedTouches[0];
       if (t) move(t.clientX, t.clientY, e);
     }, { passive: false, capture: true });
 
     page.addEventListener("touchend", e => {
+      if (pointerActive) return;
       const t = e.changedTouches && e.changedTouches[0];
       if (t) end(t.clientX, t.clientY, e);
     }, { passive: false, capture: true });
   }
 
-  bindNormalSlide();
-  window.addEventListener("load", bindNormalSlide);
-  document.addEventListener("DOMContentLoaded", bindNormalSlide);
+  bindNormalSlideV51();
+  window.addEventListener("load", bindNormalSlideV51);
+  document.addEventListener("DOMContentLoaded", bindNormalSlideV51);
 })();
