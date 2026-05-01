@@ -2182,3 +2182,89 @@ init();
     boot();
   }
 })();
+
+/* v55: mobile tap voice + label fix */
+(function(){
+  const isMobile = /iPhone|Android/i.test(navigator.userAgent);
+
+  function getMode(){ return typeof appMode !== "undefined" ? appMode : ""; }
+
+  function getWordText(){
+    const el = document.getElementById("word");
+    return el ? el.textContent.trim() : "";
+  }
+
+  function getGlassId(){
+    try{
+      if(typeof currentGlass==="function"){
+        const g=currentGlass();
+        return g && g.id ? g.id : "";
+      }
+    }catch(e){}
+    return "";
+  }
+
+  function voiceKey(){
+    const id=getGlassId();
+    if(id==="happy") return "kureina";
+    if(id==="gag") return "zurea";
+    return "nyx";
+  }
+
+  const voiceLines = window.voiceLines || window.dictionaryVoiceLines || {};
+
+  function speak(text){
+    if(!text || !("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang="ja-JP";
+    u.rate=0.92;
+    u.pitch=1.02;
+    speechSynthesis.speak(u);
+  }
+
+  function playCurrentWord(){
+    if(getMode()!=="dictionary") return;
+    const w=getWordText();
+    const entry=voiceLines[w];
+    if(!entry) return;
+    const key=voiceKey();
+    const line=entry[key]||entry.nyx;
+    if(line) speak(line);
+  }
+
+  function bind(){
+    const card=document.querySelector(".card");
+    if(!card || card.dataset.v55) return;
+    card.dataset.v55="1";
+
+    if(isMobile){
+      card.addEventListener("click",(e)=>{
+        if(getMode()!=="dictionary") return;
+        e.stopImmediatePropagation();
+        playCurrentWord();
+      },true);
+    }
+  }
+
+  function fixLabel(){
+    const btn=document.getElementById("randomWord");
+    if(!btn) return;
+    if(getMode()==="dictionary"){
+      btn.textContent="メガネ一覧";
+    }
+  }
+
+  function boot(){
+    bind();
+    fixLabel();
+    // 常時上書き（チラつき防止）
+    setInterval(fixLabel,100);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",boot);
+  }else{
+    boot();
+  }
+})();
