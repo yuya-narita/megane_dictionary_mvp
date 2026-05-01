@@ -461,3 +461,91 @@ body.mode-cards .controls button:last-child {
   60%  { transform: translate(0,0) scale(1.018); }
   100% { transform: translate(0,0) scale(1); }
 }
+
+
+/* v12: カード表裏フリップ */
+body.mode-cards .hint {
+  opacity: .5;
+}
+
+.flip-card {
+  width: min(70vw, 330px);
+  height: min(54vh, 520px);
+  perspective: 1200px;
+  display: grid;
+  place-items: center;
+}
+
+.flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform .46s cubic-bezier(.2,.8,.2,1);
+  transform-style: preserve-3d;
+}
+
+.flip-card.flipped .flip-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+.flip-face .bug-card-image {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+}
+
+.bug-card-view {
+  width: min(84vw, 430px);
+  max-height: 72vh;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+}
+
+body.mode-cards .bug-card-subtitle::after {
+  content: "　｜　上下:カード / 左右:裏表";
+  opacity: .65;
+}
+
+.flip-card.flip-pop .flip-inner {
+  animation: flipPop .26s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes flipPop {
+  0% { scale: 1; }
+  45% { scale: .985; }
+  100% { scale: 1; }
+}
+
+
+/* v14: 左右スワイプ中だけ表をチラ見せする仕様 */
+body.mode-cards .flip-card.flip-pop .flip-inner {
+  animation: flipPeekPulse .22s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes flipPeekPulse {
+  0% { scale: .995; }
+  50% { scale: 1.012; }
+  100% { scale: 1; }
+}
+
+
+/* v15: 左右スワイプで表裏を切り替えて保持 */
+body.mode-cards .bug-card-subtitle::after {
+  content: "　｜　上下:カード / 左右:めくる";
+}

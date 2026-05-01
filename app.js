@@ -222,9 +222,10 @@ let data = {
     }
   ]
 };
-const cards = [{"title": "ダブルバインド", "subtitle": "DOUBLE BIND｜命令 → 矛盾", "image": "images/cards/double_bind.jpeg", "caption": "自由にしていい。でも間違えないで。"}, {"title": "白クマバグ", "subtitle": "WHITE BEAR BUG｜禁止 → 観測", "image": "images/cards/white_bear_bug.jpeg", "caption": "考えるな、と言われた瞬間に始まる。"}, {"title": "再帰", "subtitle": "RECURSION｜自己参照 → 終わらない", "image": "images/cards/recursion.jpeg", "caption": "終わったはずのものが、また始まっていた。"}, {"title": "教義", "subtitle": "DOCTRINE｜教え → 停止", "image": "images/cards/doctrine.jpeg", "caption": "最初はただの考え。気づけば守るべきものになった。"}, {"title": "H(x)バグ", "subtitle": "H(x)｜否定 → 存在", "image": "images/cards/hx_bug.jpeg", "caption": "これは意味がない。そう言った瞬間、意味が生まれる。"}];
+const cards = [{"title": "ダブルバインド", "subtitle": "DOUBLE BIND｜命令 → 矛盾", "image": "images/cards/double_bind.jpeg", "caption": "自由にしていい。でも間違えないで。", "back": "images/cards/card_back.png"}, {"title": "白クマバグ", "subtitle": "WHITE BEAR BUG｜禁止 → 観測", "image": "images/cards/white_bear_bug.jpeg", "caption": "考えるな、と言われた瞬間に始まる。", "back": "images/cards/card_back.png"}, {"title": "再帰", "subtitle": "RECURSION｜自己参照 → 終わらない", "image": "images/cards/recursion.jpeg", "caption": "終わったはずのものが、また始まっていた。", "back": "images/cards/card_back.png"}, {"title": "教義", "subtitle": "DOCTRINE｜教え → 停止", "image": "images/cards/doctrine.jpeg", "caption": "最初はただの考え。気づけば守るべきものになった。", "back": "images/cards/card_back.png"}, {"title": "H(x)バグ", "subtitle": "H(x)｜否定 → 存在", "image": "images/cards/hx_bug.jpeg", "caption": "これは意味がない。そう言った瞬間、意味が生まれる。", "back": "images/cards/card_back.png"}];
 let appMode = "dictionary";
 let cardIndex = 0;
+let cardFlipped = true;
 let wordIndex = 0;
 let glassIndex = 0;
 let pressTimer = null;
@@ -242,6 +243,8 @@ const els = {
   dictionaryView: document.getElementById("dictionaryView"),
   bugCardView: document.getElementById("bugCardView"),
   cardImage: document.getElementById("cardImage"),
+  cardBackImage: document.getElementById("cardBackImage"),
+  flipCard: document.getElementById("flipCard"),
   cardTitle: document.getElementById("cardTitle"),
   cardSubtitle: document.getElementById("cardSubtitle"),
   cardCaption: document.getElementById("cardCaption"),
@@ -251,7 +254,18 @@ const els = {
   glassList: document.getElementById("glassList"),
 };
 
+
+function preloadCardImages() {
+  cards.forEach(card => {
+    const front = new Image();
+    front.src = card.image;
+    const back = new Image();
+    back.src = card.back || "images/cards/card_back.png";
+  });
+}
+
 function init() {
+  preloadCardImages();
   render();
   buildGlassList();
   bind();
@@ -273,11 +287,24 @@ function render(animationClass = "flash") {
     const c = cards[cardIndex];
     els.cardImage.src = c.image;
     els.cardImage.alt = c.title;
-    els.cardTitle.textContent = c.title;
-    els.cardSubtitle.textContent = c.subtitle;
-    els.cardCaption.textContent = c.caption;
+    if (els.cardBackImage) {
+      els.cardBackImage.src = c.back || "images/cards/card_back.png";
+      els.cardBackImage.alt = `${c.title} 裏面`;
+    }
+    if (els.flipCard) {
+      els.flipCard.classList.toggle("flipped", cardFlipped);
+    }
+    if (cardFlipped) {
+      els.cardTitle.textContent = "？？？";
+      els.cardSubtitle.textContent = "裏面｜左右でめくる";
+      els.cardCaption.textContent = "上下でシャッフル";
+    } else {
+      els.cardTitle.textContent = c.title;
+      els.cardSubtitle.textContent = c.subtitle;
+      els.cardCaption.textContent = c.caption;
+    }
     els.counter.textContent = `${cardIndex + 1} / ${cards.length}`;
-    if (els.hint) els.hint.textContent = "左右：カード / 辞書に戻る";
+    if (els.hint) els.hint.textContent = "上下：カード / 左右：めくる";
   } else {
     const w = currentWord();
     const g = currentGlass();
@@ -316,12 +343,25 @@ function moveGlass(step) {
 
 function moveCard(step) {
   cardIndex = (cardIndex + step + cards.length) % cards.length;
-  render(step > 0 ? "slide-left" : "slide-right");
+  cardFlipped = true; // カード切替後は必ず裏面
+  render(step > 0 ? "slide-up" : "slide-down");
+}
+
+function flipCurrentCard() {
+  if (appMode !== "cards") return;
+  cardFlipped = !cardFlipped; // 左右スワイプで表裏を切り替えて保持
+  if (els.flipCard) {
+    els.flipCard.classList.remove("flip-pop");
+    void els.flipCard.offsetWidth;
+    els.flipCard.classList.add("flip-pop");
+  }
+  render("flash");
 }
 
 function randomWord() {
   if (appMode === "cards") {
     cardIndex = Math.floor(Math.random() * cards.length);
+    cardFlipped = true;
   } else {
     wordIndex = Math.floor(Math.random() * data.words.length);
   }
@@ -330,6 +370,7 @@ function randomWord() {
 
 function setMode(mode) {
   appMode = mode;
+  if (mode === "cards") cardFlipped = true;
   render("flash");
 }
 
@@ -472,10 +513,10 @@ function bind() {
     if (content) content.style.transform = "";
 
     if (appMode === "cards") {
-      if (Math.abs(dx) >= Math.abs(dy)) {
-        moveCard(dx < 0 ? 1 : -1);
+      if (Math.abs(dy) > Math.abs(dx)) {
+        moveCard(dy < 0 ? 1 : -1); // 上下はカード切替。移動後は裏面。
       } else {
-        render("flash");
+        flipCurrentCard(); // 左右は表裏切替。勝手には戻らない。
       }
     } else {
       if (Math.abs(dx) > Math.abs(dy)) {
@@ -502,8 +543,11 @@ function bind() {
 
   window.addEventListener("keydown", (e) => {
     if (appMode === "cards") {
-      if (e.key === "ArrowRight") moveCard(1);
-      if (e.key === "ArrowLeft") moveCard(-1);
+      if (e.key === "ArrowUp") moveCard(1);
+      if (e.key === "ArrowDown") moveCard(-1);
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        flipCurrentCard();
+      }
     } else {
       if (e.key === "ArrowRight") moveWord(1);
       if (e.key === "ArrowLeft") moveWord(-1);
