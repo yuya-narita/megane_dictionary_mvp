@@ -1094,10 +1094,15 @@ function bind() {
       content.style.transform = "";
     }
     pressTimer = setTimeout(() => {
-      // v54: dictionary long-press no longer opens glass list.
-      if (appMode !== "dictionary") {
-        els.dialog.showModal();
+      if (appMode !== "dictionary") return; // 長押し一覧は辞書モードだけ
+      isDragging = false;
+      lockedDirection = null;
+      els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
+      if (content) {
+        content.classList.remove("dragging");
+        content.style.transform = "";
       }
+      els.dialog.showModal();
     }, 550);
   });
 
@@ -2101,170 +2106,62 @@ init();
 })();
 
 
-/* v54: prevent original long-press glass list in dictionary mode */
-(function () {
-  let v54PressTimer = null;
-  let v54LongPressHandled = false;
-
-  function isDictionaryMode() {
-    return typeof appMode !== "undefined" && appMode === "dictionary";
-  }
-
-  function cardEl() {
-    return document.querySelector(".card");
-  }
-
-  function bindV54Guard() {
-    const card = cardEl();
-    if (!card || card.dataset.v54GuardBound) return;
-    card.dataset.v54GuardBound = "1";
-
-    card.addEventListener("pointerdown", (e) => {
-      if (!isDictionaryMode()) return;
-
-      v54LongPressHandled = false;
-      clearTimeout(v54PressTimer);
-
-      v54PressTimer = setTimeout(() => {
-        v54LongPressHandled = true;
-      }, 500);
-    }, true);
-
-    card.addEventListener("pointerup", (e) => {
-      clearTimeout(v54PressTimer);
-
-      if (isDictionaryMode() && v54LongPressHandled) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }
-
-      v54LongPressHandled = false;
-    }, true);
-
-    card.addEventListener("pointercancel", () => {
-      clearTimeout(v54PressTimer);
-      v54LongPressHandled = false;
-    }, true);
-
-    card.addEventListener("pointerleave", () => {
-      clearTimeout(v54PressTimer);
-      v54LongPressHandled = false;
-    }, true);
-  }
-
-  // If the old dialog still opens, close it immediately only for dictionary long-press.
-  function bindDialogAutoCloseGuard() {
-    const dialog = document.getElementById("glassDialog");
-    if (!dialog || dialog.dataset.v54CloseGuard) return;
-    dialog.dataset.v54CloseGuard = "1";
-
-    const observer = new MutationObserver(() => {
-      if (
-        isDictionaryMode() &&
-        v54LongPressHandled &&
-        dialog.open
-      ) {
-        dialog.close();
-      }
-    });
-
-    observer.observe(dialog, { attributes: true, attributeFilter: ["open"] });
-  }
-
-  function boot() {
-    bindV54Guard();
-    bindDialogAutoCloseGuard();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
-})();
-
-/* v55: mobile tap voice + label fix */
+/* v57: SAFE mobile audio + label fix (no event blocking) */
 (function(){
   const isMobile = /iPhone|Android/i.test(navigator.userAgent);
 
-  function getMode(){ return typeof appMode !== "undefined" ? appMode : ""; }
-
-  function getWordText(){
+  function getWord(){
     const el = document.getElementById("word");
     return el ? el.textContent.trim() : "";
   }
 
-  function getGlassId(){
-    try{
-      if(typeof currentGlass==="function"){
-        const g=currentGlass();
-        return g && g.id ? g.id : "";
-      }
-    }catch(e){}
-    return "";
-  }
-
-  function voiceKey(){
-    const id=getGlassId();
-    if(id==="happy") return "kureina";
-    if(id==="gag") return "zurea";
-    return "nyx";
-  }
-
-  const voiceLines = window.voiceLines || window.dictionaryVoiceLines || {};
-
   function speak(text){
     if(!text || !("speechSynthesis" in window)) return;
-    speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(text);
+    const u = new SpeechSynthesisUtterance(text);
     u.lang="ja-JP";
-    u.rate=0.92;
-    u.pitch=1.02;
+    speechSynthesis.cancel();
     speechSynthesis.speak(u);
   }
 
-  function playCurrentWord(){
-    if(getMode()!=="dictionary") return;
-    const w=getWordText();
-    const entry=voiceLines[w];
+  const voiceLines = window.dictionaryVoiceLines || {};
+
+  function play(){
+    if(typeof appMode==="undefined" || appMode!=="dictionary") return;
+    const w = getWord();
+    const entry = voiceLines[w];
     if(!entry) return;
-    const key=voiceKey();
-    const line=entry[key]||entry.nyx;
-    if(line) speak(line);
+    const line = entry.nyx || Object.values(entry)[0];
+    speak(line);
   }
 
   function bind(){
-    const card=document.querySelector(".card");
-    if(!card || card.dataset.v55) return;
-    card.dataset.v55="1";
+    const card = document.querySelector(".card");
+    if(!card || card.dataset.v57) return;
+    card.dataset.v57 = "1";
 
     if(isMobile){
-      card.addEventListener("click",(e)=>{
-        if(getMode()!=="dictionary") return;
-        e.stopImmediatePropagation();
-        playCurrentWord();
-      },true);
+      card.addEventListener("click", ()=>{
+        play();
+      });
     }
   }
 
   function fixLabel(){
-    const btn=document.getElementById("randomWord");
+    const btn = document.getElementById("randomWord");
     if(!btn) return;
-    if(getMode()==="dictionary"){
-      btn.textContent="メガネ一覧";
+    if(typeof appMode!=="undefined" && appMode==="dictionary"){
+      btn.textContent = "メガネ一覧";
     }
   }
 
   function boot(){
     bind();
-    fixLabel();
-    // 常時上書き（チラつき防止）
-    setInterval(fixLabel,100);
+    setInterval(fixLabel,300);
   }
 
   if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded",boot);
-  }else{
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
     boot();
   }
 })();
