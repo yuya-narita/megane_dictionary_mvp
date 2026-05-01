@@ -305,13 +305,14 @@ function bind() {
   document.getElementById("randomWord").onclick = randomWord;
   document.getElementById("closeDialog").onclick = () => els.dialog.close();
 
-  let startX = 0, startY = 0, isDragging = false, lastDx = 0, lastDy = 0;
+  let startX = 0, startY = 0, isDragging = false, lastDx = 0, lastDy = 0, lockedDirection = null;
 
   els.card.addEventListener("pointerdown", (e) => {
     startX = e.clientX;
     startY = e.clientY;
     lastDx = 0;
     lastDy = 0;
+    lockedDirection = null;
     isDragging = true;
     els.card.setPointerCapture(e.pointerId);
     if (content) {
@@ -320,6 +321,7 @@ function bind() {
     }
     pressTimer = setTimeout(() => {
       isDragging = false;
+      lockedDirection = null;
       els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
       if (content) {
         content.classList.remove("dragging");
@@ -355,9 +357,21 @@ function bind() {
     }
 
     if (content) {
-      const followX = Math.max(-70, Math.min(70, dx * 0.34));
-      const followY = Math.max(-46, Math.min(46, dy * 0.24));
-      const scale = 1 - Math.min(distance, 150) / 5000;
+      // v8: 斜めブレ防止。一定距離を超えたら方向をロック
+      if (!lockedDirection && distance > 16) {
+        lockedDirection = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
+      }
+
+      let followX = 0;
+      let followY = 0;
+
+      if (lockedDirection === "x") {
+        followX = Math.max(-76, Math.min(76, dx * 0.38));
+      } else if (lockedDirection === "y") {
+        followY = Math.max(-52, Math.min(52, dy * 0.28));
+      }
+
+      const scale = 1 - Math.min(distance, 150) / 5200;
       content.style.transform = `translate(${followX}px, ${followY}px) scale(${scale})`;
     }
   });
@@ -376,9 +390,16 @@ function bind() {
 
     if (distance < 58) {
       if (content) {
-        const followX = Math.max(-70, Math.min(70, lastDx * 0.34));
-        const followY = Math.max(-46, Math.min(46, lastDy * 0.24));
-        const scale = 1 - Math.min(distance, 150) / 5000;
+        let followX = 0;
+        let followY = 0;
+
+        if (lockedDirection === "x") {
+          followX = Math.max(-76, Math.min(76, lastDx * 0.38));
+        } else if (lockedDirection === "y") {
+          followY = Math.max(-52, Math.min(52, lastDy * 0.28));
+        }
+
+        const scale = 1 - Math.min(distance, 150) / 5200;
 
         content.style.setProperty(
           "--release-transform",
@@ -390,9 +411,11 @@ function bind() {
         void content.offsetWidth;
         content.classList.add("snap-back");
       }
+      lockedDirection = null;
       return;
     }
 
+    lockedDirection = null;
     if (content) content.style.transform = "";
 
     if (Math.abs(dx) > Math.abs(dy)) {
@@ -405,6 +428,7 @@ function bind() {
   els.card.addEventListener("pointercancel", () => {
     clearTimeout(pressTimer);
     isDragging = false;
+    lockedDirection = null;
     els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
     if (content) {
       content.classList.remove("dragging");
