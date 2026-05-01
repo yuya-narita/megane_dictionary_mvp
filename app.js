@@ -2414,3 +2414,129 @@ init();
     boot();
   }
 })();
+
+
+/* v62: MP3-ready audio system (DEV fallback hidden) */
+(function(){
+
+  const DEV_MODE = false; // ← 開発時だけ true
+
+  const audio = new Audio();
+
+  function playAudio(id){
+    const path = `audio/${id}.mp3`;
+    audio.src = path;
+    audio.currentTime = 0;
+    audio.play().catch(()=>{});
+  }
+
+  function speak(text){
+    if(!DEV_MODE) return;
+    if(!("speechSynthesis" in window)) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang="ja-JP";
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }
+
+  // v61のvoiceLinesをMP3対応構造に変換
+  const voiceMap = {
+    "笑い": {
+      gag: { id: "laugh_gag_01", text: "笑い？ 世界が一瞬だけバグを許した音や。" }
+    },
+    "沈黙": {
+      nyx: { id: "silence_nyx_01", text: "……沈黙は、空白じゃない。意味が増える場所だ。" }
+    },
+    "観測": {
+      hacker: { id: "observe_nyx_01", text: "観測した時点で、もう同じじゃない。" }
+    }
+  };
+
+  function getWord(){
+    const el=document.getElementById("word");
+    return el?el.textContent.trim():"";
+  }
+
+  function getGlassId(){
+    try{
+      if(typeof currentGlass==="function"){
+        const g=currentGlass();
+        return g && g.id ? g.id : "";
+      }
+    }catch(e){}
+    return "";
+  }
+
+  function getLine(){
+    const w = getWord();
+    const entry = voiceMap[w];
+    if(!entry) return null;
+
+    const gid = getGlassId();
+    if(entry[gid]) return entry[gid];
+
+    return null;
+  }
+
+  function playLine(){
+    if(typeof appMode==="undefined" || appMode!=="dictionary") return;
+
+    const line = getLine();
+    if(!line){
+      return; // 無音（エフェクトはv61側が出す）
+    }
+
+    const path = `audio/${line.id}.mp3`;
+
+    fetch(path).then(res=>{
+      if(res.ok){
+        playAudio(line.id);
+      }else{
+        speak(line.text);
+      }
+    }).catch(()=>{
+      speak(line.text);
+    });
+  }
+
+  function bind(){
+    const card = document.querySelector(".card");
+    if(!card || card.dataset.v62) return;
+    card.dataset.v62="1";
+
+    let sx=0, sy=0, moved=false;
+
+    card.addEventListener("touchstart",(e)=>{
+      const t=e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+      sx=t.clientX; sy=t.clientY; moved=false;
+    },{passive:true});
+
+    card.addEventListener("touchmove",(e)=>{
+      const t=e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+      if(Math.abs(t.clientX-sx)>14 || Math.abs(t.clientY-sy)>14){
+        moved=true;
+      }
+    },{passive:true});
+
+    card.addEventListener("touchend",()=>{
+      if(!moved) playLine();
+    },{passive:true});
+
+    card.addEventListener("click",()=>{
+      if(!moved) playLine();
+    });
+  }
+
+  function boot(){
+    bind();
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",boot);
+  }else{
+    boot();
+  }
+
+})();
