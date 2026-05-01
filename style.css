@@ -1051,3 +1051,234 @@ input, textarea {
   -webkit-user-select: text;
   user-select: text;
 }
+
+
+/* v25 manga list */
+.manga-list {
+  width: min(90vw, 420px);
+  display: grid;
+  gap: 12px;
+}
+
+.manga-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.05);
+  cursor: pointer;
+}
+
+.manga-thumb {
+  width: 64px;
+  height: 64px;
+  background: rgba(255,255,255,.1);
+  border-radius: 12px;
+}
+
+.manga-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+body.mode-manga-reading .manga-list {
+  display: none;
+}
+
+body.mode-manga-reading .manga-view {
+  display: grid;
+}
+
+
+/* v26: マンガ一覧と閲覧を完全分離 */
+body.mode-manga .dictionary-view,
+body.mode-manga .bug-card-view {
+  display: none !important;
+}
+
+body.mode-manga.manga-list-state .manga-list {
+  display: grid !important;
+}
+
+body.mode-manga.manga-list-state .manga-view {
+  display: none !important;
+}
+
+body.mode-manga.manga-reader-state .manga-list {
+  display: none !important;
+}
+
+body.mode-manga.manga-reader-state .manga-view {
+  display: grid !important;
+}
+
+body.mode-dictionary .manga-list,
+body.mode-dictionary .manga-view,
+body.mode-cards .manga-list,
+body.mode-cards .manga-view {
+  display: none !important;
+}
+
+body.mode-manga .counter {
+  opacity: .75;
+}
+
+
+/* v28: 画像マンガ対応 */
+.manga-list {
+  width: min(90vw, 460px);
+  max-height: 62vh;
+  overflow-y: auto;
+  display: grid;
+  gap: 12px;
+  padding: 4px;
+}
+
+.manga-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.065);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.manga-thumb {
+  width: 74px;
+  height: 74px;
+  flex: 0 0 auto;
+  background: rgba(255,255,255,.12);
+  border-radius: 14px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.manga-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.manga-meta {
+  min-width: 0;
+}
+
+.manga-title {
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.manga-desc {
+  opacity: .72;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+.manga-view {
+  width: min(88vw, 430px);
+  height: min(66vh, 720px);
+  display: grid;
+  place-items: center;
+}
+
+.manga-page.image-page {
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.manga-page.image-page::before {
+  display: none;
+}
+
+.manga-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 18px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.45);
+  background: rgba(255,255,255,.03);
+}
+
+.manga-page.image-page .manga-title,
+.manga-page.image-page .manga-caption,
+.manga-page.image-page .manga-text {
+  display: none;
+}
+
+
+/* v29: manga item as button */
+.manga-item {
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+
+/* v30: content内のマンガ一覧をタップ可能にする */
+body.mode-manga .manga-list,
+body.mode-manga .manga-list *,
+body.mode-manga .manga-view,
+body.mode-manga .manga-view * {
+  pointer-events: auto;
+}
+
+body.mode-manga .manga-item {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255,255,255,.15);
+}
+
+body.mode-manga .content {
+  pointer-events: none;
+}
+
+
+/* v31: マンガ一覧をカード外レイヤー化してタップ干渉を回避 */
+.manga-list-layer {
+  display: none;
+  place-items: center;
+  width: 100%;
+  min-height: min(58vh, 620px);
+  padding: 12px 0;
+  pointer-events: auto;
+}
+
+body.mode-manga.manga-list-state .manga-list-layer {
+  display: grid;
+}
+
+body.mode-manga.manga-list-state .card {
+  display: none;
+}
+
+body.mode-manga.manga-reader-state .manga-list-layer {
+  display: none;
+}
+
+.manga-list-layer .manga-list,
+.manga-list-layer .manga-list * {
+  pointer-events: auto !important;
+}
+
+.manga-list-layer .manga-item {
+  cursor: pointer;
+  touch-action: manipulation;
+  pointer-events: auto !important;
+  width: 100%;
+}
+
+.manga-list-layer button.manga-item {
+  appearance: none;
+  -webkit-appearance: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}

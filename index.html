@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>メガネ辞書 MVP</title>
-  <link rel="stylesheet" href="./style.css?v=24" />
+  <link rel="stylesheet" href="./style.css?v=31" />
 </head>
 <body class="mode-dictionary">
   <main id="app" class="app">
@@ -50,9 +50,10 @@
           <div id="cardSubtitle" class="bug-card-subtitle"></div>
           <div id="cardCaption" class="bug-card-caption"></div>
         </div>
+<div id="mangaView" class="manga-view" hidden>
 
-        <div id="mangaView" class="manga-view" hidden>
           <div id="mangaPage" class="manga-page">
+            <img id="mangaImage" class="manga-image" alt="" hidden />
             <div id="mangaTitle" class="manga-title"></div>
             <div id="mangaCaption" class="manga-caption"></div>
             <div id="mangaText" class="manga-text"></div>
@@ -61,6 +62,10 @@
 
         <div id="counter" class="counter"></div>
       </div>
+    </section>
+
+    <section id="mangaListLayer" class="manga-list-layer" hidden>
+      <div id="mangaListView" class="manga-list"></div>
     </section>
 
     <footer class="controls">
@@ -91,6 +96,6 @@
     <div class="fullscreen-hint">上下:カード / 左右:めくる / タップで閉じる</div>
   </div>
 
-  <script src="./app.js?v=24"></script>
+  <script src="./app.js?v=31"></script>
 </body>
 </html>

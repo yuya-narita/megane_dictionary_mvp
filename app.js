@@ -378,8 +378,8 @@ let data = {
   ]
 };
 const cards = [{"title": "ダブルバインド", "subtitle": "DOUBLE BIND｜命令 → 矛盾", "image": "images/cards/double_bind.jpeg", "caption": "自由にしていい。でも間違えないで。", "back": "images/cards/card_back.png"}, {"title": "白クマバグ", "subtitle": "WHITE BEAR BUG｜禁止 → 観測", "image": "images/cards/white_bear_bug.jpeg", "caption": "考えるな、と言われた瞬間に始まる。", "back": "images/cards/card_back.png"}, {"title": "再帰", "subtitle": "RECURSION｜自己参照 → 終わらない", "image": "images/cards/recursion.jpeg", "caption": "終わったはずのものが、また始まっていた。", "back": "images/cards/card_back.png"}, {"title": "教義", "subtitle": "DOCTRINE｜教え → 停止", "image": "images/cards/doctrine.jpeg", "caption": "最初はただの考え。気づけば守るべきものになった。", "back": "images/cards/card_back.png"}, {"title": "H(x)バグ", "subtitle": "H(x)｜否定 → 存在", "image": "images/cards/hx_bug.jpeg", "caption": "これは意味がない。そう言った瞬間、意味が生まれる。", "back": "images/cards/card_back.png"}];
-const mangaStories = [{"id": "silence", "title": "その沈黙", "pages": [{"caption": "会議室。誰かが話し終えた。", "text": "そのあと、誰もすぐには答えなかった。"}, {"caption": "時計の音だけが残る。", "text": "沈黙は、ただの空白ではなかった。"}, {"caption": "話した本人が、少しだけ周りを見る。", "text": "返事がない。その事実だけで、意味は増えはじめる。"}, {"caption": "誰かが小さく息を吐いた。", "text": "それは同意にも、拒否にも、疲れにも見えた。"}, {"caption": "……じゃあ、これで進めます。", "text": "沈黙は、決定になった。"}]}];
-let appMode = "dictionary";
+const mangaStories = [{"id": "syntax_resonance_sample", "title": "Syntax Resonance Sample", "desc": "音が意味になる世界のサンプル", "thumb": "images/manga/syntax_resonance_sample/syntax_resonance_01.jpg", "type": "image", "pages": [{"image": "images/manga/syntax_resonance_sample/syntax_resonance_01.jpg", "caption": "", "text": ""}, {"image": "images/manga/syntax_resonance_sample/syntax_resonance_02.jpg", "caption": "", "text": ""}, {"image": "images/manga/syntax_resonance_sample/syntax_resonance_03.jpg", "caption": "", "text": ""}], "webtoon": ["images/manga/syntax_resonance_sample/syntax_resonance_01.jpg", "images/manga/syntax_resonance_sample/syntax_resonance_02.jpg", "images/manga/syntax_resonance_sample/syntax_resonance_03.jpg"]}, {"id": "silence", "title": "その沈黙", "desc": "沈黙が意味を生む話", "thumb": "", "type": "text", "pages": [{"caption": "会議室。誰かが話し終えた。", "text": "そのあと、誰もすぐには答えなかった。"}, {"caption": "時計の音だけが残る。", "text": "沈黙は、ただの空白ではなかった。"}, {"caption": "話した本人が、少しだけ周りを見る。", "text": "返事がない。その事実だけで、意味は増えはじめる。"}, {"caption": "誰かが小さく息を吐いた。", "text": "それは同意にも、拒否にも、疲れにも見えた。"}, {"caption": "……じゃあ、これで進めます。", "text": "沈黙は、決定になった。"}]}];
+let appMode = "dictionary"; let mangaState = "list";
 let cardIndex = 0;
 let mangaStoryIndex = 0;
 let mangaPageIndex = 0;
@@ -410,8 +410,10 @@ const els = {
   dictionaryMode: document.getElementById("dictionaryMode"),
   cardMode: document.getElementById("cardMode"),
   mangaMode: document.getElementById("mangaMode"),
+  mangaListLayer: document.getElementById("mangaListLayer"),
   mangaView: document.getElementById("mangaView"),
   mangaPage: document.getElementById("mangaPage"),
+  mangaImage: document.getElementById("mangaImage"),
   mangaTitle: document.getElementById("mangaTitle"),
   mangaCaption: document.getElementById("mangaCaption"),
   mangaText: document.getElementById("mangaText"),
@@ -434,8 +436,28 @@ function preloadCardImages() {
   });
 }
 
+
+function preloadMangaImages() {
+  mangaStories.forEach(story => {
+    if (story.thumb) {
+      const t = new Image();
+      t.src = story.thumb;
+    }
+    story.pages.forEach(page => {
+      if (page.image) {
+        const img = new Image();
+        img.src = page.image;
+      }
+    });
+  });
+}
+
+
 function init() {
   preloadCardImages();
+  renderMangaList();
+preloadMangaImages();
+  renderMangaList();
   render();
   buildGlassList();
   bind();
@@ -444,10 +466,54 @@ function init() {
 function currentWord() { return data.words[wordIndex]; }
 function currentGlass() { return data.glasses[glassIndex]; }
 
+
+function renderMangaList() {
+  const list = document.getElementById("mangaListView");
+  if (!list) return;
+
+  list.innerHTML = mangaStories.map((story, index) => {
+    const thumb = story.thumb ? `<img src="${story.thumb}" alt="${story.title}">` : "";
+    return `
+      <button type="button" class="manga-item" data-index="${index}">
+        <div class="manga-thumb">${thumb}</div>
+        <div class="manga-meta">
+          <div class="manga-title">${story.title}</div>
+          <div class="manga-desc">${story.desc || ""}</div>
+        </div>
+      </button>
+    `;
+  }).join("");
+
+  list.querySelectorAll(".manga-item").forEach((item) => {
+    item.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      mangaStoryIndex = Number(item.dataset.index || 0);
+      mangaPageIndex = 0;
+      mangaState = "reader";
+      setMode("manga");
+    });
+
+    item.addEventListener("pointerup", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      mangaStoryIndex = Number(item.dataset.index || 0);
+      mangaPageIndex = 0;
+      mangaState = "reader";
+      setMode("manga");
+    });
+  });
+}
+
 function render(animationClass = "flash") {
   els.body.classList.toggle("mode-cards", appMode === "cards");
   els.body.classList.toggle("mode-dictionary", appMode === "dictionary");
   els.body.classList.toggle("mode-manga", appMode === "manga");
+  els.body.classList.toggle("manga-list-state", appMode === "manga" && mangaState === "list");
+  els.body.classList.toggle("manga-reader-state", appMode === "manga" && mangaState === "reader");
+  if (els.mangaListLayer) {
+    els.mangaListLayer.hidden = !(appMode === "manga" && mangaState === "list");
+  }
 
   if (els.dictionaryMode && els.cardMode) {
     els.dictionaryMode.classList.toggle("active", appMode === "dictionary");
@@ -478,13 +544,33 @@ function render(animationClass = "flash") {
     els.counter.textContent = `${cardIndex + 1} / ${cards.length}`;
     if (els.hint) els.hint.textContent = "上下：カード / 左右：めくる";
   } else if (appMode === "manga") {
-    const story = mangaStories[mangaStoryIndex];
-    const page = story.pages[mangaPageIndex];
-    els.mangaTitle.textContent = story.title;
-    els.mangaCaption.textContent = page.caption;
-    els.mangaText.textContent = page.text;
-    els.counter.textContent = `${mangaPageIndex + 1} / ${story.pages.length}`;
-    if (els.hint) els.hint.textContent = "左右：ページ / 上：カードへ戻る";
+    if (mangaState === "list") {
+      els.counter.textContent = `${mangaStories.length} stories`;
+      if (els.hint) els.hint.textContent = "作品を選ぶ / 上：カードへ戻る";
+    } else {
+      const story = mangaStories[mangaStoryIndex];
+      const page = story.pages[mangaPageIndex];
+
+      const isImagePage = !!page.image;
+      if (els.mangaPage) els.mangaPage.classList.toggle("image-page", isImagePage);
+
+      if (els.mangaImage) {
+        if (isImagePage) {
+          els.mangaImage.src = page.image;
+          els.mangaImage.alt = `${story.title} ${mangaPageIndex + 1}`;
+          els.mangaImage.hidden = false;
+        } else {
+          els.mangaImage.hidden = true;
+          els.mangaImage.removeAttribute("src");
+        }
+      }
+
+      els.mangaTitle.textContent = story.title;
+      els.mangaCaption.textContent = page.caption || "";
+      els.mangaText.textContent = page.text || "";
+      els.counter.textContent = `${mangaPageIndex + 1} / ${story.pages.length}`;
+      if (els.hint) els.hint.textContent = "左右：ページ / 上：一覧へ戻る";
+    }
   } else {
     const w = currentWord();
     const g = currentGlass();
@@ -589,6 +675,7 @@ function randomWord() {
 function setMode(mode) {
   appMode = mode;
   if (mode === "cards") cardFlipped = true;
+  if (mode === "manga" && mangaState !== "reader") mangaState = "list";
   render("flash");
 }
 
@@ -672,7 +759,25 @@ function bind() {
   document.getElementById("randomWord").onclick = randomWord;
   if (els.dictionaryMode) els.dictionaryMode.onclick = () => setMode("dictionary");
   if (els.cardMode) els.cardMode.onclick = () => setMode("cards");
-  if (els.mangaMode) els.mangaMode.onclick = () => setMode("manga");
+  if (els.mangaMode) els.mangaMode.onclick = () => {
+    mangaState = "list";
+    setMode("manga");
+  };
+
+  const mangaListView = document.getElementById("mangaListView");
+  if (mangaListView && !mangaListView.dataset.bound) {
+    mangaListView.dataset.bound = "1";
+    mangaListView.addEventListener("click", (e) => {
+      const item = e.target.closest(".manga-item");
+      if (!item) return;
+
+      mangaStoryIndex = Number(item.dataset.index || 0);
+      mangaPageIndex = 0;
+      mangaState = "reader";
+      setMode("manga");
+    });
+  }
+
   document.getElementById("closeDialog").onclick = () => els.dialog.close();
 
   // v24: 長押しでブラウザのテキスト選択/メニューを出さない
@@ -847,12 +952,17 @@ function bind() {
     if (content) content.style.transform = "";
 
     if (appMode === "manga") {
-      if (Math.abs(dx) >= Math.abs(dy)) {
-        moveMangaPage(dx < 0 ? 1 : -1);
-      } else if (dy < 0) {
-        setMode("cards");
-      } else {
+      if (mangaState === "list") {
         render("flash");
+      } else {
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          moveMangaPage(dx < 0 ? 1 : -1);
+        } else if (dy < 0) {
+          mangaState = "list";
+          render("flash");
+        } else {
+          render("flash");
+        }
       }
     } else if (appMode === "cards") {
       if (Math.abs(dy) > Math.abs(dx)) {
@@ -885,9 +995,16 @@ function bind() {
 
   window.addEventListener("keydown", (e) => {
     if (appMode === "manga") {
-      if (e.key === "ArrowRight") moveMangaPage(1);
-      if (e.key === "ArrowLeft") moveMangaPage(-1);
-      if (e.key === "ArrowUp") setMode("cards");
+      if (mangaState === "reader") {
+        if (e.key === "ArrowRight") moveMangaPage(1);
+        if (e.key === "ArrowLeft") moveMangaPage(-1);
+        if (e.key === "ArrowUp") {
+          mangaState = "list";
+          render("flash");
+        }
+      } else {
+        // no swipe/arrow exit from list
+      }
     } else if (appMode === "cards") {
       if (e.key === "ArrowUp") moveCard(1);
       if (e.key === "ArrowDown") moveCard(-1);
@@ -904,3 +1021,5 @@ function bind() {
 }
 
 init();
+
+

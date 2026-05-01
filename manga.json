@@ -1,7 +1,39 @@
 [
   {
+    "id": "syntax_resonance_sample",
+    "title": "Syntax Resonance Sample",
+    "desc": "音が意味になる世界のサンプル",
+    "thumb": "images/manga/syntax_resonance_sample/syntax_resonance_01.jpg",
+    "type": "image",
+    "pages": [
+      {
+        "image": "images/manga/syntax_resonance_sample/syntax_resonance_01.jpg",
+        "caption": "",
+        "text": ""
+      },
+      {
+        "image": "images/manga/syntax_resonance_sample/syntax_resonance_02.jpg",
+        "caption": "",
+        "text": ""
+      },
+      {
+        "image": "images/manga/syntax_resonance_sample/syntax_resonance_03.jpg",
+        "caption": "",
+        "text": ""
+      }
+    ],
+    "webtoon": [
+      "images/manga/syntax_resonance_sample/syntax_resonance_01.jpg",
+      "images/manga/syntax_resonance_sample/syntax_resonance_02.jpg",
+      "images/manga/syntax_resonance_sample/syntax_resonance_03.jpg"
+    ]
+  },
+  {
     "id": "silence",
     "title": "その沈黙",
+    "desc": "沈黙が意味を生む話",
+    "thumb": "",
+    "type": "text",
     "pages": [
       {
         "caption": "会議室。誰かが話し終えた。",
