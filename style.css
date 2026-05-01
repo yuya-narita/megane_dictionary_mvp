@@ -1038,3 +1038,16 @@ body.theme-medical { --accent: #bfffe8; }
 body.theme-economy { --accent: #ffe3a8; }
 body.theme-science { --accent: #c8f0ff; }
 body.theme-gag { --accent: #ffd08a; }
+
+
+/* v24: 長押し時のテキスト選択防止 */
+html, body, .app, .card, .content, button {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}

@@ -674,6 +674,10 @@ function bind() {
   if (els.cardMode) els.cardMode.onclick = () => setMode("cards");
   if (els.mangaMode) els.mangaMode.onclick = () => setMode("manga");
   document.getElementById("closeDialog").onclick = () => els.dialog.close();
+
+  // v24: 長押しでブラウザのテキスト選択/メニューを出さない
+  els.card.addEventListener("contextmenu", (e) => e.preventDefault());
+  els.card.addEventListener("selectstart", (e) => e.preventDefault());
   if (els.fullscreenOverlay) {
     let fsStartX = 0, fsStartY = 0, fsMoved = false;
 
@@ -739,6 +743,7 @@ function bind() {
       content.style.transform = "";
     }
     pressTimer = setTimeout(() => {
+      if (appMode !== "dictionary") return; // 長押し一覧は辞書モードだけ
       isDragging = false;
       lockedDirection = null;
       els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
@@ -758,6 +763,10 @@ function bind() {
     lastDx = dx;
     lastDy = dy;
     const distance = Math.max(Math.abs(dx), Math.abs(dy));
+
+    if (appMode !== "dictionary") {
+      clearTimeout(pressTimer);
+    }
 
     if (distance > 10) {
       clearTimeout(pressTimer);
