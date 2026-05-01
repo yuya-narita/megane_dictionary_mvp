@@ -847,3 +847,99 @@ body.mode-cards .flip-card.shuffle-prev {
 .flip-card.flow-in {
   animation: none !important;
 }
+
+
+/* v20: 全画面でも同じカード操作 */
+.fullscreen-card {
+  position: relative;
+  width: min(92vw, 520px);
+  height: min(82vh, 760px);
+  perspective: 1300px;
+  display: grid;
+  place-items: center;
+}
+
+.fullscreen-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("images/cards/card_back.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: .34;
+  transform: translate(0, 18px) rotate(-2deg) scale(.965);
+  filter: brightness(.8);
+  pointer-events: none;
+}
+
+.fullscreen-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform .46s cubic-bezier(.2,.8,.2,1);
+  transform-style: preserve-3d;
+  z-index: 2;
+}
+
+.fullscreen-card.flipped .fullscreen-flip-inner {
+  transform: rotateY(180deg);
+}
+
+.fullscreen-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.fullscreen-back {
+  transform: rotateY(180deg);
+}
+
+.fullscreen-flow-card {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fullscreen-card.flowing .fullscreen-flow-card {
+  opacity: 1;
+}
+
+.fullscreen-card.flow-up-safe .fullscreen-flow-card {
+  animation: fullscreenFlowUp .5s cubic-bezier(.22,.86,.22,1);
+}
+
+.fullscreen-card.flow-down-safe .fullscreen-flow-card {
+  animation: fullscreenFlowDown .5s cubic-bezier(.22,.86,.22,1);
+}
+
+@keyframes fullscreenFlowUp {
+  0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  32%  { transform: translateY(-90px) rotate(-4deg) scale(.97); opacity: .95; }
+  100% { transform: translateY(-320px) rotate(-10deg) scale(.88); opacity: 0; }
+}
+
+@keyframes fullscreenFlowDown {
+  0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  32%  { transform: translateY(90px) rotate(4deg) scale(.97); opacity: .95; }
+  100% { transform: translateY(320px) rotate(10deg) scale(.88); opacity: 0; }
+}
+
+.fullscreen-card.flip-pop .fullscreen-flip-inner {
+  animation: fullscreenFlipPop .24s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes fullscreenFlipPop {
+  0% { scale: .995; }
+  55% { scale: 1.012; }
+  100% { scale: 1; }
+}

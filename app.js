@@ -252,7 +252,10 @@ const els = {
   dictionaryMode: document.getElementById("dictionaryMode"),
   cardMode: document.getElementById("cardMode"),
   fullscreenOverlay: document.getElementById("fullscreenOverlay"),
-  fullscreenImage: document.getElementById("fullscreenImage"),
+  fullscreenCard: document.getElementById("fullscreenCard"),
+  fullscreenFrontImage: document.getElementById("fullscreenFrontImage"),
+  fullscreenBackImage: document.getElementById("fullscreenBackImage"),
+  fullscreenFlowCard: document.getElementById("fullscreenFlowCard"),
   dialog: document.getElementById("glassDialog"),
   glassList: document.getElementById("glassList"),
 };
@@ -333,6 +336,9 @@ function render(animationClass = "flash") {
   els.card.classList.remove("flash", "slide-left", "slide-right", "slide-up", "slide-down", "peek-left", "peek-right", "peek-up", "peek-down", "snap-back");
   void els.card.offsetWidth;
   els.card.classList.add(animationClass);
+  if (els.fullscreenOverlay && !els.fullscreenOverlay.hidden) {
+    syncFullscreenCard();
+  }
 }
 function moveWord(step) {
   wordIndex = (wordIndex + step + data.words.length) % data.words.length;
@@ -403,16 +409,60 @@ function setMode(mode) {
   render("flash");
 }
 
-function openFullscreenCard() {
-  if (appMode !== "cards" || !els.fullscreenOverlay || !els.fullscreenImage) return;
+function syncFullscreenCard() {
+  if (!els.fullscreenCard || !els.fullscreenFrontImage || !els.fullscreenBackImage) return;
   const c = cards[cardIndex];
-  els.fullscreenImage.src = cardFlipped ? (c.back || "images/cards/card_back.png") : c.image;
-  els.fullscreenImage.alt = cardFlipped ? `${c.title} 裏面` : c.title;
+  els.fullscreenFrontImage.src = c.image;
+  els.fullscreenFrontImage.alt = c.title;
+  els.fullscreenBackImage.src = c.back || "images/cards/card_back.png";
+  els.fullscreenBackImage.alt = `${c.title} 裏面`;
+  els.fullscreenCard.classList.toggle("flipped", cardFlipped);
+}
+
+function openFullscreenCard() {
+  if (appMode !== "cards" || !els.fullscreenOverlay) return;
+  syncFullscreenCard();
   els.fullscreenOverlay.hidden = false;
 }
 
 function closeFullscreenCard() {
   if (els.fullscreenOverlay) els.fullscreenOverlay.hidden = true;
+}
+
+function flipFullscreenCard() {
+  cardFlipped = !cardFlipped;
+  syncFullscreenCard();
+  if (els.fullscreenCard) {
+    els.fullscreenCard.classList.remove("flip-pop");
+    void els.fullscreenCard.offsetWidth;
+    els.fullscreenCard.classList.add("flip-pop");
+  }
+  render("flash");
+}
+
+function moveFullscreenCard(step) {
+  cardFlipped = true;
+  syncFullscreenCard();
+
+  if (els.fullscreenCard) {
+    els.fullscreenCard.classList.remove("flow-up-safe", "flow-down-safe", "flowing");
+    void els.fullscreenCard.offsetWidth;
+    els.fullscreenCard.classList.add("flowing");
+    els.fullscreenCard.classList.add(step > 0 ? "flow-up-safe" : "flow-down-safe");
+  }
+
+  setTimeout(() => {
+    cardIndex = (cardIndex + step + cards.length) % cards.length;
+    cardFlipped = true;
+    syncFullscreenCard();
+    render(step > 0 ? "slide-up" : "slide-down");
+  }, 230);
+
+  setTimeout(() => {
+    if (els.fullscreenCard) {
+      els.fullscreenCard.classList.remove("flow-up-safe", "flow-down-safe", "flowing");
+    }
+  }, 540);
 }
 
 
@@ -440,7 +490,34 @@ function bind() {
   if (els.dictionaryMode) els.dictionaryMode.onclick = () => setMode("dictionary");
   if (els.cardMode) els.cardMode.onclick = () => setMode("cards");
   document.getElementById("closeDialog").onclick = () => els.dialog.close();
-  if (els.fullscreenOverlay) els.fullscreenOverlay.onclick = closeFullscreenCard;
+  if (els.fullscreenOverlay) {
+    let fsStartX = 0, fsStartY = 0, fsMoved = false;
+
+    els.fullscreenOverlay.addEventListener("pointerdown", (e) => {
+      fsStartX = e.clientX;
+      fsStartY = e.clientY;
+      fsMoved = false;
+    });
+
+    els.fullscreenOverlay.addEventListener("pointerup", (e) => {
+      const dx = e.clientX - fsStartX;
+      const dy = e.clientY - fsStartY;
+      const distance = Math.max(Math.abs(dx), Math.abs(dy));
+
+      if (distance < 28) {
+        closeFullscreenCard();
+        return;
+      }
+
+      fsMoved = true;
+
+      if (Math.abs(dy) > Math.abs(dx)) {
+        moveFullscreenCard(dy < 0 ? 1 : -1);
+      } else {
+        flipFullscreenCard();
+      }
+    });
+  }
 
   let lastTapTime = 0;
   els.card.addEventListener("click", () => {
