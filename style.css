@@ -1030,3 +1030,11 @@ body.mode-manga .controls button:first-child,
 body.mode-manga .controls button:last-child {
   opacity: .35;
 }
+
+
+/* v23: 追加メガネのアクセント */
+body.theme-communication { --accent: #d7c6ff; }
+body.theme-medical { --accent: #bfffe8; }
+body.theme-economy { --accent: #ffe3a8; }
+body.theme-science { --accent: #c8f0ff; }
+body.theme-gag { --accent: #ffd08a; }
