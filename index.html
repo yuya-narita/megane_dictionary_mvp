@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>メガネ辞書 MVP</title>
-  <link rel="stylesheet" href="./style.css?v=15" />
+  <link rel="stylesheet" href="./style.css?v=17" />
 </head>
 <body class="mode-dictionary">
   <main id="app" class="app">
@@ -32,6 +32,9 @@
 
         <div id="bugCardView" class="bug-card-view" hidden>
           <div id="flipCard" class="flip-card">
+            <img id="deckLayer1" class="deck-layer deck-layer-1" src="images/cards/card_back.png" alt="" aria-hidden="true" />
+            <img id="deckLayer2" class="deck-layer deck-layer-2" src="images/cards/card_back.png" alt="" aria-hidden="true" />
+            <img id="deckLayer3" class="deck-layer deck-layer-3" src="images/cards/card_back.png" alt="" aria-hidden="true" />
             <div class="flip-inner">
               <div class="flip-face flip-front">
                 <img id="cardImage" class="bug-card-image" alt="" />
@@ -63,6 +66,6 @@
     </dialog>
   </main>
 
-  <script src="./app.js?v=15"></script>
+  <script src="./app.js?v=17"></script>
 </body>
 </html>

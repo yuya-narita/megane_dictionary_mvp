@@ -549,3 +549,145 @@ body.mode-cards .flip-card.flip-pop .flip-inner {
 body.mode-cards .bug-card-subtitle::after {
   content: "　｜　上下:カード / 左右:めくる";
 }
+
+
+/* v16: 上下スワイプ時のシャッフル演出 */
+.flip-card.shuffle-next .flip-inner {
+  animation: shuffleNext .42s cubic-bezier(.2,.8,.2,1);
+}
+
+.flip-card.shuffle-prev .flip-inner {
+  animation: shufflePrev .42s cubic-bezier(.2,.8,.2,1);
+}
+
+@keyframes shuffleNext {
+  0%   { transform: rotateY(180deg) translateY(0) rotateZ(0deg) scale(1); filter: brightness(1); }
+  22%  { transform: rotateY(180deg) translateY(-18px) rotateZ(3deg) scale(.96); filter: brightness(1.18); }
+  48%  { transform: rotateY(180deg) translateY(22px) rotateZ(-4deg) scale(.93); filter: brightness(.88); }
+  72%  { transform: rotateY(180deg) translateY(-8px) rotateZ(2deg) scale(1.02); filter: brightness(1.08); }
+  100% { transform: rotateY(180deg) translateY(0) rotateZ(0deg) scale(1); filter: brightness(1); }
+}
+
+@keyframes shufflePrev {
+  0%   { transform: rotateY(180deg) translateY(0) rotateZ(0deg) scale(1); filter: brightness(1); }
+  22%  { transform: rotateY(180deg) translateY(18px) rotateZ(-3deg) scale(.96); filter: brightness(1.18); }
+  48%  { transform: rotateY(180deg) translateY(-22px) rotateZ(4deg) scale(.93); filter: brightness(.88); }
+  72%  { transform: rotateY(180deg) translateY(8px) rotateZ(-2deg) scale(1.02); filter: brightness(1.08); }
+  100% { transform: rotateY(180deg) translateY(0) rotateZ(0deg) scale(1); filter: brightness(1); }
+}
+
+body.mode-cards .flip-card.shuffle-next,
+body.mode-cards .flip-card.shuffle-prev {
+  filter: drop-shadow(0 18px 35px rgba(255,255,255,.08));
+}
+
+
+/* v17: カードを配っているようなデッキ演出 */
+.flip-card {
+  position: relative;
+}
+
+.deck-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 18px;
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: center;
+  filter: brightness(.9);
+  z-index: 0;
+}
+
+.flip-inner {
+  z-index: 3;
+}
+
+.deck-layer-1 { transform: translate(8px, 10px) rotate(3deg) scale(.985); }
+.deck-layer-2 { transform: translate(-7px, 16px) rotate(-4deg) scale(.972); }
+.deck-layer-3 { transform: translate(2px, 23px) rotate(1deg) scale(.958); }
+
+.flip-card.shuffling .deck-layer {
+  opacity: .72;
+}
+
+.flip-card.deal-next .deck-layer-1 {
+  animation: dealLayerNext1 .52s cubic-bezier(.2,.8,.2,1);
+}
+.flip-card.deal-next .deck-layer-2 {
+  animation: dealLayerNext2 .52s cubic-bezier(.2,.8,.2,1);
+}
+.flip-card.deal-next .deck-layer-3 {
+  animation: dealLayerNext3 .52s cubic-bezier(.2,.8,.2,1);
+}
+
+.flip-card.deal-prev .deck-layer-1 {
+  animation: dealLayerPrev1 .52s cubic-bezier(.2,.8,.2,1);
+}
+.flip-card.deal-prev .deck-layer-2 {
+  animation: dealLayerPrev2 .52s cubic-bezier(.2,.8,.2,1);
+}
+.flip-card.deal-prev .deck-layer-3 {
+  animation: dealLayerPrev3 .52s cubic-bezier(.2,.8,.2,1);
+}
+
+.flip-card.deal-next .flip-inner {
+  animation: dealMainNext .52s cubic-bezier(.2,.8,.2,1);
+}
+.flip-card.deal-prev .flip-inner {
+  animation: dealMainPrev .52s cubic-bezier(.2,.8,.2,1);
+}
+
+@keyframes dealMainNext {
+  0%   { transform: rotateY(180deg) translateY(0) rotateZ(0deg) scale(1); }
+  28%  { transform: rotateY(180deg) translateY(-32px) rotateZ(5deg) scale(.93); }
+  52%  { transform: rotateY(180deg) translateY(46px) rotateZ(-7deg) scale(.90); }
+  76%  { transform: rotateY(180deg) translateY(-8px) rotateZ(2deg) scale(1.02); }
+  100% { transform: rotateY(180deg) translateY(0) rotateZ(0deg) scale(1); }
+}
+
+@keyframes dealMainPrev {
+  0%   { transform: rotateY(180deg) translateY(0) rotateZ(0deg) scale(1); }
+  28%  { transform: rotateY(180deg) translateY(32px) rotateZ(-5deg) scale(.93); }
+  52%  { transform: rotateY(180deg) translateY(-46px) rotateZ(7deg) scale(.90); }
+  76%  { transform: rotateY(180deg) translateY(8px) rotateZ(-2deg) scale(1.02); }
+  100% { transform: rotateY(180deg) translateY(0) rotateZ(0deg) scale(1); }
+}
+
+@keyframes dealLayerNext1 {
+  0%   { opacity: .12; transform: translate(8px, 10px) rotate(3deg) scale(.985); }
+  35%  { opacity: .80; transform: translate(14px, -24px) rotate(9deg) scale(.96); }
+  70%  { opacity: .60; transform: translate(-10px, 34px) rotate(-8deg) scale(.94); }
+  100% { opacity: .12; transform: translate(8px, 10px) rotate(3deg) scale(.985); }
+}
+@keyframes dealLayerNext2 {
+  0%   { opacity: .10; transform: translate(-7px, 16px) rotate(-4deg) scale(.972); }
+  42%  { opacity: .66; transform: translate(-18px, -18px) rotate(-11deg) scale(.95); }
+  78%  { opacity: .52; transform: translate(16px, 28px) rotate(7deg) scale(.93); }
+  100% { opacity: .10; transform: translate(-7px, 16px) rotate(-4deg) scale(.972); }
+}
+@keyframes dealLayerNext3 {
+  0%   { opacity: .08; transform: translate(2px, 23px) rotate(1deg) scale(.958); }
+  48%  { opacity: .52; transform: translate(0, -10px) rotate(4deg) scale(.935); }
+  100% { opacity: .08; transform: translate(2px, 23px) rotate(1deg) scale(.958); }
+}
+
+@keyframes dealLayerPrev1 {
+  0%   { opacity: .12; transform: translate(8px, 10px) rotate(3deg) scale(.985); }
+  35%  { opacity: .80; transform: translate(-14px, 24px) rotate(-9deg) scale(.96); }
+  70%  { opacity: .60; transform: translate(10px, -34px) rotate(8deg) scale(.94); }
+  100% { opacity: .12; transform: translate(8px, 10px) rotate(3deg) scale(.985); }
+}
+@keyframes dealLayerPrev2 {
+  0%   { opacity: .10; transform: translate(-7px, 16px) rotate(-4deg) scale(.972); }
+  42%  { opacity: .66; transform: translate(18px, 18px) rotate(11deg) scale(.95); }
+  78%  { opacity: .52; transform: translate(-16px, -28px) rotate(-7deg) scale(.93); }
+  100% { opacity: .10; transform: translate(-7px, 16px) rotate(-4deg) scale(.972); }
+}
+@keyframes dealLayerPrev3 {
+  0%   { opacity: .08; transform: translate(2px, 23px) rotate(1deg) scale(.958); }
+  48%  { opacity: .52; transform: translate(0, 10px) rotate(-4deg) scale(.935); }
+  100% { opacity: .08; transform: translate(2px, 23px) rotate(1deg) scale(.958); }
+}

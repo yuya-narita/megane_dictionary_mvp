@@ -342,9 +342,26 @@ function moveGlass(step) {
 }
 
 function moveCard(step) {
-  cardIndex = (cardIndex + step + cards.length) % cards.length;
-  cardFlipped = true; // カード切替後は必ず裏面
-  render(step > 0 ? "slide-up" : "slide-down");
+  cardFlipped = true; // シャッフル中も裏面固定
+
+  if (els.flipCard) {
+    els.flipCard.classList.remove("shuffle-next", "shuffle-prev", "deal-next", "deal-prev", "shuffling");
+    void els.flipCard.offsetWidth;
+    els.flipCard.classList.add("shuffling");
+    els.flipCard.classList.add(step > 0 ? "deal-next" : "deal-prev");
+  }
+
+  // 配っている途中でカードの中身を入れ替える
+  setTimeout(() => {
+    cardIndex = (cardIndex + step + cards.length) % cards.length;
+    render(step > 0 ? "slide-up" : "slide-down");
+  }, 230);
+
+  setTimeout(() => {
+    if (els.flipCard) {
+      els.flipCard.classList.remove("deal-next", "deal-prev", "shuffling");
+    }
+  }, 560);
 }
 
 function flipCurrentCard() {
