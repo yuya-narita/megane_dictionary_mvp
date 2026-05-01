@@ -1521,7 +1521,10 @@ init();
 })();
 
 
-/* v44: fullscreen reader logic */
+
+
+
+/* v48: fullscreen two-layer slide reader */
 (function () {
   function q(id) { return document.getElementById(id); }
 
@@ -1533,50 +1536,70 @@ init();
     }
   }
 
-  function currentPageImage() {
+  function imagePages() {
     const s = story();
-    if (!s || !s.pages) return "";
-    const p = s.pages[mangaPageIndex];
-    return p && p.image ? p.image : "";
+    if (!s || !Array.isArray(s.pages)) return [];
+    return s.pages.map(p => p && p.image).filter(Boolean);
   }
 
   function webtoonImages() {
     const s = story();
     if (!s) return [];
     if (Array.isArray(s.webtoon) && s.webtoon.length) return s.webtoon;
-    if (Array.isArray(s.pages)) return s.pages.map(p => p.image).filter(Boolean);
-    return [];
+    return imagePages();
   }
 
-  function refreshFullscreenPageImage() {
-    const image = q("mangaFullscreenImage");
-    if (!image) return;
-    const src = currentPageImage();
-    if (!src) return;
-    image.src = src;
-    image.alt = "manga fullscreen";
+  function setCurrentImage() {
+    const pages = imagePages();
+    const cur = q("fullscreenCurrentPage");
+    const incoming = q("fullscreenIncomingPage");
+    if (!cur) return;
+
+    cur.src = pages[mangaPageIndex] || "";
+    cur.style.transition = "none";
+    cur.style.transform = "translateX(0)";
+    void cur.offsetWidth;
+    cur.style.transition = "transform .28s cubic-bezier(.2,.8,.2,1)";
+
+    if (incoming) {
+      incoming.removeAttribute("src");
+      incoming.style.transition = "none";
+      incoming.style.transform = "translateX(100%)";
+      void incoming.offsetWidth;
+      incoming.style.transition = "transform .28s cubic-bezier(.2,.8,.2,1)";
+    }
+  }
+
+  function openPageFullscreen() {
+    const overlay = q("mangaFullscreenOverlay");
+    const reader = q("fullscreenPageReader");
+    const webtoon = q("mangaFullscreenWebtoon");
+    if (!overlay || !reader || !webtoon) return;
+
+    overlay.hidden = false;
+    reader.hidden = false;
+    webtoon.hidden = true;
+    setCurrentImage();
+  }
+
+  function openWebtoonFullscreen() {
+    const overlay = q("mangaFullscreenOverlay");
+    const reader = q("fullscreenPageReader");
+    const webtoon = q("mangaFullscreenWebtoon");
+    if (!overlay || !reader || !webtoon) return;
+
+    overlay.hidden = false;
+    reader.hidden = true;
+    webtoon.hidden = false;
+    webtoon.innerHTML = webtoonImages()
+      .map((src, i) => `<img src="${src}" alt="webtoon ${i + 1}">`)
+      .join("");
+    webtoon.scrollTop = 0;
   }
 
   window.openMangaFullscreenFromButton = function () {
-    const overlay = q("mangaFullscreenOverlay");
-    const image = q("mangaFullscreenImage");
-    const webtoon = q("mangaFullscreenWebtoon");
-    if (!overlay || !image || !webtoon) return;
-
-    overlay.hidden = false;
-
-    if (mangaReadMode === "webtoon") {
-      image.hidden = true;
-      webtoon.hidden = false;
-      webtoon.innerHTML = webtoonImages()
-        .map((src, i) => `<img src="${src}" alt="webtoon ${i + 1}">`)
-        .join("");
-      webtoon.scrollTop = 0;
-    } else {
-      webtoon.hidden = true;
-      image.hidden = false;
-      refreshFullscreenPageImage();
-    }
+    if (mangaReadMode === "webtoon") openWebtoonFullscreen();
+    else openPageFullscreen();
   };
 
   window.closeMangaFullscreen = function () {
@@ -1584,13 +1607,15 @@ init();
     if (overlay) overlay.hidden = true;
   };
 
-  function bindV44() {
+  function bindV48() {
     const openBtn = q("mangaOpenFullscreenButton");
     const closeBtn = q("mangaFullscreenClose");
-    const image = q("mangaFullscreenImage");
+    const reader = q("fullscreenPageReader");
+    const cur = q("fullscreenCurrentPage");
+    const incoming = q("fullscreenIncomingPage");
 
-    if (openBtn && !openBtn.dataset.v44) {
-      openBtn.dataset.v44 = "1";
+    if (openBtn && !openBtn.dataset.v48) {
+      openBtn.dataset.v48 = "1";
       ["click", "touchend", "pointerup"].forEach(type => {
         openBtn.addEventListener(type, e => {
           e.preventDefault();
@@ -1600,8 +1625,8 @@ init();
       });
     }
 
-    if (closeBtn && !closeBtn.dataset.v44) {
-      closeBtn.dataset.v44 = "1";
+    if (closeBtn && !closeBtn.dataset.v48) {
+      closeBtn.dataset.v48 = "1";
       ["click", "touchend", "pointerup"].forEach(type => {
         closeBtn.addEventListener(type, e => {
           e.preventDefault();
@@ -1611,50 +1636,164 @@ init();
       });
     }
 
-    if (image && !image.dataset.v44) {
-      image.dataset.v44 = "1";
-      let sx = 0, sy = 0;
+    if (reader && cur && incoming && !reader.dataset.v48) {
+      reader.dataset.v48 = "1";
+      let sx = 0, sy = 0, dx = 0, dragging = false, direction = 0;
 
-      image.addEventListener("touchstart", e => {
+      function prepareIncoming(dir) {
+        const pages = imagePages();
+        const nextIndex = mangaPageIndex + dir;
+        if (nextIndex < 0 || nextIndex >= pages.length) return false;
+
+        direction = dir;
+        incoming.src = pages[nextIndex];
+        incoming.style.transition = "none";
+        incoming.style.transform = dir > 0 ? "translateX(100%)" : "translateX(-100%)";
+        cur.style.transition = "none";
+        cur.style.transform = "translateX(0)";
+        void incoming.offsetWidth;
+        incoming.style.transition = "transform .28s cubic-bezier(.2,.8,.2,1)";
+        cur.style.transition = "transform .28s cubic-bezier(.2,.8,.2,1)";
+        return true;
+      }
+
+      function start(x, y) {
+        if (mangaReadMode !== "page") return;
+        sx = x; sy = y; dx = 0; dragging = true; direction = 0;
+        cur.style.transition = "none";
+        incoming.style.transition = "none";
+      }
+
+      function move(x, y) {
+        if (!dragging) return;
+        dx = x - sx;
+        const dy = y - sy;
+        if (Math.abs(dx) < Math.abs(dy)) return;
+
+        const dir = dx < 0 ? 1 : -1;
+        if (direction !== dir) {
+          if (!prepareIncoming(dir)) {
+            cur.style.transform = `translateX(${dx * 0.18}px)`;
+            return;
+          }
+        }
+
+        cur.style.transform = `translateX(${dx}px)`;
+        incoming.style.transform = direction > 0
+          ? `translateX(calc(100% + ${dx}px))`
+          : `translateX(calc(-100% + ${dx}px))`;
+      }
+
+      function end(x, y) {
+        if (!dragging) return;
+        dragging = false;
+
+        dx = x - sx;
+        const dy = y - sy;
+        cur.style.transition = "transform .28s cubic-bezier(.2,.8,.2,1)";
+        incoming.style.transition = "transform .28s cubic-bezier(.2,.8,.2,1)";
+
+        if (Math.abs(dx) > 52 && Math.abs(dx) > Math.abs(dy) * 1.05 && direction !== 0) {
+          cur.style.transform = direction > 0 ? "translateX(-100%)" : "translateX(100%)";
+          incoming.style.transform = "translateX(0)";
+
+          setTimeout(() => {
+            moveMangaPage(direction);
+            setCurrentImage();
+          }, 285);
+        } else {
+          cur.style.transform = "translateX(0)";
+          incoming.style.transform = direction > 0 ? "translateX(100%)" : "translateX(-100%)";
+        }
+      }
+
+      reader.addEventListener("touchstart", e => {
         const t = e.changedTouches && e.changedTouches[0];
-        if (!t) return;
-        sx = t.clientX;
-        sy = t.clientY;
+        if (t) start(t.clientX, t.clientY);
       }, { passive: true });
 
-      image.addEventListener("touchend", e => {
+      reader.addEventListener("touchmove", e => {
         const t = e.changedTouches && e.changedTouches[0];
-        if (!t) return;
-        const dx = t.clientX - sx;
-        const dy = t.clientY - sy;
+        if (t) move(t.clientX, t.clientY);
+      }, { passive: true });
 
-        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.1 && mangaReadMode === "page") {
-          e.preventDefault();
-          e.stopPropagation();
-          moveMangaPage(dx < 0 ? 1 : -1);
-          setTimeout(refreshFullscreenPageImage, 30);
-        }
-      }, { passive: false });
+      reader.addEventListener("touchend", e => {
+        const t = e.changedTouches && e.changedTouches[0];
+        if (t) end(t.clientX, t.clientY);
+      }, { passive: true });
 
-      image.addEventListener("pointerdown", e => {
-        sx = e.clientX;
-        sy = e.clientY;
-      });
-
-      image.addEventListener("pointerup", e => {
-        const dx = e.clientX - sx;
-        const dy = e.clientY - sy;
-        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.1 && mangaReadMode === "page") {
-          e.preventDefault();
-          e.stopPropagation();
-          moveMangaPage(dx < 0 ? 1 : -1);
-          setTimeout(refreshFullscreenPageImage, 30);
-        }
+      reader.addEventListener("pointerdown", e => start(e.clientX, e.clientY));
+      reader.addEventListener("pointermove", e => move(e.clientX, e.clientY));
+      reader.addEventListener("pointerup", e => end(e.clientX, e.clientY));
+      reader.addEventListener("pointercancel", () => {
+        dragging = false;
+        setCurrentImage();
       });
     }
   }
 
-  bindV44();
-  window.addEventListener("load", bindV44);
-  document.addEventListener("DOMContentLoaded", bindV44);
+  bindV48();
+  window.addEventListener("load", bindV48);
+  document.addEventListener("DOMContentLoaded", bindV48);
+})();
+
+(function(){
+  const cur = document.getElementById("fullscreenCurrentPage");
+  const incoming = document.getElementById("fullscreenIncomingPage");
+  if(!cur || !incoming) return;
+
+  let sx=0, dx=0, dragging=false, direction=0;
+
+  function start(x){
+    sx=x; dx=0; dragging=true;
+    cur.style.transition="none";
+    incoming.style.transition="none";
+  }
+
+  function move(x){
+    if(!dragging) return;
+    dx = x - sx;
+    const moveX = dx * 0.9;
+    cur.style.transform = `translateX(${moveX}px)`;
+    if(direction!==0){
+      incoming.style.transform = direction>0
+        ? `translateX(calc(85% + ${moveX}px))`
+        : `translateX(calc(-85% + ${moveX}px))`;
+    }
+  }
+
+  function end(){
+    if(!dragging) return;
+    dragging=false;
+
+    cur.style.transition="";
+    incoming.style.transition="";
+
+    if(Math.abs(dx)>80){
+      const dir = dx<0 ? 1 : -1;
+      cur.style.transform = dir>0 ? "translateX(-100%)":"translateX(100%)";
+      incoming.style.transform = "translateX(0)";
+      setTimeout(()=>{
+        if(window.moveMangaPage) moveMangaPage(dir);
+        if(window.setCurrentImage) setCurrentImage();
+      },320);
+    }else{
+      cur.style.transform="translateX(0)";
+      incoming.style.transform = direction>0 ? "translateX(85%)":"translateX(-85%)";
+    }
+    dx=0; direction=0;
+  }
+
+  const reader = document.getElementById("fullscreenPageReader");
+  if(reader){
+    reader.addEventListener("pointerdown", e=>{direction=0; start(e.clientX);});
+    reader.addEventListener("pointermove", e=>{
+      const newDx = e.clientX - sx;
+      if(newDx<0) direction=1;
+      if(newDx>0) direction=-1;
+      move(e.clientX);
+    });
+    reader.addEventListener("pointerup", end);
+    reader.addEventListener("pointercancel", end);
+  }
 })();

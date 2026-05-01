@@ -1691,3 +1691,91 @@ body.mode-manga.manga-choice-state .manga-open-fullscreen {
   border: 1px solid rgba(255,255,255,.22);
   color: rgba(255,255,255,.94);
 }
+
+
+/* v48: 全画面ページ読みを2枚レイヤー方式に変更 */
+.manga-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.96);
+  padding: max(18px, env(safe-area-inset-top)) 0 max(18px, env(safe-area-inset-bottom));
+  pointer-events: auto !important;
+}
+
+.manga-fullscreen-overlay[hidden] {
+  display: none !important;
+}
+
+.manga-fullscreen-close {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  left: 14px;
+  z-index: 10001;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.58);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.22);
+  color: rgba(255,255,255,.94);
+  pointer-events: auto !important;
+}
+
+.fullscreen-page-reader {
+  position: relative;
+  width: min(100vw, 760px);
+  height: 92vh;
+  overflow: hidden;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+.fullscreen-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 0 12px;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: none;
+  transform: translateX(0);
+  transition: transform .28s cubic-bezier(.2,.8,.2,1);
+}
+
+.fullscreen-incoming {
+  transform: translateX(100%);
+}
+
+.manga-fullscreen-webtoon {
+  width: min(100vw, 760px);
+  height: 92vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  border-radius: 18px;
+  background: rgba(0,0,0,.25);
+  box-shadow: 0 22px 90px rgba(0,0,0,.8);
+  pointer-events: auto !important;
+}
+
+.manga-fullscreen-webtoon img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.fullscreen-incoming {
+  transform: translateX(85%);
+}
+.fullscreen-layer {
+  transition: transform .32s cubic-bezier(.22,.9,.3,1);
+}
