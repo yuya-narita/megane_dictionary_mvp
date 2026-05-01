@@ -247,7 +247,7 @@ function init() {
 function currentWord() { return data.words[wordIndex]; }
 function currentGlass() { return data.glasses[glassIndex]; }
 
-function render() {
+function render(animationClass = "flash") {
   const w = currentWord();
   const g = currentGlass();
   els.body.className = `theme-${g.id}`;
@@ -256,23 +256,25 @@ function render() {
   els.word.textContent = w.word;
   els.translation.textContent = w.translations[g.id] || "このメガネでは、まだ翻訳されていない。";
   els.counter.textContent = `${wordIndex + 1} / ${data.words.length}　・　${glassIndex + 1} / ${data.glasses.length}`;
-  els.card.classList.remove("flash");
-  requestAnimationFrame(() => els.card.classList.add("flash"));
+
+  els.card.classList.remove("flash", "slide-left", "slide-right", "slide-up", "slide-down");
+  void els.card.offsetWidth;
+  els.card.classList.add(animationClass);
 }
 
 function moveWord(step) {
   wordIndex = (wordIndex + step + data.words.length) % data.words.length;
-  render();
+  render(step > 0 ? "slide-left" : "slide-right");
 }
 
 function moveGlass(step) {
   glassIndex = (glassIndex + step + data.glasses.length) % data.glasses.length;
-  render();
+  render(step > 0 ? "slide-up" : "slide-down");
 }
 
 function randomWord() {
   wordIndex = Math.floor(Math.random() * data.words.length);
-  render();
+  render("flash");
 }
 
 function buildGlassList() {
@@ -298,19 +300,55 @@ function bind() {
   document.getElementById("randomWord").onclick = randomWord;
   document.getElementById("closeDialog").onclick = () => els.dialog.close();
 
-  let startX = 0, startY = 0;
+  let startX = 0, startY = 0, isDragging = false;
 
   els.card.addEventListener("pointerdown", (e) => {
     startX = e.clientX;
     startY = e.clientY;
-    pressTimer = setTimeout(() => els.dialog.showModal(), 550);
+    isDragging = true;
+    els.card.setPointerCapture(e.pointerId);
+    pressTimer = setTimeout(() => {
+      isDragging = false;
+      els.card.classList.remove("dragging");
+      els.card.style.transform = "";
+      els.dialog.showModal();
+    }, 550);
+  });
+
+  els.card.addEventListener("pointermove", (e) => {
+    if (!isDragging) return;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const distance = Math.max(Math.abs(dx), Math.abs(dy));
+
+    if (distance > 10) {
+      clearTimeout(pressTimer);
+      els.card.classList.add("dragging");
+    }
+
+    const followX = Math.max(-48, Math.min(48, dx * 0.22));
+    const followY = Math.max(-34, Math.min(34, dy * 0.16));
+    const scale = 1 - Math.min(distance, 140) / 2800;
+    els.card.style.transform = `translate(${followX}px, ${followY}px) scale(${scale})`;
   });
 
   els.card.addEventListener("pointerup", (e) => {
     clearTimeout(pressTimer);
+    if (!isDragging) return;
+    isDragging = false;
+
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < 44) return;
+    const distance = Math.max(Math.abs(dx), Math.abs(dy));
+
+    els.card.classList.remove("dragging");
+    els.card.style.transform = "";
+
+    if (distance < 44) {
+      render("flash");
+      return;
+    }
 
     if (Math.abs(dx) > Math.abs(dy)) {
       moveWord(dx < 0 ? 1 : -1);
@@ -319,7 +357,12 @@ function bind() {
     }
   });
 
-  els.card.addEventListener("pointercancel", () => clearTimeout(pressTimer));
+  els.card.addEventListener("pointercancel", () => {
+    clearTimeout(pressTimer);
+    isDragging = false;
+    els.card.classList.remove("dragging");
+    els.card.style.transform = "";
+  });
 
   window.addEventListener("keydown", (e) => {
     if (e.key === "ArrowRight") moveWord(1);

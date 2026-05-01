@@ -71,7 +71,48 @@ button {
   padding: 28px;
   touch-action: none;
   user-select: none;
-  transition: transform .18s ease, filter .18s ease;
+  transition: transform .24s cubic-bezier(.2,.8,.2,1), opacity .24s ease, filter .18s ease;
+  will-change: transform, opacity;
+}
+
+.card.dragging {
+  transition: none;
+}
+
+.card.slide-left {
+  animation: slideLeft .26s cubic-bezier(.2,.8,.2,1);
+}
+
+.card.slide-right {
+  animation: slideRight .26s cubic-bezier(.2,.8,.2,1);
+}
+
+.card.slide-up {
+  animation: slideUp .26s cubic-bezier(.2,.8,.2,1);
+}
+
+.card.slide-down {
+  animation: slideDown .26s cubic-bezier(.2,.8,.2,1);
+}
+
+@keyframes slideLeft {
+  0% { transform: translateX(22px); opacity: .55; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideRight {
+  0% { transform: translateX(-22px); opacity: .55; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideUp {
+  0% { transform: translateY(22px); opacity: .55; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideDown {
+  0% { transform: translateY(-22px); opacity: .55; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
 .card.flash { transform: scale(.985); filter: brightness(1.18); }
@@ -123,6 +164,8 @@ button {
 
 .dialog {
   width: min(92vw, 420px);
+  max-height: 82vh;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 24px;
   background: #11131a;
@@ -140,6 +183,9 @@ button {
 .glass-list {
   display: grid;
   gap: 10px;
+  max-height: 58vh;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .glass-item {
