@@ -1811,3 +1811,33 @@ body.mode-manga.manga-reader-state.reader-page .manga-incoming-image {
   transform: translateX(85%);
   z-index: 1;
 }
+
+
+/* v53: 辞書UI安全整理 */
+#prevWord,
+#nextWord {
+  display: none !important;
+}
+
+.topbar {
+  justify-content: center;
+}
+
+.voice-active .card {
+  filter: brightness(.88);
+}
+
+.voice-pulse {
+  animation: voicePulse .52s cubic-bezier(.22,.9,.3,1);
+}
+
+@keyframes voicePulse {
+  0% { text-shadow: 0 0 0 rgba(255,255,255,0); transform: scale(1); }
+  45% { text-shadow: 0 0 22px rgba(255,255,255,.35); transform: scale(1.018); }
+  100% { text-shadow: 0 0 0 rgba(255,255,255,0); transform: scale(1); }
+}
+
+body.mode-dictionary .hint::after {
+  content: " / 長押しで特定語が喋る";
+  opacity: .72;
+}

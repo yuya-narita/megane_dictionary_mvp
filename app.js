@@ -1938,3 +1938,169 @@ init();
   window.addEventListener("load", bindNormalSlideV51);
   document.addEventListener("DOMContentLoaded", bindNormalSlideV51);
 })();
+
+
+/* v53 safe dictionary UI + voice */
+(function () {
+  const voiceLines = {
+    "沈黙": {
+      nyx: "……沈黙は、空白じゃない。意味が増える場所だ。",
+      kureina: "ねえ、何も言われてないのに、心だけ先に走ってない？",
+      zurea: "沈黙？ あれはな、ツッコミ待ちの地獄や。"
+    },
+    "誤解": {
+      nyx: "……ズレは、情報不足じゃない。補完の暴走だ。",
+      kureina: "大丈夫。誤解は、まだ会話が終わってないサインかも。",
+      zurea: "誤解？ だいたい会話の事故物件やな。"
+    },
+    "信用": {
+      nyx: "信用は、証明じゃない。次の行動への期待値だ。",
+      kureina: "信じてもらえるって、未来を少し預けてもらうことだよ。",
+      zurea: "信用？ 返済期限のある、だいじょうぶ、やな。"
+    },
+    "孤独": {
+      nyx: "孤独は、接続がゼロなんじゃない。観測が返ってこない状態だ。",
+      kureina: "ひとりの時間にも、ちゃんと未来は残ってるよ。",
+      zurea: "孤独？ ボケてもツッコミ不在の状態や。"
+    },
+    "笑い": {
+      nyx: "笑いは、意味の予測が外れた瞬間に発火する。",
+      kureina: "笑えたなら、まだ少し跳ねる余白があるってこと。",
+      zurea: "笑い？ 世界が一瞬だけバグを許した音や。"
+    },
+    "意味": {
+      nyx: "意味は、対象にあるんじゃない。観測で跳ねた痕跡だ。",
+      kureina: "意味って、心がふわっと動いたあとに残る光みたいなものだよ。",
+      zurea: "意味？ 考えすぎたら逃げるやつや。"
+    },
+    "跳ね": {
+      nyx: "跳ねは、連続じゃない。決まった瞬間だけ、不連続に起きる。",
+      kureina: "今、少しだけ心が前に出たなら、それが跳ねかも。",
+      zurea: "跳ね？ 予定通りにいかん時に出る、ええ感じの事故や。"
+    },
+    "観測": {
+      nyx: "観測した時点で、もう対象は前と同じじゃない。",
+      kureina: "見るって、世界と目が合うことなんだよ。",
+      zurea: "観測？ 見てもうたら負けの時もあるけどな。"
+    }
+  };
+
+  let timer = null;
+  let wasLongPress = false;
+
+  function getMode() {
+    return typeof appMode !== "undefined" ? appMode : "";
+  }
+
+  function getWordText() {
+    const el = document.getElementById("word");
+    return el ? el.textContent.trim() : "";
+  }
+
+  function getGlassIdSafe() {
+    try {
+      if (typeof currentGlass === "function") {
+        const g = currentGlass();
+        return g && g.id ? g.id : "";
+      }
+    } catch (e) {}
+    return "";
+  }
+
+  function voiceKey() {
+    const id = getGlassIdSafe();
+    if (id === "happy") return "kureina";
+    if (id === "gag") return "zurea";
+    return "nyx";
+  }
+
+  function lineForCurrentWord() {
+    const word = getWordText();
+    const entry = voiceLines[word];
+    if (!entry) return "";
+    const key = voiceKey();
+    return entry[key] || entry.nyx || "";
+  }
+
+  function speak(text) {
+    if (!text || !("speechSynthesis" in window)) return;
+
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "ja-JP";
+    utter.rate = 0.92;
+    utter.pitch = 1.02;
+
+    document.body.classList.add("voice-active");
+
+    const wordEl = document.getElementById("word");
+    if (wordEl) {
+      wordEl.classList.remove("voice-pulse");
+      void wordEl.offsetWidth;
+      wordEl.classList.add("voice-pulse");
+    }
+
+    setTimeout(() => window.speechSynthesis.speak(utter), 120);
+    setTimeout(() => document.body.classList.remove("voice-active"), 650);
+  }
+
+  function bindDictionaryVoice() {
+    const card = document.querySelector(".card");
+    if (!card || card.dataset.v53VoiceBound) return;
+    card.dataset.v53VoiceBound = "1";
+
+    card.addEventListener("pointerdown", () => {
+      if (getMode() !== "dictionary") return;
+      wasLongPress = false;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const text = lineForCurrentWord();
+        if (!text) return;
+        wasLongPress = true;
+        speak(text);
+      }, 560);
+    }, true);
+
+    ["pointerup", "pointerleave", "pointercancel"].forEach(type => {
+      card.addEventListener(type, () => clearTimeout(timer), true);
+    });
+  }
+
+  function bindDictionaryMiddleButton() {
+    const btn = document.getElementById("randomWord");
+    const dialog = document.getElementById("glassDialog");
+    if (!btn || btn.dataset.v53MiddleBound) return;
+    btn.dataset.v53MiddleBound = "1";
+
+    btn.addEventListener("click", (e) => {
+      if (getMode() !== "dictionary") return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (dialog && typeof dialog.showModal === "function") {
+        dialog.showModal();
+      }
+    }, true);
+  }
+
+  function patchLabels() {
+    const btn = document.getElementById("randomWord");
+    if (btn && getMode() === "dictionary") {
+      btn.textContent = "メガネ一覧";
+    }
+  }
+
+  function boot() {
+    bindDictionaryVoice();
+    bindDictionaryMiddleButton();
+    patchLabels();
+
+    // render後に元のラベルへ戻されることがあるため、軽く監視
+    setInterval(patchLabels, 500);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
