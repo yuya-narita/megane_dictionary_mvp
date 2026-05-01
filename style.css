@@ -1841,3 +1841,46 @@ body.mode-dictionary .hint::after {
   content: " / 長押しで特定語が喋る";
   opacity: .72;
 }
+
+
+/* v61: 辞書タップ反応エフェクト */
+body.mode-dictionary .card.voice-tap-feedback {
+  animation: dictionaryTapFeedback .46s cubic-bezier(.22,.9,.3,1);
+}
+
+body.mode-dictionary .card.voice-no-line {
+  animation: dictionaryNoLine .32s cubic-bezier(.22,.9,.3,1);
+}
+
+body.mode-dictionary #word.voice-word-pulse {
+  animation: dictionaryWordPulse .58s cubic-bezier(.22,.9,.3,1);
+}
+
+body.mode-dictionary #meaning.voice-meaning-glow {
+  animation: dictionaryMeaningGlow .7s cubic-bezier(.22,.9,.3,1);
+}
+
+@keyframes dictionaryTapFeedback {
+  0%   { transform: scale(1); filter: brightness(1); }
+  40%  { transform: scale(.988); filter: brightness(.82); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes dictionaryNoLine {
+  0%   { transform: translateX(0); }
+  30%  { transform: translateX(-3px); }
+  60%  { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes dictionaryWordPulse {
+  0%   { text-shadow: 0 0 0 rgba(255,255,255,0); transform: scale(1); }
+  45%  { text-shadow: 0 0 24px rgba(255,255,255,.42); transform: scale(1.018); }
+  100% { text-shadow: 0 0 0 rgba(255,255,255,0); transform: scale(1); }
+}
+
+@keyframes dictionaryMeaningGlow {
+  0%   { opacity: .78; }
+  45%  { opacity: 1; text-shadow: 0 0 16px rgba(255,255,255,.22); }
+  100% { opacity: .78; }
+}

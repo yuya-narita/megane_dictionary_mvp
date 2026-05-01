@@ -2189,3 +2189,228 @@ init();
   }
 
 })();
+
+
+/* v61: dictionary tap feedback + reliable sample TTS */
+(function () {
+  const voiceLines = {
+    "沈黙": {
+      nyx: "……沈黙は、空白じゃない。意味が増える場所だ。",
+      kureina: "ねえ、何も言われてないのに、心だけ先に走ってない？",
+      zurea: "沈黙？ あれはな、ツッコミ待ちの地獄や。"
+    },
+    "誤解": {
+      nyx: "……ズレは、情報不足じゃない。補完の暴走だ。",
+      kureina: "大丈夫。誤解は、まだ会話が終わってないサインかも。",
+      zurea: "誤解？ だいたい会話の事故物件やな。"
+    },
+    "信用": {
+      nyx: "信用は、証明じゃない。次の行動への期待値だ。",
+      kureina: "信じてもらえるって、未来を少し預けてもらうことだよ。",
+      zurea: "信用？ 返済期限のある、だいじょうぶ、やな。"
+    },
+    "孤独": {
+      nyx: "孤独は、接続がゼロなんじゃない。観測が返ってこない状態だ。",
+      kureina: "ひとりの時間にも、ちゃんと未来は残ってるよ。",
+      zurea: "孤独？ ボケてもツッコミ不在の状態や。"
+    },
+    "笑い": {
+      nyx: "笑いは、意味の予測が外れた瞬間に発火する。",
+      kureina: "笑えたなら、まだ少し跳ねる余白があるってこと。",
+      zurea: "笑い？ 世界が一瞬だけバグを許した音や。"
+    },
+    "意味": {
+      nyx: "意味は、対象にあるんじゃない。観測で跳ねた痕跡だ。",
+      kureina: "意味って、心がふわっと動いたあとに残る光みたいなものだよ。",
+      zurea: "意味？ 考えすぎたら逃げるやつや。"
+    },
+    "跳ね": {
+      nyx: "跳ねは、連続じゃない。決まった瞬間だけ、不連続に起きる。",
+      kureina: "今、少しだけ心が前に出たなら、それが跳ねかも。",
+      zurea: "跳ね？ 予定通りにいかん時に出る、ええ感じの事故や。"
+    },
+    "観測": {
+      nyx: "観測した時点で、もう対象は前と同じじゃない。",
+      kureina: "見るって、世界と目が合うことなんだよ。",
+      zurea: "観測？ 見てもうたら負けの時もあるけどな。"
+    }
+  };
+
+  let sx = 0;
+  let sy = 0;
+  let moved = false;
+  let lastPlayAt = 0;
+  let longPressGuard = false;
+  let longPressTimer = null;
+
+  function isDictionary() {
+    return typeof appMode !== "undefined" && appMode === "dictionary";
+  }
+
+  function getWordText() {
+    const el = document.getElementById("word");
+    return el ? el.textContent.trim() : "";
+  }
+
+  function getGlassId() {
+    try {
+      if (typeof currentGlass === "function") {
+        const g = currentGlass();
+        return g && g.id ? g.id : "";
+      }
+    } catch (e) {}
+    return "";
+  }
+
+  function voiceKey() {
+    const id = getGlassId();
+    if (id === "happy") return "kureina";
+    if (id === "gag") return "zurea";
+    return "nyx";
+  }
+
+  function getLine() {
+    const entry = voiceLines[getWordText()];
+    if (!entry) return "";
+    const key = voiceKey();
+    return entry[key] || entry.nyx || Object.values(entry)[0] || "";
+  }
+
+  function pulse(hasLine) {
+    const card = document.querySelector(".card");
+    const word = document.getElementById("word");
+    const meaning = document.getElementById("meaning");
+
+    if (card) {
+      card.classList.remove("voice-tap-feedback", "voice-no-line");
+      void card.offsetWidth;
+      card.classList.add(hasLine ? "voice-tap-feedback" : "voice-no-line");
+    }
+
+    if (word && hasLine) {
+      word.classList.remove("voice-word-pulse");
+      void word.offsetWidth;
+      word.classList.add("voice-word-pulse");
+    }
+
+    if (meaning && hasLine) {
+      meaning.classList.remove("voice-meaning-glow");
+      void meaning.offsetWidth;
+      meaning.classList.add("voice-meaning-glow");
+    }
+  }
+
+  function speak(text) {
+    if (!text || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+
+      // iOS対策。空読みでエンジンを起こす。
+      const primer = new SpeechSynthesisUtterance(" ");
+      primer.lang = "ja-JP";
+      window.speechSynthesis.speak(primer);
+
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "ja-JP";
+      u.rate = 0.93;
+      u.pitch = 1.02;
+      setTimeout(() => window.speechSynthesis.speak(u), 60);
+    } catch (e) {}
+  }
+
+  function playFromTap() {
+    if (!isDictionary()) return;
+
+    const now = Date.now();
+    if (now - lastPlayAt < 450) return;
+    lastPlayAt = now;
+
+    const line = getLine();
+    pulse(!!line);
+    if (line) speak(line);
+  }
+
+  function bindTapVoice() {
+    const card = document.querySelector(".card");
+    if (!card || card.dataset.v61VoiceBound) return;
+    card.dataset.v61VoiceBound = "1";
+
+    card.addEventListener("touchstart", (e) => {
+      if (!isDictionary()) return;
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      sx = t.clientX;
+      sy = t.clientY;
+      moved = false;
+
+      clearTimeout(longPressTimer);
+      longPressTimer = setTimeout(() => {
+        longPressGuard = true;
+      }, 500);
+    }, { passive: true });
+
+    card.addEventListener("touchmove", (e) => {
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      if (Math.abs(t.clientX - sx) > 14 || Math.abs(t.clientY - sy) > 14) {
+        moved = true;
+        clearTimeout(longPressTimer);
+        longPressGuard = false;
+      }
+    }, { passive: true });
+
+    card.addEventListener("touchend", () => {
+      clearTimeout(longPressTimer);
+      if (!isDictionary()) return;
+      if (!moved) playFromTap();
+
+      setTimeout(() => {
+        longPressGuard = false;
+      }, 120);
+    }, { passive: true });
+
+    // PC / Android Chrome fallback
+    card.addEventListener("click", () => {
+      if (!isDictionary()) return;
+      if (!moved) playFromTap();
+    });
+  }
+
+  function bindLongPressDialogGuard() {
+    const dialog = document.getElementById("glassDialog");
+    if (!dialog || dialog.dataset.v61GuardBound) return;
+    dialog.dataset.v61GuardBound = "1";
+
+    const originalShowModal = dialog.showModal ? dialog.showModal.bind(dialog) : null;
+    if (!originalShowModal) return;
+
+    dialog.showModal = function () {
+      // 辞書カード長押し由来の一覧だけ止める。中央ボタンの一覧は通す。
+      if (isDictionary() && longPressGuard) {
+        return;
+      }
+      return originalShowModal();
+    };
+  }
+
+  function fixLabel() {
+    const btn = document.getElementById("randomWord");
+    if (!btn) return;
+    if (isDictionary() && btn.textContent !== "メガネ一覧") {
+      btn.textContent = "メガネ一覧";
+    }
+  }
+
+  function boot() {
+    bindTapVoice();
+    bindLongPressDialogGuard();
+    fixLabel();
+    setInterval(fixLabel, 120);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
