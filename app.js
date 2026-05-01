@@ -487,6 +487,7 @@ const els = {
   mangaView: document.getElementById("mangaView"),
   mangaPage: document.getElementById("mangaPage"),
   mangaImage: document.getElementById("mangaImage"),
+  mangaIncomingImage: document.getElementById("mangaIncomingImage"),
   mangaTitle: document.getElementById("mangaTitle"),
   mangaCaption: document.getElementById("mangaCaption"),
   mangaText: document.getElementById("mangaText"),
@@ -1796,4 +1797,194 @@ init();
     reader.addEventListener("pointerup", end);
     reader.addEventListener("pointercancel", end);
   }
+})();
+
+
+/* v50: normal page reader enhanced swipe */
+(function () {
+  function q(id) { return document.getElementById(id); }
+
+  function story() {
+    try {
+      return getCurrentMangaStory();
+    } catch (e) {
+      return mangaStories[mangaStoryIndex] || mangaStories[0];
+    }
+  }
+
+  function imagePages() {
+    const s = story();
+    if (!s || !Array.isArray(s.pages)) return [];
+    return s.pages.map(p => p && p.image).filter(Boolean);
+  }
+
+  function setIncomingImage(dir) {
+    const incoming = q("mangaIncomingImage");
+    if (!incoming) return false;
+
+    const pages = imagePages();
+    const nextIndex = mangaPageIndex + dir;
+
+    if (nextIndex < 0 || nextIndex >= pages.length) {
+      incoming.hidden = true;
+      return false;
+    }
+
+    incoming.src = pages[nextIndex];
+    incoming.hidden = false;
+    incoming.style.transition = "none";
+    incoming.style.transform = dir > 0 ? "translateX(85%)" : "translateX(-85%)";
+    void incoming.offsetWidth;
+    incoming.style.transition = "transform .32s cubic-bezier(.22,.9,.3,1)";
+    return true;
+  }
+
+  function resetNormalSlide() {
+    const cur = q("mangaImage");
+    const incoming = q("mangaIncomingImage");
+    if (!cur || !incoming) return;
+
+    cur.style.transition = "none";
+    cur.style.transform = "translateX(0)";
+    incoming.style.transition = "none";
+    incoming.style.transform = "translateX(85%)";
+    incoming.hidden = true;
+
+    void cur.offsetWidth;
+
+    cur.style.transition = "transform .32s cubic-bezier(.22,.9,.3,1)";
+    incoming.style.transition = "transform .32s cubic-bezier(.22,.9,.3,1)";
+  }
+
+  function bindNormalSlide() {
+    const page = q("mangaPage");
+    const cur = q("mangaImage");
+    const incoming = q("mangaIncomingImage");
+    if (!page || !cur || !incoming || page.dataset.v50) return;
+
+    page.dataset.v50 = "1";
+
+    let sx = 0;
+    let sy = 0;
+    let dx = 0;
+    let dragging = false;
+    let direction = 0;
+
+    function isActive() {
+      return appMode === "manga" &&
+        mangaState === "reader" &&
+        mangaReadMode === "page" &&
+        page.classList.contains("image-page");
+    }
+
+    function start(x, y, e) {
+      if (!isActive()) return;
+      sx = x;
+      sy = y;
+      dx = 0;
+      direction = 0;
+      dragging = true;
+
+      cur.style.transition = "none";
+      incoming.style.transition = "none";
+
+      if (e) {
+        e.stopPropagation();
+      }
+    }
+
+    function move(x, y, e) {
+      if (!dragging || !isActive()) return;
+
+      dx = x - sx;
+      const dy = y - sy;
+
+      if (Math.abs(dx) < Math.abs(dy)) return;
+
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      const dir = dx < 0 ? 1 : -1;
+      if (direction !== dir) {
+        direction = dir;
+        if (!setIncomingImage(dir)) {
+          cur.style.transform = `translateX(${dx * 0.18}px)`;
+          return;
+        }
+      }
+
+      const moveX = dx * 0.9;
+      cur.style.transform = `translateX(${moveX}px)`;
+      incoming.style.transform = direction > 0
+        ? `translateX(calc(85% + ${moveX}px))`
+        : `translateX(calc(-85% + ${moveX}px))`;
+    }
+
+    function end(x, y, e) {
+      if (!dragging || !isActive()) return;
+
+      dragging = false;
+      dx = x - sx;
+      const dy = y - sy;
+
+      cur.style.transition = "transform .32s cubic-bezier(.22,.9,.3,1)";
+      incoming.style.transition = "transform .32s cubic-bezier(.22,.9,.3,1)";
+
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      if (Math.abs(dx) > 72 && Math.abs(dx) > Math.abs(dy) * 1.05 && direction !== 0) {
+        const pages = imagePages();
+        const target = mangaPageIndex + direction;
+
+        if (target < 0 || target >= pages.length) {
+          cur.style.transform = "translateX(0)";
+          incoming.style.transform = direction > 0 ? "translateX(85%)" : "translateX(-85%)";
+          return;
+        }
+
+        cur.style.transform = direction > 0 ? "translateX(-100%)" : "translateX(100%)";
+        incoming.style.transform = "translateX(0)";
+
+        setTimeout(() => {
+          moveMangaPage(direction);
+          resetNormalSlide();
+        }, 320);
+      } else {
+        cur.style.transform = "translateX(0)";
+        incoming.style.transform = direction > 0 ? "translateX(85%)" : "translateX(-85%)";
+      }
+    }
+
+    page.addEventListener("pointerdown", e => start(e.clientX, e.clientY, e), true);
+    page.addEventListener("pointermove", e => move(e.clientX, e.clientY, e), true);
+    page.addEventListener("pointerup", e => end(e.clientX, e.clientY, e), true);
+    page.addEventListener("pointercancel", () => {
+      dragging = false;
+      resetNormalSlide();
+    }, true);
+
+    page.addEventListener("touchstart", e => {
+      const t = e.changedTouches && e.changedTouches[0];
+      if (t) start(t.clientX, t.clientY, e);
+    }, { passive: false, capture: true });
+
+    page.addEventListener("touchmove", e => {
+      const t = e.changedTouches && e.changedTouches[0];
+      if (t) move(t.clientX, t.clientY, e);
+    }, { passive: false, capture: true });
+
+    page.addEventListener("touchend", e => {
+      const t = e.changedTouches && e.changedTouches[0];
+      if (t) end(t.clientX, t.clientY, e);
+    }, { passive: false, capture: true });
+  }
+
+  bindNormalSlide();
+  window.addEventListener("load", bindNormalSlide);
+  document.addEventListener("DOMContentLoaded", bindNormalSlide);
 })();

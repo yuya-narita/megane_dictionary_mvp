@@ -1779,3 +1779,35 @@ body.mode-manga.manga-choice-state .manga-open-fullscreen {
 .fullscreen-layer {
   transition: transform .32s cubic-bezier(.22,.9,.3,1);
 }
+
+
+/* v50: 通常ページ読みも2枚レイヤー式スライド */
+body.mode-manga.manga-reader-state.reader-page .manga-page.image-page {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+
+body.mode-manga.manga-reader-state.reader-page .manga-current-image,
+body.mode-manga.manga-reader-state.reader-page .manga-incoming-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 18px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.45);
+  background: rgba(255,255,255,.03);
+  transition: transform .32s cubic-bezier(.22,.9,.3,1);
+  will-change: transform;
+}
+
+body.mode-manga.manga-reader-state.reader-page .manga-current-image {
+  transform: translateX(0);
+  z-index: 2;
+}
+
+body.mode-manga.manga-reader-state.reader-page .manga-incoming-image {
+  transform: translateX(85%);
+  z-index: 1;
+}
