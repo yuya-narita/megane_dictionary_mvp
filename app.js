@@ -257,7 +257,7 @@ function render(animationClass = "flash") {
   els.translation.textContent = w.translations[g.id] || "このメガネでは、まだ翻訳されていない。";
   els.counter.textContent = `${wordIndex + 1} / ${data.words.length}　・　${glassIndex + 1} / ${data.glasses.length}`;
 
-  els.card.classList.remove("flash", "slide-left", "slide-right", "slide-up", "slide-down");
+  els.card.classList.remove("flash", "slide-left", "slide-right", "slide-up", "slide-down", "peek-left", "peek-right", "peek-up", "peek-down");
   void els.card.offsetWidth;
   els.card.classList.add(animationClass);
 }
@@ -309,8 +309,7 @@ function bind() {
     els.card.setPointerCapture(e.pointerId);
     pressTimer = setTimeout(() => {
       isDragging = false;
-      els.card.classList.remove("dragging");
-      els.card.style.transform = "";
+      els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
       els.dialog.showModal();
     }, 550);
   });
@@ -327,10 +326,15 @@ function bind() {
       els.card.classList.add("dragging");
     }
 
-    const followX = Math.max(-48, Math.min(48, dx * 0.22));
-    const followY = Math.max(-34, Math.min(34, dy * 0.16));
-    const scale = 1 - Math.min(distance, 140) / 2800;
-    els.card.style.transform = `translate(${followX}px, ${followY}px) scale(${scale})`;
+    els.card.classList.remove("peek-left", "peek-right", "peek-up", "peek-down");
+
+    if (distance > 24) {
+      if (Math.abs(dx) > Math.abs(dy)) {
+        els.card.classList.add(dx < 0 ? "peek-left" : "peek-right");
+      } else {
+        els.card.classList.add(dy < 0 ? "peek-up" : "peek-down");
+      }
+    }
   });
 
   els.card.addEventListener("pointerup", (e) => {
@@ -342,8 +346,7 @@ function bind() {
     const dy = e.clientY - startY;
     const distance = Math.max(Math.abs(dx), Math.abs(dy));
 
-    els.card.classList.remove("dragging");
-    els.card.style.transform = "";
+    els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
 
     if (distance < 44) {
       render("flash");
@@ -360,8 +363,7 @@ function bind() {
   els.card.addEventListener("pointercancel", () => {
     clearTimeout(pressTimer);
     isDragging = false;
-    els.card.classList.remove("dragging");
-    els.card.style.transform = "";
+    els.card.classList.remove("dragging", "peek-left", "peek-right", "peek-up", "peek-down");
   });
 
   window.addEventListener("keydown", (e) => {
