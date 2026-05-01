@@ -499,17 +499,26 @@ function bind() {
       fsMoved = false;
     });
 
+    let fsLastTap = 0;
+
     els.fullscreenOverlay.addEventListener("pointerup", (e) => {
       const dx = e.clientX - fsStartX;
       const dy = e.clientY - fsStartY;
       const distance = Math.max(Math.abs(dx), Math.abs(dy));
 
-      if (distance < 28) {
-        closeFullscreenCard();
-        return;
-      }
+      const now = Date.now();
 
-      fsMoved = true;
+      // ダブルタップで閉じる
+      if (distance < 20) {
+        if (now - fsLastTap < 300) {
+          closeFullscreenCard();
+          fsLastTap = 0;
+          return;
+        } else {
+          fsLastTap = now;
+          return;
+        }
+      }
 
       if (Math.abs(dy) > Math.abs(dx)) {
         moveFullscreenCard(dy < 0 ? 1 : -1);
