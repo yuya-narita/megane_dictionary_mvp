@@ -483,6 +483,7 @@ const els = {
   mangaAudio: document.getElementById("mangaAudio"),
   mangaFullscreenOverlay: document.getElementById("mangaFullscreenOverlay"),
   mangaFullscreenImage: document.getElementById("mangaFullscreenImage"),
+  mangaFullscreenWebtoon: document.getElementById("mangaFullscreenWebtoon"),
   mangaView: document.getElementById("mangaView"),
   mangaPage: document.getElementById("mangaPage"),
   mangaImage: document.getElementById("mangaImage"),
@@ -1517,4 +1518,143 @@ init();
   bindFsV42();
   window.addEventListener("load", bindFsV42);
   document.addEventListener("DOMContentLoaded", bindFsV42);
+})();
+
+
+/* v44: fullscreen reader logic */
+(function () {
+  function q(id) { return document.getElementById(id); }
+
+  function story() {
+    try {
+      return getCurrentMangaStory();
+    } catch (e) {
+      return mangaStories[mangaStoryIndex] || mangaStories[0];
+    }
+  }
+
+  function currentPageImage() {
+    const s = story();
+    if (!s || !s.pages) return "";
+    const p = s.pages[mangaPageIndex];
+    return p && p.image ? p.image : "";
+  }
+
+  function webtoonImages() {
+    const s = story();
+    if (!s) return [];
+    if (Array.isArray(s.webtoon) && s.webtoon.length) return s.webtoon;
+    if (Array.isArray(s.pages)) return s.pages.map(p => p.image).filter(Boolean);
+    return [];
+  }
+
+  function refreshFullscreenPageImage() {
+    const image = q("mangaFullscreenImage");
+    if (!image) return;
+    const src = currentPageImage();
+    if (!src) return;
+    image.src = src;
+    image.alt = "manga fullscreen";
+  }
+
+  window.openMangaFullscreenFromButton = function () {
+    const overlay = q("mangaFullscreenOverlay");
+    const image = q("mangaFullscreenImage");
+    const webtoon = q("mangaFullscreenWebtoon");
+    if (!overlay || !image || !webtoon) return;
+
+    overlay.hidden = false;
+
+    if (mangaReadMode === "webtoon") {
+      image.hidden = true;
+      webtoon.hidden = false;
+      webtoon.innerHTML = webtoonImages()
+        .map((src, i) => `<img src="${src}" alt="webtoon ${i + 1}">`)
+        .join("");
+      webtoon.scrollTop = 0;
+    } else {
+      webtoon.hidden = true;
+      image.hidden = false;
+      refreshFullscreenPageImage();
+    }
+  };
+
+  window.closeMangaFullscreen = function () {
+    const overlay = q("mangaFullscreenOverlay");
+    if (overlay) overlay.hidden = true;
+  };
+
+  function bindV44() {
+    const openBtn = q("mangaOpenFullscreenButton");
+    const closeBtn = q("mangaFullscreenClose");
+    const image = q("mangaFullscreenImage");
+
+    if (openBtn && !openBtn.dataset.v44) {
+      openBtn.dataset.v44 = "1";
+      ["click", "touchend", "pointerup"].forEach(type => {
+        openBtn.addEventListener(type, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.openMangaFullscreenFromButton();
+        }, { passive: false });
+      });
+    }
+
+    if (closeBtn && !closeBtn.dataset.v44) {
+      closeBtn.dataset.v44 = "1";
+      ["click", "touchend", "pointerup"].forEach(type => {
+        closeBtn.addEventListener(type, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.closeMangaFullscreen();
+        }, { passive: false });
+      });
+    }
+
+    if (image && !image.dataset.v44) {
+      image.dataset.v44 = "1";
+      let sx = 0, sy = 0;
+
+      image.addEventListener("touchstart", e => {
+        const t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+        sx = t.clientX;
+        sy = t.clientY;
+      }, { passive: true });
+
+      image.addEventListener("touchend", e => {
+        const t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+        const dx = t.clientX - sx;
+        const dy = t.clientY - sy;
+
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.1 && mangaReadMode === "page") {
+          e.preventDefault();
+          e.stopPropagation();
+          moveMangaPage(dx < 0 ? 1 : -1);
+          setTimeout(refreshFullscreenPageImage, 30);
+        }
+      }, { passive: false });
+
+      image.addEventListener("pointerdown", e => {
+        sx = e.clientX;
+        sy = e.clientY;
+      });
+
+      image.addEventListener("pointerup", e => {
+        const dx = e.clientX - sx;
+        const dy = e.clientY - sy;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.1 && mangaReadMode === "page") {
+          e.preventDefault();
+          e.stopPropagation();
+          moveMangaPage(dx < 0 ? 1 : -1);
+          setTimeout(refreshFullscreenPageImage, 30);
+        }
+      });
+    }
+  }
+
+  bindV44();
+  window.addEventListener("load", bindV44);
+  document.addEventListener("DOMContentLoaded", bindV44);
 })();
