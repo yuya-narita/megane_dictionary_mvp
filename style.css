@@ -2159,3 +2159,20 @@ body.mode-manga #favoriteToggle{display:none!important}
 .favorite-item.swiping-right {
   background: rgba(255,255,255,.055) !important;
 }
+
+/* v84: メガネごとの背景テーマ */
+body[data-glass="default"] {
+  background: #0a0a0f;
+}
+
+body[data-glass="hacker"] {
+  background: radial-gradient(circle at center, #0f0f1a, #000);
+}
+
+body[data-glass="funny"] {
+  background: linear-gradient(135deg, #fff6c9, #ffc9f9);
+}
+
+body[data-glass="logic"] {
+  background: linear-gradient(180deg, #2a2a2a, #0f0f0f);
+}
