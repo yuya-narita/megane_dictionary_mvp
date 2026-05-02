@@ -2146,3 +2146,10 @@ body.mode-manga #favoriteToggle{display:none!important}
     filter: brightness(1);
   }
 }
+
+
+/* v82: 右スワイプシェア安定化 */
+.favorite-item.share-resetting {
+  transition: transform .28s cubic-bezier(.2,1.35,.4,1), filter .28s;
+  transform: translate3d(0,0,0) !important;
+}
