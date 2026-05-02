@@ -2540,3 +2540,61 @@ init();
   }
 
 })();
+
+/* v63: resume last state */
+
+(function(){
+
+  function saveState(){
+    try{
+      if(typeof currentGlass === "function"){
+        const g = currentGlass();
+        if(g && g.id){
+          localStorage.setItem("lastGlass", g.id);
+        }
+      }
+
+      const wordEl = document.getElementById("word");
+      if(wordEl){
+        localStorage.setItem("lastWord", wordEl.textContent.trim());
+      }
+    }catch(e){}
+  }
+
+  function restoreState(){
+    try{
+      const lastGlass = localStorage.getItem("lastGlass");
+      const lastWord = localStorage.getItem("lastWord");
+
+      if(lastGlass && typeof setGlassById === "function"){
+        setGlassById(lastGlass);
+      }
+
+      if(lastWord && typeof setWord === "function"){
+        setWord(lastWord);
+      }
+    }catch(e){}
+  }
+
+  function hookRender(){
+    if(typeof render !== "function") return;
+
+    const orig = render;
+    window.render = function(){
+      orig.apply(this, arguments);
+      saveState();
+    }
+  }
+
+  function boot(){
+    restoreState();
+    hookRender();
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+
+})();
