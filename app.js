@@ -4209,6 +4209,7 @@ init();
       lp = setTimeout(() => {
         if (dragging && !moved) {
           opened = true;
+          if (navigator.vibrate) { navigator.vibrate(18); }
           el.classList.add("longpress-ready");
           setTimeout(() => jump(item), 80);
         }
