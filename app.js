@@ -3726,3 +3726,238 @@ init();
     bootV75();
   }
 })();
+
+
+/* v76: PWA standalone swipe fix for favorites */
+(function () {
+  const FAV_KEY = "meganeFavoritesV65";
+
+  function loadFavsV76() {
+    try {
+      return JSON.parse(localStorage.getItem(FAV_KEY) || "[]");
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveFavsV76(list) {
+    try {
+      localStorage.setItem(FAV_KEY, JSON.stringify(list));
+    } catch (e) {}
+  }
+
+  function escapeHtmlV76(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[ch]));
+  }
+
+  function removeFavoriteV76(item) {
+    if (!item) return;
+    const list = loadFavsV76().filter(f => f.key !== item.key);
+    saveFavsV76(list);
+    try {
+      if (typeof updateFavoriteToggle === "function") updateFavoriteToggle();
+    } catch (e) {}
+  }
+
+  async function shareFavoriteV76(item) {
+    if (!item) return;
+    const text = `${item.title || ""}｜${item.meta || ""}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "MEGANE DICTIONARY", text });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        alert("コピーしました");
+      } else {
+        prompt("コピーしてください", text);
+      }
+    } catch (e) {}
+  }
+
+  function jumpToDictFavoriteV76(item) {
+    try {
+      appMode = "dictionary";
+      if (typeof data !== "undefined") {
+        const wi = data.words.findIndex(w => w.word === item.word);
+        const gi = data.glasses.findIndex(g => g.id === item.glassId || g.name === item.glassName);
+        if (wi >= 0 && typeof wordIndex !== "undefined") wordIndex = wi;
+        if (gi >= 0 && typeof glassIndex !== "undefined") glassIndex = gi;
+      }
+      if (typeof render === "function") render("flash");
+    } catch (e) {}
+
+    const dialog = document.getElementById("favoriteDialog");
+    if (dialog && dialog.open) dialog.close();
+  }
+
+  function enableSwipeFavoriteV76(el, item) {
+    if (!el || !item || el.dataset.v76SwipeBound) return;
+    el.dataset.v76SwipeBound = "1";
+
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let dragging = false;
+    let moved = false;
+    let activePointerId = null;
+
+    const threshold = () => window.innerWidth * 0.5;
+
+    function start(x, y, pointerId) {
+      startX = x;
+      startY = y;
+      currentX = 0;
+      dragging = true;
+      moved = false;
+      activePointerId = pointerId ?? null;
+
+      el.style.transition = "none";
+      el.style.opacity = "1";
+      el.classList.remove("swiping-left", "swiping-right");
+    }
+
+    function move(x, y, e) {
+      if (!dragging) return;
+
+      const dx = x - startX;
+      const dy = y - startY;
+
+      // 縦スクロール優先。横が明確になったら横スワイプへ。
+      if (!moved) {
+        if (Math.abs(dx) < 12) return;
+        if (Math.abs(dy) > Math.abs(dx) * 1.15) return;
+        moved = true;
+      }
+
+      currentX = dx;
+
+      if (e && e.cancelable) e.preventDefault();
+
+      el.style.transform = `translate3d(${currentX}px,0,0)`;
+      el.classList.toggle("swiping-left", currentX < 0);
+      el.classList.toggle("swiping-right", currentX > 0);
+    }
+
+    function end(e) {
+      if (!dragging) return;
+      dragging = false;
+
+      el.classList.remove("swiping-left", "swiping-right");
+
+      if (!moved || Math.abs(currentX) < 10) {
+        el.style.transition = "transform .22s ease";
+        el.style.transform = "translate3d(0,0,0)";
+        jumpToDictFavoriteV76(item);
+        currentX = 0;
+        return;
+      }
+
+      if (currentX < -threshold()) {
+        el.style.transition = "transform .22s ease, opacity .22s ease";
+        el.style.transform = "translate3d(-110%,0,0)";
+        el.style.opacity = "0";
+        setTimeout(() => {
+          removeFavoriteV76(item);
+          window.renderDictFavoriteList();
+        }, 220);
+      } else if (currentX > threshold()) {
+        shareFavoriteV76(item);
+        el.style.transition = "transform .36s cubic-bezier(.2,1.55,.5,1)";
+        el.style.transform = "translate3d(0,0,0)";
+      } else {
+        el.style.transition = "transform .36s cubic-bezier(.2,1.55,.5,1)";
+        el.style.transform = "translate3d(0,0,0)";
+      }
+
+      currentX = 0;
+      activePointerId = null;
+    }
+
+    // Pointer Events: PWA standaloneで安定しやすい
+    el.addEventListener("pointerdown", e => {
+      activePointerId = e.pointerId;
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch (_) {}
+      start(e.clientX, e.clientY, e.pointerId);
+    });
+
+    el.addEventListener("pointermove", e => {
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+      move(e.clientX, e.clientY, e);
+    });
+
+    el.addEventListener("pointerup", e => {
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+      try {
+        el.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+      end(e);
+    });
+
+    el.addEventListener("pointercancel", e => {
+      try {
+        el.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+      end(e);
+    });
+  }
+
+  window.renderDictFavoriteList = function renderDictFavoriteListV76() {
+    const listEl = document.getElementById("favoriteList");
+    if (!listEl) return;
+
+    const list = loadFavsV76().filter(f => f.type === "dict");
+
+    if (!list.length) {
+      listEl.innerHTML = `<div class="favorite-empty">まだお気に入りはありません</div>`;
+      return;
+    }
+
+    // buttonではなくdiv化。iOS PWAでタッチジェスチャーが安定しやすい。
+    listEl.innerHTML = list.map(item => `
+      <div class="favorite-item" role="button" tabindex="0" data-key="${escapeHtmlV76(item.key)}">
+        <span class="favorite-item-title">${escapeHtmlV76(item.title || "Untitled")}</span>
+        <span class="favorite-item-meta">辞書｜${escapeHtmlV76(item.meta || "")}</span>
+      </div>
+    `).join("");
+
+    listEl.querySelectorAll(".favorite-item").forEach(el => {
+      const item = list.find(f => f.key === el.dataset.key);
+      enableSwipeFavoriteV76(el, item);
+    });
+  };
+
+  function bindFavoriteOpenV76() {
+    const favBar = document.getElementById("randomWord");
+    const dialog = document.getElementById("favoriteDialog");
+
+    if (favBar && !favBar.dataset.v76OpenBound) {
+      favBar.dataset.v76OpenBound = "1";
+      favBar.addEventListener("click", e => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        window.renderDictFavoriteList();
+        if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+      }, true);
+    }
+  }
+
+  function bootV76() {
+    bindFavoriteOpenV76();
+    window.renderDictFavoriteList();
+    setInterval(bindFavoriteOpenV76, 600);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootV76);
+  } else {
+    bootV76();
+  }
+})();
