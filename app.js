@@ -4197,7 +4197,7 @@ init();
     function clearLP() {
       clearTimeout(lp);
       lp = null;
-      el.classList.remove("longpress-ready");
+      el.classList.remove("longpress-ready", "longpress-charging");
     }
 
     function start(x, y, pointerId) {
@@ -4206,10 +4206,12 @@ init();
       el.style.opacity = "1";
       el.classList.remove("swiping-left", "swiping-right");
       clearLP();
+      el.classList.add("longpress-charging");
       lp = setTimeout(() => {
         if (dragging && !moved) {
           opened = true;
           if (navigator.vibrate) { navigator.vibrate(18); }
+          el.classList.remove("longpress-charging");
           el.classList.add("longpress-ready");
           setTimeout(() => jump(item), 80);
         }
