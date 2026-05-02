@@ -4564,3 +4564,214 @@ init();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();
+
+
+/* v83: stable favorite swipe - left remove only */
+(function () {
+  const FAV_KEY = "meganeFavoritesV65";
+
+  const load = () => {
+    try { return JSON.parse(localStorage.getItem(FAV_KEY) || "[]"); }
+    catch(e) { return []; }
+  };
+  const save = (list) => {
+    try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch(e) {}
+  };
+  const esc = (s) => String(s).replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[ch]));
+
+  function jump(item) {
+    try {
+      appMode = "dictionary";
+      if (typeof data !== "undefined") {
+        const wi = data.words.findIndex(w => w.word === item.word);
+        const gi = data.glasses.findIndex(g => g.id === item.glassId || g.name === item.glassName);
+        if (wi >= 0 && typeof wordIndex !== "undefined") wordIndex = wi;
+        if (gi >= 0 && typeof glassIndex !== "undefined") glassIndex = gi;
+      }
+      if (typeof render === "function") render("flash");
+    } catch(e) {}
+    const dialog = document.getElementById("favoriteDialog");
+    if (dialog && dialog.open) dialog.close();
+  }
+
+  function remove(item) {
+    save(load().filter(f => f.key !== item.key));
+    try { if (typeof updateFavoriteToggle === "function") updateFavoriteToggle(); } catch(e) {}
+  }
+
+  function bindSwipe(el, item) {
+    if (!el || !item || el.dataset.v83Bound) return;
+    el.dataset.v83Bound = "1";
+
+    let sx = 0, sy = 0, dx = 0;
+    let dragging = false, moved = false, pid = null;
+    let lp = null, opened = false;
+
+    const threshold = () => window.innerWidth * 0.5;
+
+    function clearLP() {
+      clearTimeout(lp);
+      lp = null;
+      el.classList.remove("longpress-ready", "longpress-charging");
+    }
+
+    function reset() {
+      el.classList.remove("swiping-left", "swiping-right", "longpress-ready", "longpress-charging");
+      el.style.transition = "transform .34s cubic-bezier(.2,1.55,.5,1), opacity .22s ease";
+      el.style.transform = "translate3d(0,0,0)";
+      el.style.opacity = "1";
+    }
+
+    function start(x, y, pointerId) {
+      sx = x; sy = y; dx = 0;
+      dragging = true; moved = false; opened = false; pid = pointerId ?? null;
+
+      el.classList.remove("swiping-left", "swiping-right", "longpress-ready", "longpress-charging");
+      el.style.transition = "none";
+      el.style.opacity = "1";
+      el.style.transform = "translate3d(0,0,0)";
+
+      clearLP();
+      el.classList.add("longpress-charging");
+
+      lp = setTimeout(() => {
+        if (dragging && !moved) {
+          opened = true;
+          if (navigator.vibrate) navigator.vibrate(18);
+          el.classList.remove("longpress-charging");
+          el.classList.add("longpress-ready");
+          setTimeout(() => jump(item), 90);
+        }
+      }, 620);
+    }
+
+    function move(x, y, e) {
+      if (!dragging || opened) return;
+
+      const ndx = x - sx;
+      const dy = y - sy;
+
+      if (!moved) {
+        if (Math.abs(dy) > 8) clearLP();
+        if (Math.abs(ndx) < 12) return;
+        if (Math.abs(dy) > Math.abs(ndx) * 1.15) return;
+
+        moved = true;
+        clearLP();
+      }
+
+      dx = ndx;
+
+      // v83: 右方向は軽く抵抗をかけて戻すだけ。共有はしない。
+      const visualX = dx > 0 ? dx * 0.22 : dx;
+
+      if (e && e.cancelable) e.preventDefault();
+
+      el.style.transition = "none";
+      el.style.transform = `translate3d(${visualX}px,0,0)`;
+      el.classList.toggle("swiping-left", visualX < 0);
+      el.classList.toggle("swiping-right", false);
+    }
+
+    function end(e) {
+      if (!dragging) return;
+
+      dragging = false;
+      clearLP();
+
+      if (opened || !moved || Math.abs(dx) < 10) {
+        reset();
+        dx = 0; pid = null;
+        return;
+      }
+
+      if (dx < -threshold()) {
+        el.style.transition = "transform .22s ease, opacity .22s ease";
+        el.style.transform = "translate3d(-110%,0,0)";
+        el.style.opacity = "0";
+        setTimeout(() => {
+          remove(item);
+          window.renderDictFavoriteList();
+        }, 220);
+      } else {
+        // 右スワイプも50%未満の左スワイプも、全部バイン戻り
+        reset();
+      }
+
+      dx = 0; pid = null;
+    }
+
+    el.addEventListener("pointerdown", e => {
+      pid = e.pointerId;
+      try { el.setPointerCapture(e.pointerId); } catch(_) {}
+      start(e.clientX, e.clientY, e.pointerId);
+    });
+
+    el.addEventListener("pointermove", e => {
+      if (pid !== null && e.pointerId !== pid) return;
+      move(e.clientX, e.clientY, e);
+    });
+
+    el.addEventListener("pointerup", e => {
+      if (pid !== null && e.pointerId !== pid) return;
+      try { el.releasePointerCapture(e.pointerId); } catch(_) {}
+      end(e);
+    });
+
+    el.addEventListener("pointercancel", e => {
+      clearLP();
+      try { el.releasePointerCapture(e.pointerId); } catch(_) {}
+      reset();
+      dragging = false; pid = null; dx = 0;
+    });
+  }
+
+  window.renderDictFavoriteList = function () {
+    const listEl = document.getElementById("favoriteList");
+    if (!listEl) return;
+
+    const list = load().filter(f => f.type === "dict");
+
+    if (!list.length) {
+      listEl.innerHTML = `<div class="favorite-empty">まだお気に入りはありません</div>`;
+      return;
+    }
+
+    listEl.innerHTML = list.map(item => `
+      <div class="favorite-item" role="button" tabindex="0" data-key="${esc(item.key)}">
+        <span class="favorite-item-title">${esc(item.title || "Untitled")}</span>
+        <span class="favorite-item-meta">辞書｜${esc(item.meta || "")}</span>
+      </div>
+    `).join("");
+
+    listEl.querySelectorAll(".favorite-item").forEach(el => {
+      const item = list.find(f => f.key === el.dataset.key);
+      bindSwipe(el, item);
+    });
+  };
+
+  function bindOpen() {
+    const favBar = document.getElementById("randomWord");
+    const dialog = document.getElementById("favoriteDialog");
+    if (!favBar || favBar.dataset.v83OpenBound) return;
+    favBar.dataset.v83OpenBound = "1";
+
+    favBar.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      window.renderDictFavoriteList();
+      if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+    }, true);
+  }
+
+  function boot() {
+    bindOpen();
+    window.renderDictFavoriteList();
+    setInterval(bindOpen, 600);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();

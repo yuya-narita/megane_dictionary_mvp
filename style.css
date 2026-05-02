@@ -2153,3 +2153,9 @@ body.mode-manga #favoriteToggle{display:none!important}
   transition: transform .28s cubic-bezier(.2,1.35,.4,1), filter .28s;
   transform: translate3d(0,0,0) !important;
 }
+
+
+/* v83: お気に入り一覧は左スワイプ解除のみ */
+.favorite-item.swiping-right {
+  background: rgba(255,255,255,.055) !important;
+}
