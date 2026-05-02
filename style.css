@@ -1884,3 +1884,109 @@ body.mode-dictionary #meaning.voice-meaning-glow {
   45%  { opacity: 1; text-shadow: 0 0 16px rgba(255,255,255,.22); }
   100% { opacity: .78; }
 }
+
+
+/* v65: お気に入り */
+.favorite-layer {
+  position: fixed;
+  top: max(124px, calc(env(safe-area-inset-top) + 108px));
+  right: 14px;
+  z-index: 8500;
+  display: grid;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.favorite-button,
+.favorite-list-button {
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(0,0,0,.46);
+  color: rgba(255,255,255,.92);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 28px rgba(0,0,0,.28);
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.favorite-button {
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.favorite-button.active {
+  color: #fff2a8;
+  text-shadow: 0 0 18px rgba(255,226,90,.55);
+  transform: scale(1.04);
+}
+
+.favorite-list-button {
+  padding: 8px 12px;
+  font-size: 12px;
+  writing-mode: horizontal-tb;
+}
+
+.favorite-dialog {
+  width: min(92vw, 460px);
+  max-height: 72vh;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 22px;
+  background: rgba(16,18,28,.94);
+  color: rgba(255,255,255,.94);
+  box-shadow: 0 24px 80px rgba(0,0,0,.5);
+  backdrop-filter: blur(14px);
+  padding: 14px;
+}
+
+.favorite-dialog::backdrop {
+  background: rgba(0,0,0,.55);
+}
+
+.favorite-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.favorite-list {
+  display: grid;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: 58vh;
+  padding-right: 2px;
+}
+
+.favorite-item {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  gap: 3px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.11);
+  background: rgba(255,255,255,.055);
+  color: inherit;
+}
+
+.favorite-item-title {
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.favorite-item-meta {
+  font-size: 12px;
+  opacity: .68;
+}
+
+.favorite-empty {
+  opacity: .68;
+  padding: 22px 8px;
+  text-align: center;
+}

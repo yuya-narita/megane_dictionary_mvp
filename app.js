@@ -2667,3 +2667,298 @@ init();
     bootResume();
   }
 })();
+
+
+/* v65: favorites */
+(function () {
+  const KEY = "meganeFavoritesV65";
+  let renderHooked = false;
+
+  function loadFavorites() {
+    try {
+      return JSON.parse(localStorage.getItem(KEY) || "[]");
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveFavorites(list) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(list));
+    } catch (e) {}
+  }
+
+  function uniqByKey(list) {
+    const map = new Map();
+    list.forEach(item => map.set(item.key, item));
+    return Array.from(map.values());
+  }
+
+  function mode() {
+    return typeof appMode !== "undefined" ? appMode : "dictionary";
+  }
+
+  function currentGlassSafe() {
+    try {
+      if (typeof currentGlass === "function") return currentGlass();
+    } catch (e) {}
+    return null;
+  }
+
+  function currentWordSafe() {
+    try {
+      if (typeof currentWord === "function") return currentWord();
+    } catch (e) {}
+    return null;
+  }
+
+  function currentCardSafe() {
+    try {
+      if (typeof cards !== "undefined" && typeof cardIndex !== "undefined") {
+        return cards[cardIndex];
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function currentMangaSafe() {
+    try {
+      if (typeof mangaStories !== "undefined" && typeof mangaStoryIndex !== "undefined") {
+        return mangaStories[mangaStoryIndex];
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function getCurrentFavoriteItem() {
+    const m = mode();
+
+    if (m === "dictionary") {
+      const w = currentWordSafe();
+      const g = currentGlassSafe();
+      if (!w || !g) return null;
+      const translation = w.translations && g.id ? (w.translations[g.id] || "") : "";
+      return {
+        key: `dict:${g.id}:${w.word}`,
+        type: "dict",
+        title: w.word,
+        meta: `${g.name || "メガネ"}｜${translation}`,
+        word: w.word,
+        glassId: g.id || "",
+        glassName: g.name || "",
+        savedAt: Date.now()
+      };
+    }
+
+    if (m === "cards") {
+      const c = currentCardSafe();
+      if (!c) return null;
+      return {
+        key: `card:${c.id || c.title || cardIndex}`,
+        type: "card",
+        title: c.title || "カード",
+        meta: c.subtitle || c.caption || "カード",
+        cardTitle: c.title || "",
+        cardId: c.id || "",
+        savedAt: Date.now()
+      };
+    }
+
+    if (m === "manga" && typeof mangaState !== "undefined" && mangaState === "reader") {
+      const s = currentMangaSafe();
+      if (!s) return null;
+      return {
+        key: `manga:${s.id || mangaStoryIndex}:${mangaPageIndex || 0}:${mangaReadMode || "page"}`,
+        type: "manga",
+        title: s.title || "マンガ",
+        meta: `${mangaReadMode === "webtoon" ? "Webtoon" : "ページ"}｜${(mangaPageIndex || 0) + 1}`,
+        storyId: s.id || "",
+        storyIndex: mangaStoryIndex || 0,
+        pageIndex: mangaPageIndex || 0,
+        readMode: mangaReadMode || "page",
+        savedAt: Date.now()
+      };
+    }
+
+    return null;
+  }
+
+  function isFavorited() {
+    const item = getCurrentFavoriteItem();
+    if (!item) return false;
+    return loadFavorites().some(f => f.key === item.key);
+  }
+
+  function updateFavoriteButton() {
+    const btn = document.getElementById("favoriteToggle");
+    if (!btn) return;
+
+    const item = getCurrentFavoriteItem();
+    btn.hidden = !item;
+
+    const active = !!item && isFavorited();
+    btn.classList.toggle("active", active);
+    btn.textContent = active ? "★" : "☆";
+  }
+
+  function toggleFavorite() {
+    const item = getCurrentFavoriteItem();
+    if (!item) return;
+
+    let list = loadFavorites();
+    const exists = list.some(f => f.key === item.key);
+
+    if (exists) {
+      list = list.filter(f => f.key !== item.key);
+    } else {
+      list.unshift(item);
+    }
+
+    saveFavorites(uniqByKey(list));
+    updateFavoriteButton();
+    renderFavoriteList();
+  }
+
+  function renderFavoriteList() {
+    const listEl = document.getElementById("favoriteList");
+    if (!listEl) return;
+
+    const list = loadFavorites();
+
+    if (!list.length) {
+      listEl.innerHTML = `<div class="favorite-empty">まだお気に入りはありません</div>`;
+      return;
+    }
+
+    listEl.innerHTML = list.map(item => `
+      <button class="favorite-item" data-key="${item.key}">
+        <span class="favorite-item-title">${escapeHtml(item.title || "Untitled")}</span>
+        <span class="favorite-item-meta">${escapeHtml(labelType(item.type))}｜${escapeHtml(item.meta || "")}</span>
+      </button>
+    `).join("");
+
+    listEl.querySelectorAll(".favorite-item").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const item = loadFavorites().find(f => f.key === btn.dataset.key);
+        if (item) jumpToFavorite(item);
+      });
+    });
+  }
+
+  function labelType(type) {
+    if (type === "dict") return "辞書";
+    if (type === "card") return "カード";
+    if (type === "manga") return "マンガ";
+    return "お気に入り";
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[ch]));
+  }
+
+  function jumpToFavorite(item) {
+    try {
+      if (item.type === "dict") {
+        appMode = "dictionary";
+        if (typeof data !== "undefined") {
+          const wi = data.words.findIndex(w => w.word === item.word);
+          const gi = data.glasses.findIndex(g => g.id === item.glassId || g.name === item.glassName);
+          if (wi >= 0) wordIndex = wi;
+          if (gi >= 0) glassIndex = gi;
+        }
+        if (typeof render === "function") render("flash");
+      }
+
+      if (item.type === "card") {
+        appMode = "cards";
+        if (typeof cards !== "undefined") {
+          const ci = cards.findIndex(c => c.id === item.cardId || c.title === item.cardTitle);
+          if (ci >= 0) cardIndex = ci;
+        }
+        cardFlipped = false;
+        if (typeof render === "function") render("flash");
+      }
+
+      if (item.type === "manga") {
+        appMode = "manga";
+        mangaState = "reader";
+        mangaReadMode = item.readMode || "page";
+        mangaStoryIndex = item.storyIndex || 0;
+        selectedMangaIndex = mangaStoryIndex;
+        mangaPageIndex = item.pageIndex || 0;
+        if (typeof render === "function") render("flash");
+      }
+    } catch (e) {}
+
+    const dialog = document.getElementById("favoriteDialog");
+    if (dialog && dialog.open) dialog.close();
+    setTimeout(updateFavoriteButton, 80);
+  }
+
+  function hookRender() {
+    if (renderHooked || typeof render !== "function") return;
+    const original = render;
+    render = function () {
+      const result = original.apply(this, arguments);
+      setTimeout(updateFavoriteButton, 0);
+      return result;
+    };
+    renderHooked = true;
+  }
+
+  function bindFavorites() {
+    const toggle = document.getElementById("favoriteToggle");
+    const open = document.getElementById("favoriteListOpen");
+    const close = document.getElementById("favoriteDialogClose");
+    const dialog = document.getElementById("favoriteDialog");
+
+    if (toggle && !toggle.dataset.bound) {
+      toggle.dataset.bound = "1";
+      toggle.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleFavorite();
+      });
+      toggle.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleFavorite();
+      }, { passive: false });
+    }
+
+    if (open && !open.dataset.bound) {
+      open.dataset.bound = "1";
+      open.addEventListener("click", () => {
+        renderFavoriteList();
+        if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+      });
+    }
+
+    if (close && !close.dataset.bound) {
+      close.dataset.bound = "1";
+      close.addEventListener("click", () => {
+        if (dialog && dialog.open) dialog.close();
+      });
+    }
+  }
+
+  function boot() {
+    bindFavorites();
+    hookRender();
+    renderFavoriteList();
+    updateFavoriteButton();
+    setInterval(updateFavoriteButton, 500);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
