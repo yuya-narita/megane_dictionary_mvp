@@ -2051,3 +2051,19 @@ body:not(.mode-dictionary) #favoriteToggle,
 body.mode-cards #favoriteToggle,
 body.mode-manga #favoriteToggle{display:none!important}
 .favorite-list-button{display:none!important}
+
+
+/* v75: お気に入り一覧スワイプ操作 */
+.favorite-item {
+  touch-action: pan-y;
+  will-change: transform;
+  transform: translateX(0);
+}
+
+.favorite-item.swiping-left {
+  background: rgba(255, 90, 90, .18);
+}
+
+.favorite-item.swiping-right {
+  background: rgba(120, 180, 255, .18);
+}
