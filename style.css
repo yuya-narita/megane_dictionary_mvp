@@ -1990,3 +1990,16 @@ body.mode-dictionary #meaning.voice-meaning-glow {
   padding: 22px 8px;
   text-align: center;
 }
+
+/* v68 safe explore bar */
+.controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:min(94vw,520px);margin-inline:auto}
+.controls button{min-width:0;padding:10px 8px;font-size:12px;line-height:1;letter-spacing:.04em;white-space:nowrap}
+.favorite-layer{pointer-events:none}
+.favorite-layer #favoriteToggle{pointer-events:auto}
+.favorite-list-button{display:none!important}
+.collection-dialog{width:min(92vw,460px);max-height:72vh;border:1px solid rgba(255,255,255,.16);border-radius:22px;background:rgba(16,18,28,.94);color:rgba(255,255,255,.94);box-shadow:0 24px 80px rgba(0,0,0,.5);backdrop-filter:blur(14px);padding:14px}
+.collection-dialog::backdrop{background:rgba(0,0,0,.55)}
+.collection-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:10px}
+.collection-list{display:grid;gap:9px}
+.collection-item{width:100%;text-align:left;padding:13px 14px;border-radius:15px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.055);color:inherit;font:inherit}
+.collection-item.disabled{opacity:.45}

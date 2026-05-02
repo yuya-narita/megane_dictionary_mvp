@@ -2962,3 +2962,79 @@ init();
     boot();
   }
 })();
+
+/* v68 safe explore bar */
+(function(){
+  function m(){return typeof appMode!=="undefined"?appMode:"dictionary";}
+  function rr(){if(typeof render==="function") render("flash");}
+  function stop(e){if(e){e.preventDefault();e.stopImmediatePropagation();}}
+
+  function explore(e){
+    stop(e);
+    const d=document.getElementById("glassDialog");
+    if(m()==="dictionary" && d && d.showModal){d.showModal();return;}
+    try{appMode="dictionary";rr();}catch(_){}
+  }
+  function fav(e){
+    stop(e);
+    const d=document.getElementById("favoriteDialog");
+    if(!d) return;
+    try{ if(typeof renderFavoriteList==="function") renderFavoriteList(); }catch(_){}
+    if(d.showModal) d.showModal();
+  }
+  function collection(e){
+    stop(e);
+    const d=document.getElementById("collectionDialog");
+    if(d && d.showModal) d.showModal();
+  }
+  function closeCollection(){
+    const d=document.getElementById("collectionDialog");
+    if(d && d.open) d.close();
+  }
+  function switchMode(mode){
+    try{
+      if(mode==="manga"){appMode="manga"; if(typeof mangaState!=="undefined") mangaState="list";}
+      else if(mode==="cards"){appMode="cards";}
+      else{appMode="dictionary";}
+      closeCollection(); rr();
+    }catch(_){}
+  }
+  async function share(e){
+    stop(e);
+    const url=location.href.split("#")[0];
+    try{
+      if(navigator.share) await navigator.share({title:"MEGANE DICTIONARY",url});
+      else if(navigator.clipboard){await navigator.clipboard.writeText(url); alert("リンクをコピーしました");}
+      else prompt("リンクをコピーしてください",url);
+    }catch(_){}
+  }
+  function bind(){
+    const a=document.getElementById("prevGlass");
+    const b=document.getElementById("randomWord");
+    const c=document.getElementById("nextGlass");
+    const s=document.getElementById("shareCurrent");
+    const x=document.getElementById("collectionDialogClose");
+    if(a){a.onclick=explore; if(!a.dataset.v68){a.dataset.v68=1;a.addEventListener("click",explore,true);}}
+    if(b){b.onclick=fav; if(!b.dataset.v68){b.dataset.v68=1;b.addEventListener("click",fav,true);}}
+    if(c){c.onclick=collection; if(!c.dataset.v68){c.dataset.v68=1;c.addEventListener("click",collection,true);}}
+    if(s){s.onclick=share; if(!s.dataset.v68){s.dataset.v68=1;s.addEventListener("click",share,true);}}
+    if(x && !x.dataset.v68){x.dataset.v68=1;x.addEventListener("click",closeCollection);}
+    document.querySelectorAll(".collection-item[data-mode]").forEach(btn=>{
+      if(btn.dataset.v68) return;
+      btn.dataset.v68=1;
+      btn.addEventListener("click",()=>switchMode(btn.dataset.mode));
+    });
+  }
+  function labels(){
+    const map={prevGlass:"探索",randomWord:"★",nextGlass:"コレクション",shareCurrent:"シェア"};
+    Object.entries(map).forEach(([id,t])=>{const el=document.getElementById(id); if(el && el.textContent!==t) el.textContent=t;});
+  }
+  function hook(){
+    if(typeof render!=="function" || render.__v68) return;
+    const old=render;
+    render=function(){const r=old.apply(this,arguments); setTimeout(()=>{bind();labels();},0); return r;};
+    render.__v68=true;
+  }
+  function boot(){bind();hook();labels();setInterval(()=>{bind();labels();},500);}
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot); else boot();
+})();

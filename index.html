@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>メガネ辞書 MVP</title>
-  <link rel="stylesheet" href="./style.css?v=65" />
+  <link rel="stylesheet" href="./style.css?v=68" />
 </head>
 <body class="mode-dictionary">
   <main id="app" class="app">
@@ -88,8 +88,7 @@
 
     <div id="favoriteLayer" class="favorite-layer">
       <button id="favoriteToggle" class="favorite-button" aria-label="お気に入り">☆</button>
-      <button id="favoriteListOpen" class="favorite-list-button">お気に入り</button>
-    </div>
+</div>
 
     <dialog id="favoriteDialog" class="favorite-dialog">
       <div class="favorite-dialog-head">
@@ -103,6 +102,7 @@
       <button id="prevGlass">前のメガネ</button>
       <button id="randomWord">ランダム</button>
       <button id="nextGlass">次のメガネ</button>
+      <button id="shareCurrent" class="control">シェア</button>
     </footer>
 
     <dialog id="glassDialog" class="dialog">
@@ -127,7 +127,7 @@
     <div class="fullscreen-hint">上下:カード / 左右:めくる / タップで閉じる</div>
   </div>
 
-  <script src="./app.js?v=65"></script>
+  <script src="./app.js?v=68"></script>
   <audio id="mangaAudio" preload="metadata"></audio>
   <div id="mangaFullscreenOverlay" class="manga-fullscreen-overlay" hidden>
     <button id="mangaFullscreenClose" class="manga-fullscreen-close">← 戻る</button>
@@ -139,5 +139,17 @@
 
     <div id="mangaFullscreenWebtoon" class="manga-fullscreen-webtoon" hidden></div>
   </div>
+  <dialog id="collectionDialog" class="collection-dialog">
+    <div class="collection-dialog-head">
+      <strong>コレクション</strong>
+      <button id="collectionDialogClose" class="ghost">×</button>
+    </div>
+    <div class="collection-list">
+      <button class="collection-item" data-mode="manga">マンガ</button>
+      <button class="collection-item" data-mode="cards">カード</button>
+      <button class="collection-item" data-mode="dictionary">辞書</button>
+      <button class="collection-item disabled" disabled>音声作品（準備中）</button>
+    </div>
+  </dialog>
 </body>
 </html>
