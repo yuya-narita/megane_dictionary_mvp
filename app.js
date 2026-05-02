@@ -2838,6 +2838,8 @@ init();
     `).join("");
 
     listEl.querySelectorAll(".favorite-item").forEach(btn => {
+      const item = loadFavs().find(f => f.key === btn.dataset.key);
+      enableSwipe(btn, item);
       btn.addEventListener("click", () => {
         const item = loadFavorites().find(f => f.key === btn.dataset.key);
         if (item) jumpToFavorite(item);
@@ -3478,3 +3480,64 @@ init();
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bootV73);
   else bootV73();
 })();
+
+/* v74: swipe favorites */
+
+function enableSwipe(el, item){
+  let startX = 0;
+  let currentX = 0;
+  let dragging = false;
+  const threshold = window.innerWidth * 0.5;
+
+  el.addEventListener("touchstart", e=>{
+    startX = e.touches[0].clientX;
+    dragging = true;
+    el.style.transition = "none";
+  });
+
+  el.addEventListener("touchmove", e=>{
+    if(!dragging) return;
+    currentX = e.touches[0].clientX - startX;
+    el.style.transform = `translateX(${currentX}px)`;
+  });
+
+  el.addEventListener("touchend", ()=>{
+    dragging = false;
+
+    if(currentX < -threshold){
+      el.style.transition = "0.2s";
+      el.style.transform = "translateX(-100%)";
+      setTimeout(()=>{
+        removeFavorite(item);
+        el.remove();
+      },200);
+    }
+    else if(currentX > threshold){
+      shareItem(item);
+      el.style.transition = "0.3s cubic-bezier(.2,1.5,.5,1)";
+      el.style.transform = "translateX(0)";
+    }
+    else{
+      el.style.transition = "0.3s cubic-bezier(.2,1.5,.5,1)";
+      el.style.transform = "translateX(0)";
+    }
+
+    currentX = 0;
+  });
+}
+
+function removeFavorite(item){
+  let list = JSON.parse(localStorage.getItem("meganeFavoritesV65")||"[]");
+  list = list.filter(f=>f.key!==item.key);
+  localStorage.setItem("meganeFavoritesV65", JSON.stringify(list));
+}
+
+function shareItem(item){
+  const text = `${item.title}｜${item.meta}`;
+  if(navigator.share){
+    navigator.share({title:"MEGANE DICTIONARY",text});
+  }else{
+    navigator.clipboard.writeText(text);
+    alert("コピーした");
+  }
+}
