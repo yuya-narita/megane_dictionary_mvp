@@ -3190,3 +3190,66 @@ init();
     boot();
   }
 })();
+
+/* v71: fix randomWord hijack */
+
+(function(){
+
+  function disableOriginalRandomWord(){
+    const btn = document.getElementById("randomWord");
+    if(!btn) return;
+
+    btn.onclick = null;
+
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+
+    clone.addEventListener("click", (e)=>{
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      const dialog = document.getElementById("favoriteDialog");
+      if(!dialog) return;
+
+      if(typeof renderFavoriteList === "function"){
+        renderFavoriteList();
+      }
+
+      if(dialog.showModal){
+        dialog.showModal();
+      }
+    });
+
+  }
+
+  function fix(){
+    disableOriginalRandomWord();
+
+    const map = {
+      prevGlass: "探索",
+      randomWord: "★",
+      shareCurrent: "シェア"
+    };
+
+    Object.entries(map).forEach(([id, text])=>{
+      const el = document.getElementById(id);
+      if(el) el.textContent = text;
+    });
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", fix);
+  } else {
+    fix();
+  }
+
+  if(typeof render === "function"){
+    const original = render;
+    window.render = function(){
+      const r = original.apply(this, arguments);
+      setTimeout(fix, 0);
+      return r;
+    }
+  }
+
+})();
