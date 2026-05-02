@@ -3253,3 +3253,228 @@ init();
   }
 
 })();
+
+/* v72: explore overlay (no mode change) */
+(function(){
+
+  function overrideExplore(){
+    const btn = document.getElementById("prevGlass");
+    if(!btn) return;
+
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+
+    clone.addEventListener("click", (e)=>{
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      const dialog = document.getElementById("glassDialog");
+      if(dialog && dialog.showModal){
+        dialog.showModal();
+      }
+    });
+  }
+
+  function apply(){
+    overrideExplore();
+
+    const map = {
+      prevGlass: "探索",
+      randomWord: "★",
+      shareCurrent: "シェア"
+    };
+
+    Object.entries(map).forEach(([id, text])=>{
+      const el = document.getElementById(id);
+      if(el) el.textContent = text;
+    });
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", apply);
+  } else {
+    apply();
+  }
+
+  if(typeof render === "function"){
+    const original = render;
+    window.render = function(){
+      const r = original.apply(this, arguments);
+      setTimeout(apply, 0);
+      return r;
+    }
+  }
+
+})();
+
+/* v73: dictionary-only favorites and stable control bar */
+(function(){
+  const FAV_KEY="meganeFavoritesV65";
+
+  function mode(){return typeof appMode!=="undefined"?appMode:"dictionary";}
+  function stop(e){if(e){e.preventDefault();e.stopImmediatePropagation();}}
+  function safeRender(){if(typeof render==="function") render("flash");}
+
+  function loadFavs(){
+    try{return JSON.parse(localStorage.getItem(FAV_KEY)||"[]");}catch(e){return [];}
+  }
+  function saveFavs(list){
+    try{localStorage.setItem(FAV_KEY,JSON.stringify(list));}catch(e){}
+  }
+
+  function currentDictFavorite(){
+    if(mode()!=="dictionary") return null;
+    try{
+      if(typeof currentWord!=="function"||typeof currentGlass!=="function") return null;
+      const w=currentWord();
+      const g=currentGlass();
+      if(!w||!g) return null;
+      const translation=w.translations&&g.id?(w.translations[g.id]||""):"";
+      return {
+        key:`dict:${g.id}:${w.word}`,
+        type:"dict",
+        title:w.word,
+        meta:`${g.name||"メガネ"}｜${translation}`,
+        word:w.word,
+        glassId:g.id||"",
+        glassName:g.name||"",
+        savedAt:Date.now()
+      };
+    }catch(e){return null;}
+  }
+
+  function isDictFavorited(){
+    const item=currentDictFavorite();
+    if(!item) return false;
+    return loadFavs().some(f=>f.key===item.key&&f.type==="dict");
+  }
+
+  function updateFavoriteToggle(){
+    const btn=document.getElementById("favoriteToggle");
+    if(!btn) return;
+    const item=currentDictFavorite();
+    if(!item){
+      btn.hidden=true;
+      btn.classList.remove("active");
+      return;
+    }
+    btn.hidden=false;
+    const active=isDictFavorited();
+    btn.classList.toggle("active",active);
+    btn.textContent=active?"★":"☆";
+  }
+
+  function toggleDictFavorite(e){
+    stop(e);
+    const item=currentDictFavorite();
+    if(!item) return;
+    let list=loadFavs().filter(f=>f.type==="dict");
+    const exists=list.some(f=>f.key===item.key);
+    list=exists?list.filter(f=>f.key!==item.key):[item,...list];
+    saveFavs(list);
+    updateFavoriteToggle();
+    renderDictFavoriteList();
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));
+  }
+
+  function renderDictFavoriteList(){
+    const listEl=document.getElementById("favoriteList");
+    if(!listEl) return;
+    const list=loadFavs().filter(f=>f.type==="dict");
+    if(!list.length){
+      listEl.innerHTML='<div class="favorite-empty">まだお気に入りはありません</div>';
+      return;
+    }
+    listEl.innerHTML=list.map(item=>`
+      <button class="favorite-item" data-key="${escapeHtml(item.key)}">
+        <span class="favorite-item-title">${escapeHtml(item.title||"Untitled")}</span>
+        <span class="favorite-item-meta">辞書｜${escapeHtml(item.meta||"")}</span>
+      </button>
+    `).join("");
+    listEl.querySelectorAll(".favorite-item").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const item=loadFavs().find(f=>f.key===btn.dataset.key&&f.type==="dict");
+        if(item) jumpToDictFavorite(item);
+      });
+    });
+  }
+
+  function jumpToDictFavorite(item){
+    try{
+      appMode="dictionary";
+      if(typeof data!=="undefined"){
+        const wi=data.words.findIndex(w=>w.word===item.word);
+        const gi=data.glasses.findIndex(g=>g.id===item.glassId||g.name===item.glassName);
+        if(wi>=0&&typeof wordIndex!=="undefined") wordIndex=wi;
+        if(gi>=0&&typeof glassIndex!=="undefined") glassIndex=gi;
+      }
+      safeRender();
+    }catch(e){}
+    const dialog=document.getElementById("favoriteDialog");
+    if(dialog&&dialog.open) dialog.close();
+    setTimeout(updateFavoriteToggle,80);
+  }
+
+  function openExplore(e){
+    stop(e);
+    const dialog=document.getElementById("glassDialog");
+    if(dialog&&typeof dialog.showModal==="function") dialog.showModal();
+  }
+
+  function openFavorites(e){
+    stop(e);
+    renderDictFavoriteList();
+    const dialog=document.getElementById("favoriteDialog");
+    if(dialog&&typeof dialog.showModal==="function") dialog.showModal();
+  }
+
+  async function shareCurrent(e){
+    stop(e);
+    const url=location.href.split("#")[0];
+    try{
+      if(navigator.share) await navigator.share({title:"MEGANE DICTIONARY",url});
+      else if(navigator.clipboard){await navigator.clipboard.writeText(url);alert("リンクをコピーしました");}
+      else prompt("リンクをコピーしてください",url);
+    }catch(err){}
+  }
+
+  function bindV73(){
+    const explore=document.getElementById("prevGlass");
+    const favBar=document.getElementById("randomWord");
+    const share=document.getElementById("shareCurrent");
+    const favToggle=document.getElementById("favoriteToggle");
+    const next=document.getElementById("nextGlass");
+
+    if(explore){explore.onclick=openExplore;if(!explore.dataset.v73){explore.dataset.v73="1";explore.addEventListener("click",openExplore,true);}}
+    if(favBar){favBar.onclick=openFavorites;if(!favBar.dataset.v73){favBar.dataset.v73="1";favBar.addEventListener("click",openFavorites,true);}}
+    if(share){share.onclick=shareCurrent;if(!share.dataset.v73){share.dataset.v73="1";share.addEventListener("click",shareCurrent,true);}}
+    if(next){next.onclick=function(e){stop(e)};}
+    if(favToggle){favToggle.onclick=toggleDictFavorite;if(!favToggle.dataset.v73){favToggle.dataset.v73="1";favToggle.addEventListener("click",toggleDictFavorite,true);favToggle.addEventListener("touchend",toggleDictFavorite,{passive:false,capture:true});}}
+  }
+
+  function hookRenderV73(){
+    if(typeof render!=="function"||render.__v73Hooked) return;
+    const original=render;
+    render=function(){
+      const result=original.apply(this,arguments);
+      setTimeout(()=>{bindV73();updateFavoriteToggle();},0);
+      return result;
+    };
+    render.__v73Hooked=true;
+  }
+
+  function bootV73(){
+    saveFavs(loadFavs().filter(f=>f.type==="dict"));
+    bindV73();
+    hookRenderV73();
+    renderDictFavoriteList();
+    updateFavoriteToggle();
+    setInterval(()=>{bindV73();updateFavoriteToggle();},600);
+  }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bootV73);
+  else bootV73();
+})();

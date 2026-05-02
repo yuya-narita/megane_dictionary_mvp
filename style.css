@@ -2039,3 +2039,15 @@ body.mode-dictionary #meaning.voice-meaning-glow {
 .favorite-list-button {
   display: none !important;
 }
+
+/* v73: 辞書お気に入り専用・安定化 */
+#prevGlass,#randomWord,#shareCurrent{font-size:0!important;position:relative}
+#prevGlass::after,#randomWord::after,#shareCurrent::after{font-size:12px;line-height:1;letter-spacing:.04em}
+#prevGlass::after{content:"探索"}
+#randomWord::after{content:"★"}
+#shareCurrent::after{content:"シェア"}
+#nextGlass{display:none!important}
+body:not(.mode-dictionary) #favoriteToggle,
+body.mode-cards #favoriteToggle,
+body.mode-manga #favoriteToggle{display:none!important}
+.favorite-list-button{display:none!important}
