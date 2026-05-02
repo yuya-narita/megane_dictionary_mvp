@@ -2107,3 +2107,9 @@ body.mode-manga #favoriteToggle{display:none!important}
 .favorite-item {
   transform: translate3d(0,0,0);
 }
+
+/* v79: favorite list scroll-safe */
+.favorite-item { touch-action: pan-y; }
+.favorite-item.longpress-ready {
+  box-shadow: 0 0 0 1px rgba(255,255,255,.24), 0 0 22px rgba(255,255,255,.14);
+}
