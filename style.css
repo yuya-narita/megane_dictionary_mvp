@@ -2176,3 +2176,43 @@ body[data-glass="funny"] {
 body[data-glass="logic"] {
   background: linear-gradient(180deg, #2a2a2a, #0f0f0f);
 }
+
+
+/* v85: 背景テーマ修正版 */
+body {
+  transition: background .35s ease, background-color .35s ease;
+}
+
+body[data-glass-theme="hacker"] {
+  background:
+    radial-gradient(circle at 50% 10%, rgba(90,120,255,.18), transparent 34%),
+    radial-gradient(circle at 10% 80%, rgba(0,255,210,.10), transparent 32%),
+    linear-gradient(180deg, #070913 0%, #020308 100%) !important;
+}
+
+body[data-glass-theme="gag"],
+body[data-glass-theme="funny"] {
+  background:
+    radial-gradient(circle at 80% 20%, rgba(255,220,90,.28), transparent 30%),
+    linear-gradient(135deg, #2b1800 0%, #3a1230 55%, #120812 100%) !important;
+}
+
+body[data-glass-theme="math"],
+body[data-glass-theme="logic"] {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px),
+    linear-gradient(180deg, #202226 0%, #08090b 100%) !important;
+  background-size: 28px 28px, auto !important;
+}
+
+body[data-glass-theme="happy"] {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255,210,235,.28), transparent 34%),
+    linear-gradient(180deg, #2b1b32 0%, #120917 100%) !important;
+}
+
+body[data-glass-theme="default"] {
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255,255,255,.06), transparent 30%),
+    linear-gradient(180deg, #101018 0%, #050507 100%) !important;
+}

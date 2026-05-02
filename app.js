@@ -4812,3 +4812,73 @@ init();
     bootV84();
   }
 })();
+
+
+/* v85: robust glass theme mapping */
+(function(){
+  function normalizeGlassTheme(g){
+    if(!g) return "default";
+
+    const raw = [
+      g.id || "",
+      g.name || "",
+      g.label || "",
+      g.title || ""
+    ].join(" ").toLowerCase();
+
+    const jp = [
+      g.id || "",
+      g.name || "",
+      g.label || "",
+      g.title || ""
+    ].join(" ");
+
+    if(raw.includes("hack") || jp.includes("ハッカー") || jp.includes("ニクス") || jp.includes("NIX") || jp.includes("NXS")) return "hacker";
+    if(raw.includes("gag") || raw.includes("funny") || jp.includes("ギャグ") || jp.includes("ズレア")) return "gag";
+    if(raw.includes("math") || raw.includes("logic") || jp.includes("数学") || jp.includes("論理") || jp.includes("ゼリス")) return "math";
+    if(raw.includes("happy") || jp.includes("ハッピー") || jp.includes("クエリナ")) return "happy";
+
+    return "default";
+  }
+
+  function applyGlassThemeV85(){
+    try{
+      if(typeof currentGlass !== "function") {
+        document.body.dataset.glassTheme = "default";
+        return;
+      }
+
+      const g = currentGlass();
+      const theme = normalizeGlassTheme(g);
+      document.body.dataset.glassTheme = theme;
+      document.body.dataset.glass = g && g.id ? g.id : "default";
+    }catch(e){
+      document.body.dataset.glassTheme = "default";
+    }
+  }
+
+  function hookRenderV85(){
+    if(typeof render !== "function" || render.__v85Hooked) return;
+
+    const original = render;
+    render = function(){
+      const res = original.apply(this, arguments);
+      setTimeout(applyGlassThemeV85, 0);
+      return res;
+    };
+
+    render.__v85Hooked = true;
+  }
+
+  function bootV85(){
+    hookRenderV85();
+    applyGlassThemeV85();
+    setInterval(applyGlassThemeV85, 400);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", bootV85);
+  }else{
+    bootV85();
+  }
+})();
