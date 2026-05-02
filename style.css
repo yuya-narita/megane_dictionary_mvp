@@ -2003,3 +2003,39 @@ body.mode-dictionary #meaning.voice-meaning-glow {
 .collection-list{display:grid;gap:9px}
 .collection-item{width:100%;text-align:left;padding:13px 14px;border-radius:15px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.055);color:inherit;font:inherit}
 .collection-item.disabled{opacity:.45}
+
+
+/* v70: safe 3-button bar. Keep nextGlass hidden for old JS compatibility. */
+.controls {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px;
+  width: min(94vw, 520px);
+  margin-inline: auto;
+}
+
+.controls button {
+  min-width: 0;
+  padding: 10px 8px;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+/* Keep this button in DOM so existing JS doesn't crash, but don't show it. */
+#nextGlass {
+  display: none !important;
+}
+
+.favorite-layer {
+  pointer-events: none;
+}
+
+.favorite-layer #favoriteToggle {
+  pointer-events: auto;
+}
+
+.favorite-list-button {
+  display: none !important;
+}

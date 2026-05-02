@@ -3038,3 +3038,155 @@ init();
   function boot(){bind();hook();labels();setInterval(()=>{bind();labels();},500);}
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot); else boot();
 })();
+
+
+/* v70: safe clean bar override */
+(function () {
+  function mode() {
+    return typeof appMode !== "undefined" ? appMode : "dictionary";
+  }
+
+  function safeRender() {
+    if (typeof render === "function") render("flash");
+  }
+
+  function stop(e) {
+    if (!e) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
+
+  function openExplore(e) {
+    stop(e);
+    const dialog = document.getElementById("glassDialog");
+
+    if (mode() === "dictionary" && dialog && typeof dialog.showModal === "function") {
+      dialog.showModal();
+      return;
+    }
+
+    try {
+      appMode = "dictionary";
+      safeRender();
+    } catch (err) {}
+  }
+
+  function openFavorites(e) {
+    stop(e);
+    const dialog = document.getElementById("favoriteDialog");
+    if (!dialog) return;
+
+    try {
+      if (typeof renderFavoriteList === "function") renderFavoriteList();
+    } catch (err) {}
+
+    if (typeof dialog.showModal === "function") dialog.showModal();
+  }
+
+  async function shareCurrent(e) {
+    stop(e);
+    const url = location.href.split("#")[0];
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "MEGANE DICTIONARY",
+          url
+        });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        alert("リンクをコピーしました");
+      } else {
+        prompt("リンクをコピーしてください", url);
+      }
+    } catch (err) {}
+  }
+
+  function bindV70Bar() {
+    const explore = document.getElementById("prevGlass");
+    const fav = document.getElementById("randomWord");
+    const nextHidden = document.getElementById("nextGlass");
+    const share = document.getElementById("shareCurrent");
+
+    if (explore) {
+      explore.onclick = openExplore;
+      if (!explore.dataset.v70) {
+        explore.dataset.v70 = "1";
+        explore.addEventListener("click", openExplore, true);
+      }
+    }
+
+    if (fav) {
+      fav.onclick = openFavorites;
+      if (!fav.dataset.v70) {
+        fav.dataset.v70 = "1";
+        fav.addEventListener("click", openFavorites, true);
+      }
+    }
+
+    // Keep old nextGlass harmless if any code calls it.
+    if (nextHidden) {
+      nextHidden.onclick = function (e) {
+        if (e) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      };
+    }
+
+    if (share) {
+      share.onclick = shareCurrent;
+      if (!share.dataset.v70) {
+        share.dataset.v70 = "1";
+        share.addEventListener("click", shareCurrent, true);
+      }
+    }
+  }
+
+  function forceLabels() {
+    const labels = {
+      prevGlass: "探索",
+      randomWord: "★",
+      shareCurrent: "シェア"
+    };
+
+    Object.entries(labels).forEach(([id, text]) => {
+      const el = document.getElementById(id);
+      if (el && el.textContent !== text) el.textContent = text;
+    });
+  }
+
+  function hookRender() {
+    if (typeof render !== "function" || render.__v70Hooked) return;
+
+    const original = render;
+    render = function () {
+      const result = original.apply(this, arguments);
+      setTimeout(() => {
+        bindV70Bar();
+        forceLabels();
+      }, 0);
+      return result;
+    };
+
+    render.__v70Hooked = true;
+  }
+
+  function boot() {
+    bindV70Bar();
+    hookRender();
+    forceLabels();
+
+    // Light safety label refresh. Does not mutate structure.
+    setInterval(() => {
+      bindV70Bar();
+      forceLabels();
+    }, 500);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
