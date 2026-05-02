@@ -3961,3 +3961,184 @@ init();
     bootV76();
   }
 })();
+
+
+/* v78: favorite list rebind after star add */
+(function () {
+  const FAV_KEY = "meganeFavoritesV65";
+
+  function loadFavsV78() {
+    try {
+      return JSON.parse(localStorage.getItem(FAV_KEY) || "[]");
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveFavsV78(list) {
+    try {
+      localStorage.setItem(FAV_KEY, JSON.stringify(list));
+    } catch (e) {}
+  }
+
+  function currentDictFavoriteV78() {
+    try {
+      if (typeof appMode !== "undefined" && appMode !== "dictionary") return null;
+      if (typeof currentWord !== "function" || typeof currentGlass !== "function") return null;
+
+      const w = currentWord();
+      const g = currentGlass();
+      if (!w || !g) return null;
+
+      const translation = w.translations && g.id ? (w.translations[g.id] || "") : "";
+
+      return {
+        key: `dict:${g.id}:${w.word}`,
+        type: "dict",
+        title: w.word,
+        meta: `${g.name || "メガネ"}｜${translation}`,
+        word: w.word,
+        glassId: g.id || "",
+        glassName: g.name || "",
+        savedAt: Date.now()
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function updateStarV78() {
+    const btn = document.getElementById("favoriteToggle");
+    if (!btn) return;
+
+    const item = currentDictFavoriteV78();
+    if (!item) {
+      btn.hidden = true;
+      btn.classList.remove("active");
+      return;
+    }
+
+    const active = loadFavsV78().some(f => f.key === item.key && f.type === "dict");
+    btn.hidden = false;
+    btn.classList.toggle("active", active);
+    btn.textContent = active ? "★" : "☆";
+  }
+
+  function toggleDictFavoriteV78(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+
+    const item = currentDictFavoriteV78();
+    if (!item) return;
+
+    let list = loadFavsV78().filter(f => f.type === "dict");
+    const exists = list.some(f => f.key === item.key);
+
+    if (exists) {
+      list = list.filter(f => f.key !== item.key);
+    } else {
+      list.unshift(item);
+    }
+
+    saveFavsV78(list);
+    updateStarV78();
+
+    // 追加/解除直後に一覧側を必ず再描画・再バインド
+    setTimeout(() => {
+      if (typeof window.renderDictFavoriteList === "function") {
+        window.renderDictFavoriteList();
+      }
+    }, 0);
+  }
+
+  function bindStarV78() {
+    const btn = document.getElementById("favoriteToggle");
+    if (!btn) return;
+
+    // cloneして過去バージョンのイベント競合を除去
+    if (!btn.dataset.v78Replaced) {
+      const clone = btn.cloneNode(true);
+      clone.dataset.v78Replaced = "1";
+      btn.parentNode.replaceChild(clone, btn);
+
+      clone.addEventListener("click", toggleDictFavoriteV78, true);
+      clone.addEventListener("touchend", toggleDictFavoriteV78, { passive: false, capture: true });
+    }
+  }
+
+  function bindFavoriteListOpenV78() {
+    const favBar = document.getElementById("randomWord");
+    const dialog = document.getElementById("favoriteDialog");
+    if (!favBar || !dialog) return;
+
+    if (!favBar.dataset.v78FavOpenBound) {
+      favBar.dataset.v78FavOpenBound = "1";
+
+      favBar.addEventListener("click", e => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        // 開く直前に必ず最新のlocalStorageから一覧再生成
+        if (typeof window.renderDictFavoriteList === "function") {
+          window.renderDictFavoriteList();
+        }
+
+        // iOS/PWAでDOM反映が遅れることがあるので1フレーム後にも再生成
+        requestAnimationFrame(() => {
+          if (typeof window.renderDictFavoriteList === "function") {
+            window.renderDictFavoriteList();
+          }
+
+          if (typeof dialog.showModal === "function" && !dialog.open) {
+            dialog.showModal();
+          }
+        });
+      }, true);
+    }
+  }
+
+  function hookRenderV78() {
+    if (typeof render !== "function" || render.__v78Hooked) return;
+
+    const original = render;
+    render = function () {
+      const result = original.apply(this, arguments);
+      setTimeout(() => {
+        bindStarV78();
+        bindFavoriteListOpenV78();
+        updateStarV78();
+      }, 0);
+      return result;
+    };
+
+    render.__v78Hooked = true;
+  }
+
+  function bootV78() {
+    bindStarV78();
+    bindFavoriteListOpenV78();
+    hookRenderV78();
+    updateStarV78();
+
+    // 起動直後も一覧関数があれば一度作っておく
+    setTimeout(() => {
+      if (typeof window.renderDictFavoriteList === "function") {
+        window.renderDictFavoriteList();
+      }
+    }, 100);
+
+    setInterval(() => {
+      bindStarV78();
+      bindFavoriteListOpenV78();
+      updateStarV78();
+    }, 700);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootV78);
+  } else {
+    bootV78();
+  }
+})();

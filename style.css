@@ -2101,3 +2101,9 @@ body.mode-manga #favoriteToggle{display:none!important}
 .favorite-item.swiping-right {
   background: rgba(120, 180, 255, .18);
 }
+
+
+/* v78: お気に入り追加直後の再描画安定化 */
+.favorite-item {
+  transform: translate3d(0,0,0);
+}
