@@ -2541,60 +2541,129 @@ init();
 
 })();
 
-/* v63: resume last state */
 
-(function(){
 
-  function saveState(){
-    try{
-      if(typeof currentGlass === "function"){
+/* v64: robust resume last dictionary state */
+(function () {
+  const STORAGE_KEY = "meganeDictionaryResumeV64";
+  let restored = false;
+
+  function getDataSafe() {
+    try {
+      if (typeof data !== "undefined") return data;
+    } catch (e) {}
+    return null;
+  }
+
+  function getCurrentState() {
+    const wordEl = document.getElementById("word");
+    let word = wordEl ? wordEl.textContent.trim() : "";
+
+    let glassId = "";
+    let glassName = "";
+
+    try {
+      if (typeof currentGlass === "function") {
         const g = currentGlass();
-        if(g && g.id){
-          localStorage.setItem("lastGlass", g.id);
+        if (g) {
+          glassId = g.id || "";
+          glassName = g.name || "";
         }
       }
+    } catch (e) {}
 
-      const wordEl = document.getElementById("word");
-      if(wordEl){
-        localStorage.setItem("lastWord", wordEl.textContent.trim());
+    return { word, glassId, glassName };
+  }
+
+  function saveResumeState() {
+    try {
+      if (typeof appMode !== "undefined" && appMode !== "dictionary") return;
+
+      const state = getCurrentState();
+      if (!state.word && !state.glassId) return;
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        word: state.word,
+        glassId: state.glassId,
+        glassName: state.glassName,
+        savedAt: Date.now()
+      }));
+    } catch (e) {}
+  }
+
+  function restoreResumeState() {
+    if (restored) return;
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+
+      const saved = JSON.parse(raw);
+      const d = getDataSafe();
+      if (!d || !Array.isArray(d.words) || !Array.isArray(d.glasses)) return;
+
+      // Restore glassIndex / wordIndex directly if those globals exist.
+      const gi = d.glasses.findIndex(g =>
+        g.id === saved.glassId || g.name === saved.glassName
+      );
+
+      const wi = d.words.findIndex(w =>
+        w.word === saved.word
+      );
+
+      if (gi >= 0 && typeof glassIndex !== "undefined") {
+        glassIndex = gi;
       }
-    }catch(e){}
-  }
 
-  function restoreState(){
-    try{
-      const lastGlass = localStorage.getItem("lastGlass");
-      const lastWord = localStorage.getItem("lastWord");
-
-      if(lastGlass && typeof setGlassById === "function"){
-        setGlassById(lastGlass);
+      if (wi >= 0 && typeof wordIndex !== "undefined") {
+        wordIndex = wi;
       }
 
-      if(lastWord && typeof setWord === "function"){
-        setWord(lastWord);
+      restored = true;
+
+      if (typeof render === "function") {
+        render("flash");
       }
-    }catch(e){}
+    } catch (e) {}
   }
 
-  function hookRender(){
-    if(typeof render !== "function") return;
+  function hookRenderForResume() {
+    if (typeof render !== "function" || render.__resumeHookedV64) return;
 
-    const orig = render;
-    window.render = function(){
-      orig.apply(this, arguments);
-      saveState();
-    }
+    const originalRender = render;
+    window.render = function () {
+      const result = originalRender.apply(this, arguments);
+      saveResumeState();
+      return result;
+    };
+    window.render.__resumeHookedV64 = true;
   }
 
-  function boot(){
-    restoreState();
-    hookRender();
+  function bindResumeSavers() {
+    // renderが呼ばれない場面でも保存する保険
+    ["pointerup", "touchend", "click", "keydown"].forEach(type => {
+      document.addEventListener(type, () => {
+        setTimeout(saveResumeState, 80);
+      }, { passive: true });
+    });
+
+    window.addEventListener("pagehide", saveResumeState);
+    window.addEventListener("beforeunload", saveResumeState);
   }
 
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded", boot);
-  }else{
-    boot();
+  function bootResume() {
+    // 初期render後に復元するため少し遅延
+    setTimeout(() => {
+      restoreResumeState();
+      hookRenderForResume();
+      bindResumeSavers();
+      saveResumeState();
+    }, 120);
   }
 
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootResume);
+  } else {
+    bootResume();
+  }
 })();

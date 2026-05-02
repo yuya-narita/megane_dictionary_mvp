@@ -289,3 +289,11 @@
 - TTS用セリフをv61内に直接持たせ、参照ミスを回避
 - 辞書カード長押し由来のメガネ一覧表示を抑制
 - メガネ一覧ボタンはそのまま使用可能
+
+
+## v64変更点
+- v63で前回状態から再開しない問題を修正
+- 存在しない setWord / setGlassById ではなく、data.words / data.glasses から index を探して復元
+- wordIndex / glassIndex を直接復元
+- render後・操作後・ページ終了時に保存
+- Webアプリとしてホーム画面から開いた場合も localStorage で復元
