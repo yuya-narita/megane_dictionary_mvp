@@ -3881,3 +3881,22 @@ body[data-mode="cards"] #openBinderBtn {
   font-size: 11px;
   opacity: .86;
 }
+
+
+/* v119: マンガ・音声をコンテンツへ統合 */
+#audioModeBtn,
+[data-mode-button="audio"] {
+  display: none !important;
+}
+
+.content-mode-fallback {
+  position: fixed;
+  top: 118px;
+  right: 22px;
+  z-index: 20;
+}
+
+/* 旧マンガ/音声ではなく、作品一覧として見せる */
+.library-title-v116::after {
+  content: "";
+}
