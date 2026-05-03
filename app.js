@@ -8852,7 +8852,7 @@ const CONTENTS_V118 = [
 
 
 
-/* v125: fix empty content screen + stop dictionary/card gestures while content is active */
+/* v126: stable content screen, no repeated re-render */
 (function(){
   const ITEMS = [
     ["構文的イグノーベル賞","音声化予定","IG","くだらないけど深い観測シリーズ","rgba(255,210,90,.42)"],
@@ -8868,54 +8868,57 @@ const CONTENTS_V118 = [
     ["ぴょこん日和","音声／紙芝居動画","PY","ゆるい音声と紙芝居的動画","rgba(110,230,255,.38)"]
   ];
 
+  let rendered = false;
+
   function ensureScreen(){
-    let screen = document.getElementById("contentScreenV120");
+    let screen = document.getElementById("contentScreenV126");
     if(!screen){
       screen = document.createElement("div");
-      screen.id = "contentScreenV120";
-      screen.className = "content-screen-v120";
+      screen.id = "contentScreenV126";
+      screen.className = "content-screen-stable-v126";
+      screen.hidden = true;
       document.body.appendChild(screen);
     }
 
-    screen.innerHTML = `
-      <div class="content-hero-v120">
-        <div class="hero-kicker-v120">おすすめ</div>
-        <div class="hero-title-v120">H(x)∞origin</div>
-        <div class="hero-meta-v120">音声・マンガ化済み</div>
-        <div class="hero-copy-v120">意味が生まれる瞬間を、カード・音声・マンガで観測する。</div>
-      </div>
+    if(!rendered){
+      screen.innerHTML = `
+        <div class="content-hero-v126">
+          <div class="hero-kicker-v126">おすすめ</div>
+          <div class="hero-title-v126">H(x)∞origin</div>
+          <div class="hero-meta-v126">音声・マンガ化済み</div>
+          <div class="hero-copy-v126">意味が生まれる瞬間を、カード・音声・マンガで観測する。</div>
+        </div>
 
-      <div class="content-section-head-v120">
-        <span>作品一覧</span>
-        <span id="contentCountV120">${ITEMS.length}作品</span>
-      </div>
+        <div class="content-section-head-v126">
+          <span>作品一覧</span>
+          <span>${ITEMS.length}作品</span>
+        </div>
 
-      <div id="contentGridV120" class="content-grid-v120">
-        ${ITEMS.map(([title,status,mark,desc,accent],i)=>`
-          <div class="content-card-v120" data-index="${i}">
-            <div class="content-thumb-v120" data-mark="${mark}" style="--accent:${accent}"></div>
-            <div class="content-info-v120">
-              <div class="content-title-v120">${title}</div>
-              <div class="content-status-v120">${status}</div>
-              <div class="content-desc-v120">${desc}</div>
+        <div class="content-grid-v126">
+          ${ITEMS.map(([title,status,mark,desc,accent],i)=>`
+            <div class="content-card-v126" data-index="${i}">
+              <div class="content-thumb-v126" data-mark="${mark}" style="--accent:${accent}"></div>
+              <div class="content-info-v126">
+                <div class="content-title-v126">${title}</div>
+                <div class="content-status-v126">${status}</div>
+                <div class="content-desc-v126">${desc}</div>
+              </div>
             </div>
-          </div>
-        `).join("")}
-      </div>
-    `;
+          `).join("")}
+        </div>
+      `;
 
-    screen.querySelectorAll(".content-card-v120").forEach(el=>{
-      el.onclick = () => {
-        const [title,status] = ITEMS[Number(el.dataset.index)];
-        alert(`${title}\n${status}\n\n次：作品詳細画面を接続`);
-      };
-    });
+      screen.querySelectorAll(".content-card-v126").forEach(el=>{
+        el.onclick = () => {
+          const [title,status] = ITEMS[Number(el.dataset.index)];
+          alert(`${title}\n${status}\n\n次：作品詳細画面を接続`);
+        };
+      });
+
+      rendered = true;
+    }
 
     return screen;
-  }
-
-  function isContentMode(){
-    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
   }
 
   function showContent(ev){
@@ -8926,106 +8929,90 @@ const CONTENTS_V118 = [
     }
 
     const screen = ensureScreen();
-
     try { appMode = "content"; } catch(e) {}
 
     document.body.classList.add("mode-content");
     document.body.dataset.mode = "content";
     screen.hidden = false;
-    screen.style.display = "block";
-
-    markActive("コンテンツ");
   }
 
   function hideContent(){
-    const screen = document.getElementById("contentScreenV120");
+    const screen = document.getElementById("contentScreenV126");
     document.body.classList.remove("mode-content");
     if(document.body.dataset.mode === "content") document.body.dataset.mode = "";
-    if(screen){
-      screen.hidden = true;
-      screen.style.display = "none";
-    }
+    if(screen) screen.hidden = true;
   }
 
-  function getModeButtons(){
-    const btns = Array.from(document.querySelectorAll("button")).filter(b=>{
-      const t=(b.textContent||"").replace(/\s+/g,"").trim();
-      return ["辞書","カード","マンガ","音声","コンテンツ"].includes(t);
-    });
-
-    return btns
-      .filter(b => b.offsetParent !== null)
-      .sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top || a.getBoundingClientRect().left - b.getBoundingClientRect().left)
+  function getTopButtons(){
+    return Array.from(document.querySelectorAll("button"))
+      .filter(b=>{
+        const t=(b.textContent||"").replace(/\s+/g,"").trim();
+        return ["辞書","カード","マンガ","音声","コンテンツ"].includes(t);
+      })
+      .filter(b=>b.offsetParent !== null)
+      .sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top || a.getBoundingClientRect().left-b.getBoundingClientRect().left)
       .slice(0,3);
   }
 
-  function markActive(label){
-    getModeButtons().forEach(b=>{
-      const t=(b.textContent||"").replace(/\s+/g,"").trim();
-      b.classList.toggle("active", t === label);
-      b.setAttribute("aria-pressed", t === label ? "true" : "false");
-    });
-  }
+  function setupButtonsOnce(){
+    const btns = getTopButtons();
+    if(btns.length < 3) return false;
 
-  function setupButtons(){
-    const btns = getModeButtons();
-    if(btns.length < 3) return;
+    const [dict, card, content] = btns;
 
-    const dict = btns[0];
-    const card = btns[1];
-    const content = btns[2];
+    dict.textContent = "辞書";
+    card.textContent = "カード";
+    content.textContent = "コンテンツ";
 
-    if(dict.textContent.trim() !== "辞書") dict.textContent = "辞書";
-    if(card.textContent.trim() !== "カード") card.textContent = "カード";
-    if(content.textContent.trim() !== "コンテンツ") content.textContent = "コンテンツ";
-
-    // 何度も付け直さない
-    if(!content.dataset.v125){
-      content.dataset.v125 = "1";
+    if(!content.dataset.v126){
+      content.dataset.v126 = "1";
       const h = ev => showContent(ev);
       content.addEventListener("touchstart", h, {capture:true, passive:false});
       content.addEventListener("click", h, true);
-      content.addEventListener("pointerdown", h, true);
     }
 
-    if(!dict.dataset.v125){
-      dict.dataset.v125 = "1";
-      const h = ev => {
+    if(!dict.dataset.v126){
+      dict.dataset.v126 = "1";
+      dict.addEventListener("click", ()=>{
         hideContent();
         try { appMode = "dictionary"; if(typeof render === "function") render("flash"); } catch(e){}
-        markActive("辞書");
-      };
-      dict.addEventListener("touchstart", h, {capture:true, passive:true});
-      dict.addEventListener("click", h, true);
+      }, true);
+      dict.addEventListener("touchstart", ()=>{
+        hideContent();
+        try { appMode = "dictionary"; if(typeof render === "function") render("flash"); } catch(e){}
+      }, {capture:true, passive:true});
     }
 
-    if(!card.dataset.v125){
-      card.dataset.v125 = "1";
-      const h = ev => {
+    if(!card.dataset.v126){
+      card.dataset.v126 = "1";
+      card.addEventListener("click", ()=>{
         hideContent();
         try { appMode = "cards"; if(typeof render === "function") render("flash"); } catch(e){}
-        markActive("カード");
-      };
-      card.addEventListener("touchstart", h, {capture:true, passive:true});
-      card.addEventListener("click", h, true);
+      }, true);
+      card.addEventListener("touchstart", ()=>{
+        hideContent();
+        try { appMode = "cards"; if(typeof render === "function") render("flash"); } catch(e){}
+      }, {capture:true, passive:true});
     }
+
+    return true;
   }
 
-  // コンテンツ中は、既存の上下スワイプや左右スワイプをcontent screen外では止める
-  function stopAppGesturesInContent(ev){
-    if(!isContentMode()) return;
+  function stopGesturesOutsideContent(ev){
+    if(!document.body.classList.contains("mode-content")) return;
 
-    const screen = document.getElementById("contentScreenV120");
+    const screen = document.getElementById("contentScreenV126");
     const path = ev.composedPath ? ev.composedPath() : [];
 
-    const onScreen = screen && path.includes(screen);
-    const onModeButton = path.some(el=>{
+    if(screen && path.includes(screen)) return;
+
+    const onTopButton = path.some(el=>{
       if(!el || el.tagName !== "BUTTON") return false;
       const t=(el.textContent||"").replace(/\s+/g,"").trim();
       return ["辞書","カード","コンテンツ"].includes(t);
     });
 
-    if(onScreen || onModeButton) return;
+    if(onTopButton) return;
 
     ev.preventDefault();
     ev.stopPropagation();
@@ -9034,17 +9021,18 @@ const CONTENTS_V118 = [
 
   function boot(){
     ensureScreen();
-    setupButtons();
 
-    document.addEventListener("touchstart", stopAppGesturesInContent, {capture:true, passive:false});
-    document.addEventListener("touchmove", stopAppGesturesInContent, {capture:true, passive:false});
-    document.addEventListener("pointerdown", stopAppGesturesInContent, true);
-    document.addEventListener("click", stopAppGesturesInContent, true);
+    let tries = 0;
+    const timer = setInterval(()=>{
+      tries++;
+      const ok = setupButtonsOnce();
+      if(ok || tries > 12) clearInterval(timer);
+    }, 250);
 
-    setInterval(()=>{
-      setupButtons();
-      if(isContentMode()) ensureScreen();
-    }, 600);
+    setupButtonsOnce();
+
+    document.addEventListener("touchmove", stopGesturesOutsideContent, {capture:true, passive:false});
+    document.addEventListener("touchstart", stopGesturesOutsideContent, {capture:true, passive:false});
   }
 
   if(document.readyState === "loading"){
