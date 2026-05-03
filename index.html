@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>メガネ辞書 MVP</title>
-  <link rel="stylesheet" href="./style.css?v=86" />
+  <link rel="stylesheet" href="./style.css?v=87" />
 </head>
 <body class="mode-dictionary">
   <main id="app" class="app">
@@ -127,7 +127,7 @@
     <div class="fullscreen-hint">上下:カード / 左右:めくる / タップで閉じる</div>
   </div>
 
-  <script src="./app.js?v=86"></script>
+  <script src="./app.js?v=87"></script>
   <audio id="mangaAudio" preload="metadata"></audio>
   <div id="mangaFullscreenOverlay" class="manga-fullscreen-overlay" hidden>
     <button id="mangaFullscreenClose" class="manga-fullscreen-close">← 戻る</button>
@@ -151,12 +151,6 @@
       <button class="collection-item disabled" disabled>音声作品（準備中）</button>
     </div>
   </dialog>
-
-<button id="drawCardBtn" style="
-position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
-padding:12px 18px;border-radius:999px;
-background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);
-color:white;backdrop-filter:blur(6px);
-">引く</button>
+  <div id="cardTutorialHint" class="card-tutorial-hint" hidden>めくってみて</div>
 </body>
 </html>

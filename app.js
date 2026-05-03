@@ -4883,42 +4883,189 @@ init();
   }
 })();
 
-/* v86: card draw logic */
-(function(){
-  function drawCard(){
-    try{
-      if(typeof wordIndex !== "undefined" && typeof data !== "undefined"){
-        wordIndex = Math.floor(Math.random()*data.words.length);
-      }
-      if(typeof render === "function"){
-        render("flash");
-      }
+/* v86 draw logic removed in v87 */
 
-      const card = document.querySelector(".card, .card-item, .main-card");
-      if(card){
-        card.classList.remove("card-draw-anim");
-        void card.offsetWidth;
-        card.classList.add("card-draw-anim");
-      }
-    }catch(e){}
+
+/* v87: card tutorial + directional flip */
+(function () {
+  let cardTouchedToday = false;
+  let lastCardMode = false;
+  let hintTimer = null;
+  let sx = 0;
+  let sy = 0;
+  let moved = false;
+  let bound = false;
+
+  function isCardMode() {
+    return typeof appMode !== "undefined" && appMode === "cards";
   }
 
-  function bindDraw(){
-    const btn = document.getElementById("drawCardBtn");
-    if(!btn || btn.dataset.v86) return;
-    btn.dataset.v86 = "1";
-
-    btn.addEventListener("click", drawCard);
+  function getCardSurface() {
+    return document.querySelector(".card img") ||
+           document.querySelector(".card-face") ||
+           document.querySelector(".card-inner") ||
+           document.querySelector(".card");
   }
 
-  function bootV86(){
-    bindDraw();
-    setInterval(bindDraw, 800);
+  function hintEl() {
+    return document.getElementById("cardTutorialHint");
   }
 
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded", bootV86);
-  }else{
-    bootV86();
+  function showHint(text, duration = 2200) {
+    const el = hintEl();
+    if (!el) return;
+
+    clearTimeout(hintTimer);
+    el.textContent = text;
+    el.hidden = false;
+
+    requestAnimationFrame(() => {
+      el.classList.add("show");
+    });
+
+    hintTimer = setTimeout(() => {
+      el.classList.remove("show");
+      setTimeout(() => {
+        if (!el.classList.contains("show")) el.hidden = true;
+      }, 360);
+    }, duration);
+  }
+
+  function onEnterCardMode() {
+    if (!cardTouchedToday) {
+      showHint("めくってみて", 2600);
+    } else {
+      showHint("またあした", 1800);
+    }
+  }
+
+  function markCardTouched() {
+    if (!cardTouchedToday) {
+      cardTouchedToday = true;
+      setTimeout(() => showHint("またあした", 1600), 420);
+    }
+  }
+
+  function playDirectionalFlip(direction) {
+    const surface = getCardSurface();
+    if (!surface) return;
+
+    const cls = direction === "left" ? "card-page-turn-left" : "card-page-turn-right";
+
+    surface.classList.remove("card-page-turn-left", "card-page-turn-right");
+    void surface.offsetWidth;
+    surface.classList.add(cls);
+
+    setTimeout(() => {
+      surface.classList.remove(cls);
+    }, 380);
+  }
+
+  function bindCardGestureObserver() {
+    if (bound) return;
+    bound = true;
+
+    document.addEventListener("touchstart", e => {
+      if (!isCardMode()) return;
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      sx = t.clientX;
+      sy = t.clientY;
+      moved = false;
+    }, { passive: true });
+
+    document.addEventListener("touchmove", e => {
+      if (!isCardMode()) return;
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+
+      const dx = t.clientX - sx;
+      const dy = t.clientY - sy;
+
+      if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy) * 1.25) {
+        moved = true;
+      }
+    }, { passive: true });
+
+    document.addEventListener("touchend", e => {
+      if (!isCardMode()) return;
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+
+      const dx = t.clientX - sx;
+      const dy = t.clientY - sy;
+
+      if (moved && Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        const dir = dx < 0 ? "left" : "right";
+        playDirectionalFlip(dir);
+        markCardTouched();
+      }
+
+      moved = false;
+    }, { passive: true });
+
+    // PC fallback
+    let mouseDown = false;
+    document.addEventListener("pointerdown", e => {
+      if (!isCardMode() || e.pointerType === "touch") return;
+      mouseDown = true;
+      sx = e.clientX;
+      sy = e.clientY;
+      moved = false;
+    });
+
+    document.addEventListener("pointerup", e => {
+      if (!isCardMode() || e.pointerType === "touch" || !mouseDown) return;
+      mouseDown = false;
+
+      const dx = e.clientX - sx;
+      const dy = e.clientY - sy;
+
+      if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        const dir = dx < 0 ? "left" : "right";
+        playDirectionalFlip(dir);
+        markCardTouched();
+      }
+    });
+  }
+
+  function hookRenderV87() {
+    if (typeof render !== "function" || render.__v87Hooked) return;
+
+    const original = render;
+    render = function () {
+      const wasCard = lastCardMode;
+      const result = original.apply(this, arguments);
+
+      setTimeout(() => {
+        const nowCard = isCardMode();
+
+        if (nowCard && !wasCard) {
+          onEnterCardMode();
+        }
+
+        lastCardMode = nowCard;
+      }, 0);
+
+      return result;
+    };
+
+    render.__v87Hooked = true;
+  }
+
+  function bootV87() {
+    bindCardGestureObserver();
+    hookRenderV87();
+
+    setTimeout(() => {
+      lastCardMode = isCardMode();
+      if (lastCardMode) onEnterCardMode();
+    }, 300);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootV87);
+  } else {
+    bootV87();
   }
 })();
