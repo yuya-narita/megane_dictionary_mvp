@@ -8580,3 +8580,305 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+
+
+/* v135.1: card-mode binder button + content selection + content-only favorite */
+(function(){
+  const CONTENT_FAV_KEY = "contentFavoritesV1351";
+  let selectedContentIndex = null;
+  let sx = 0;
+  let sy = 0;
+  let moved = false;
+  let startTime = 0;
+  let scrollTimer = null;
+  let scrolling = false;
+
+  function isContentMode(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function getMode(){
+    if(isContentMode()) return "content";
+    try {
+      if(typeof appMode !== "undefined") return appMode;
+    } catch(e){}
+    return document.body.dataset.mode || "";
+  }
+
+  function isCardMode(){
+    const mode = getMode();
+    return mode === "cards" || mode === "card";
+  }
+
+  function contentScreen(){
+    return document.getElementById("contentScreenV127");
+  }
+
+  function controls(){
+    const wrap = document.querySelector(".controls");
+    if(!wrap) return [];
+    return Array.from(wrap.querySelectorAll("button")).slice(0,3);
+  }
+
+  function loadFavs(){
+    try { return JSON.parse(localStorage.getItem(CONTENT_FAV_KEY) || "[]"); }
+    catch(e){ return []; }
+  }
+
+  function saveFavs(list){
+    localStorage.setItem(CONTENT_FAV_KEY, JSON.stringify(list));
+  }
+
+  function updateBottomButtons(){
+    const btns = controls();
+    if(btns.length < 3) return;
+
+    const [left, center, right] = btns;
+    const mode = getMode();
+
+    if(mode === "content"){
+      left.textContent = "探索";
+      center.textContent = "★";
+      right.textContent = "シェア";
+      center.title = "コンテンツお気に入り";
+
+      const favs = loadFavs();
+      center.classList.toggle(
+        "content-fav-on-v1351",
+        selectedContentIndex !== null && favs.includes(selectedContentIndex)
+      );
+      return;
+    }
+
+    center.classList.remove("content-fav-on-v1351");
+
+    if(isCardMode()){
+      left.textContent = "探索";
+      center.textContent = "📘";
+      right.textContent = "シェア";
+      center.title = "バインダー";
+    }else{
+      left.textContent = "探索";
+      center.textContent = "★";
+      right.textContent = "シェア";
+      center.title = "お気に入り";
+    }
+  }
+
+  function selectContentCard(el){
+    const idx = Number(el.dataset.index ?? -1);
+    if(!Number.isFinite(idx) || idx < 0) return;
+
+    selectedContentIndex = idx;
+
+    const s = contentScreen();
+    if(s){
+      s.querySelectorAll(".content-card-v127").forEach(card=>{
+        card.classList.toggle("selected-v1351", card === el);
+      });
+    }
+
+    updateBottomButtons();
+  }
+
+  function bindContentCards(){
+    const s = contentScreen();
+    if(!s) return;
+
+    s.querySelectorAll(".content-card-v127").forEach(el=>{
+      if(el.dataset.v1351Bound) return;
+      el.dataset.v1351Bound = "1";
+
+      // 既存の強いclick抑制を上書きするためcaptureで先に扱う
+      el.addEventListener("touchstart", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        sx = t.clientX;
+        sy = t.clientY;
+        moved = false;
+        startTime = Date.now();
+      }, {capture:true, passive:true});
+
+      el.addEventListener("touchmove", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        const dx = Math.abs(t.clientX - sx);
+        const dy = Math.abs(t.clientY - sy);
+        if(dx > 12 || dy > 12){
+          moved = true;
+          scrolling = true;
+          clearTimeout(scrollTimer);
+          scrollTimer = setTimeout(()=>{ scrolling = false; }, 260);
+        }
+      }, {capture:true, passive:true});
+
+      el.addEventListener("touchend", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+
+        const dx = Math.abs(t.clientX - sx);
+        const dy = Math.abs(t.clientY - sy);
+        const duration = Date.now() - startTime;
+
+        if(dx > 12 || dy > 12 || moved || scrolling || duration < 50){
+          moved = false;
+          return;
+        }
+
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+        selectContentCard(el);
+      }, {capture:true, passive:false});
+
+      el.addEventListener("click", ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+
+        if(!moved && !scrolling){
+          selectContentCard(el);
+        }
+      }, true);
+    });
+  }
+
+  function bindContentScroll(){
+    const s = contentScreen();
+    if(!s || s.dataset.v1351Scroll) return;
+    s.dataset.v1351Scroll = "1";
+    s.addEventListener("scroll", ()=>{
+      scrolling = true;
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(()=>{ scrolling = false; }, 260);
+    }, {passive:true});
+  }
+
+  function bindBottomButtons(){
+    const btns = controls();
+    if(btns.length < 3) return;
+
+    const [left, center, right] = btns;
+
+    if(!center.dataset.v1351Center){
+      center.dataset.v1351Center = "1";
+
+      center.addEventListener("click", ev=>{
+        if(isContentMode()){
+          ev.preventDefault();
+          ev.stopPropagation();
+          ev.stopImmediatePropagation?.();
+
+          if(selectedContentIndex === null){
+            alert("お気に入りにするコンテンツを選んでください");
+            return;
+          }
+
+          const favs = loadFavs();
+          const i = favs.indexOf(selectedContentIndex);
+          if(i >= 0) favs.splice(i, 1);
+          else favs.push(selectedContentIndex);
+          saveFavs(favs);
+          updateBottomButtons();
+          return;
+        }
+
+        if(isCardMode()){
+          // 既存のバインダー処理へ影響させない。表示だけ📘にする。
+          center.textContent = "📘";
+        }
+      }, true);
+    }
+
+    if(!left.dataset.v1351Left){
+      left.dataset.v1351Left = "1";
+      left.addEventListener("click", ev=>{
+        if(isContentMode()){
+          ev.preventDefault();
+          ev.stopPropagation();
+          ev.stopImmediatePropagation?.();
+          alert("コンテンツ探索は次の版で接続予定");
+        }
+      }, true);
+    }
+
+    if(!right.dataset.v1351Right){
+      right.dataset.v1351Right = "1";
+      right.addEventListener("click", ev=>{
+        if(isContentMode()){
+          ev.preventDefault();
+          ev.stopPropagation();
+          ev.stopImmediatePropagation?.();
+
+          const title = selectedContentIndex !== null
+            ? contentScreen()?.querySelector(`.content-card-v127[data-index="${selectedContentIndex}"] .content-title-v127`)?.textContent
+            : "コンテンツ一覧";
+
+          if(navigator.share){
+            navigator.share({ title: title || "コンテンツ一覧", text: title || "コンテンツ一覧" }).catch(()=>{});
+          }else{
+            alert("シェア機能はこの環境では未対応です");
+          }
+        }
+      }, true);
+    }
+  }
+
+  function bindTopModeChanges(){
+    const buttons = Array.from(document.querySelectorAll("button")).filter(b=>{
+      const t=(b.textContent||"").replace(/\s+/g,"").trim();
+      return ["辞書","カード","コンテンツ"].includes(t);
+    });
+
+    buttons.forEach(btn=>{
+      if(btn.dataset.v1351Mode) return;
+      btn.dataset.v1351Mode = "1";
+
+      btn.addEventListener("click", ()=>{
+        setTimeout(()=>{
+          if(!isContentMode()) selectedContentIndex = null;
+          bindContentCards();
+          bindContentScroll();
+          bindBottomButtons();
+          updateBottomButtons();
+        }, 80);
+      }, true);
+
+      btn.addEventListener("touchstart", ()=>{
+        setTimeout(()=>{
+          if(!isContentMode()) selectedContentIndex = null;
+          bindContentCards();
+          bindContentScroll();
+          bindBottomButtons();
+          updateBottomButtons();
+        }, 120);
+      }, {capture:true, passive:true});
+    });
+  }
+
+  function boot(){
+    bindContentCards();
+    bindContentScroll();
+    bindBottomButtons();
+    bindTopModeChanges();
+    updateBottomButtons();
+
+    let n = 0;
+    const timer = setInterval(()=>{
+      n++;
+      bindContentCards();
+      bindContentScroll();
+      bindBottomButtons();
+      bindTopModeChanges();
+      updateBottomButtons();
+      if(n > 12) clearInterval(timer);
+    }, 300);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();
