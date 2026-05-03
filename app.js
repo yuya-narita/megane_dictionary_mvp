@@ -5300,3 +5300,274 @@ init();
  // override renderBinder
  window.renderBinder=renderBinderAnim;
 })();
+
+/* v100 binder mini card + new badge */
+(function(){
+  const BINDER_KEY = "binderV98";
+  const NEW_KEY = "binderNewV100";
+
+  function load(key, fallback){
+    try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}
+    catch(e){return fallback;}
+  }
+  function save(key, val){
+    try{localStorage.setItem(key, JSON.stringify(val));}catch(e){}
+  }
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g, ch => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[ch]));
+  }
+  function getTitle(i){
+    try{
+      if(typeof data !== "undefined" && data.words && data.words[i]){
+        return data.words[i].word || data.words[i].title || ("CARD " + (i+1));
+      }
+    }catch(e){}
+    return "CARD " + (i+1);
+  }
+
+  // 既存addCardを補強：新規取得だけNEW記録
+  window.addBinderCardV100 = function(idx){
+    const owned = load(BINDER_KEY, []);
+    const newOnes = load(NEW_KEY, []);
+    if(!owned.includes(idx)){
+      owned.push(idx);
+      save(BINDER_KEY, owned);
+      if(!newOnes.includes(idx)){
+        newOnes.push(idx);
+        save(NEW_KEY, newOnes);
+      }
+    }
+  };
+
+  // flip時の既存binder追加より後に効くよう保険を追加
+  if(typeof flipCurrentCard === "function" && !flipCurrentCard.__v100Binder){
+    const orig = flipCurrentCard;
+    flipCurrentCard = function(){
+      const before = (()=>{try{return typeof wordIndex !== "undefined" ? wordIndex : null}catch(e){return null}})();
+      orig.apply(this, arguments);
+      setTimeout(()=>{
+        try{
+          const idx = typeof wordIndex !== "undefined" ? wordIndex : before;
+          if(typeof idx === "number") window.addBinderCardV100(idx);
+        }catch(e){}
+      }, 80);
+    };
+    flipCurrentCard.__v100Binder = true;
+  }
+
+  window.renderBinder = function renderBinderV100(){
+    const grid = document.getElementById("binderGrid");
+    if(!grid) return;
+
+    const owned = load(BINDER_KEY, []);
+    const newOnes = load(NEW_KEY, []);
+    const total = 60;
+
+    let html = "";
+    for(let i=0;i<total;i++){
+      const has = owned.includes(i);
+      const isNew = newOnes.includes(i);
+      const no = String(i+1).padStart(3,"0");
+      const title = getTitle(i);
+
+      if(has){
+        html += `
+          <div class="binder-item ${isNew ? "new-fill" : ""}" data-idx="${i}">
+            <span class="binder-mini-no">No.${no}</span>
+            ${isNew ? `<span class="binder-new-badge">NEW</span>` : ""}
+            <div class="binder-mini-card">
+              <span class="binder-mini-title">${esc(title)}</span>
+            </div>
+          </div>`;
+      }else{
+        html += `
+          <div class="binder-item binder-locked" data-idx="${i}">
+            <span class="binder-mini-no">No.${no}</span>
+            <span>???</span>
+          </div>`;
+      }
+    }
+
+    grid.innerHTML = html;
+
+    // NEWは一度見たら消す。ただしアニメが見えるよう少し遅らせる。
+    if(newOnes.length){
+      setTimeout(()=>save(NEW_KEY, []), 1200);
+    }
+  };
+
+  function bindBinderOpenV100(){
+    const btn = document.getElementById("openBinderBtn");
+    const modal = document.getElementById("binderModal");
+    if(!btn || !modal || btn.dataset.v100) return;
+    btn.dataset.v100 = "1";
+
+    btn.onclick = () => {
+      modal.style.display = "block";
+      window.renderBinder();
+    };
+
+    modal.onclick = (e) => {
+      if(e.target === modal) modal.style.display = "none";
+    };
+  }
+
+  function boot(){
+    bindBinderOpenV100();
+    setInterval(bindBinderOpenV100, 600);
+  }
+
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+
+
+/* v101: binder close + safer card display */
+(function(){
+  const BINDER_KEY = "binderV98";
+  const NEW_KEY = "binderNewV100";
+
+  function load(key, fallback){
+    try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}
+    catch(e){return fallback;}
+  }
+  function save(key, val){
+    try{localStorage.setItem(key, JSON.stringify(val));}catch(e){}
+  }
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g, ch => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[ch]));
+  }
+
+  function getCardData(i){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards) && cards[i]){
+        return cards[i];
+      }
+    }catch(e){}
+    try{
+      if(typeof data !== "undefined" && Array.isArray(data.words) && data.words[i]){
+        return data.words[i];
+      }
+    }catch(e){}
+    return null;
+  }
+
+  function getCardTitle(i){
+    const c = getCardData(i);
+    if(!c) return "CARD " + String(i+1).padStart(3,"0");
+    return c.title || c.word || c.name || c.label || ("CARD " + String(i+1).padStart(3,"0"));
+  }
+
+  function getTotal(){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards)) return Math.max(cards.length, 1);
+    }catch(e){}
+    try{
+      if(typeof data !== "undefined" && Array.isArray(data.words)) return Math.max(data.words.length, 1);
+    }catch(e){}
+    return 60;
+  }
+
+  // 今日カードや既存処理がbinderV98に入れているindexをそのまま使う
+  window.renderBinder = function renderBinderV101(){
+    const grid = document.getElementById("binderGrid");
+    if(!grid) return;
+
+    const owned = load(BINDER_KEY, []);
+    const newOnes = load(NEW_KEY, []);
+    const total = Math.max(getTotal(), 60);
+
+    let html = "";
+
+    for(let i=0;i<total;i++){
+      const has = owned.includes(i);
+      const isNew = newOnes.includes(i);
+      const no = String(i+1).padStart(3,"0");
+      const title = getCardTitle(i);
+
+      if(has){
+        html += `
+          <div class="binder-item ${isNew ? "new-fill" : ""}" data-idx="${i}">
+            <span class="binder-mini-no">No.${no}</span>
+            ${isNew ? `<span class="binder-new-badge">NEW</span>` : ""}
+            <div class="binder-mini-card">
+              <span class="binder-mini-title">${esc(title)}</span>
+            </div>
+          </div>`;
+      }else{
+        html += `
+          <div class="binder-item binder-locked" data-idx="${i}">
+            <span class="binder-mini-no">No.${no}</span>
+            <span>???</span>
+          </div>`;
+      }
+    }
+
+    grid.innerHTML = html;
+
+    if(newOnes.length){
+      setTimeout(()=>save(NEW_KEY, []), 1400);
+    }
+  };
+
+  function openBinder(){
+    const modal = document.getElementById("binderModal");
+    if(!modal) return;
+    modal.style.display = "block";
+    window.renderBinder();
+  }
+
+  function closeBinder(){
+    const modal = document.getElementById("binderModal");
+    if(!modal) return;
+    modal.style.display = "none";
+  }
+
+  function bindBinderV101(){
+    const btn = document.getElementById("openBinderBtn");
+    const modal = document.getElementById("binderModal");
+    const close = document.getElementById("binderCloseBtn");
+
+    if(btn && !btn.dataset.v101){
+      btn.dataset.v101 = "1";
+      btn.onclick = (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        openBinder();
+      };
+    }
+
+    if(close && !close.dataset.v101){
+      close.dataset.v101 = "1";
+      close.onclick = (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        closeBinder();
+      };
+    }
+
+    if(modal && !modal.dataset.v101){
+      modal.dataset.v101 = "1";
+      modal.addEventListener("click", (e)=>{
+        // 背景タップだけ閉じる。中身タップでは閉じない。
+        if(e.target === modal) closeBinder();
+      });
+    }
+
+    document.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape") closeBinder();
+    }, { once: false });
+  }
+
+  function boot(){
+    bindBinderV101();
+    setInterval(bindBinderV101, 700);
+  }
+
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
