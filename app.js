@@ -6490,3 +6490,292 @@ init();
     boot();
   }
 })();
+
+
+/* v108: binder viewer flip + guaranteed sample text */
+(function(){
+  const BINDER_KEY = "binderCardsV104";
+
+  let owned = [];
+  let pos = 0;
+  let face = "front";
+  let sx = 0;
+  let sy = 0;
+  let tracking = false;
+
+  function load(key, fallback){
+    try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}
+    catch(e){return fallback;}
+  }
+
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g,ch=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[ch]));
+  }
+
+  function getCards(){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards)) return cards;
+    }catch(e){}
+    return [];
+  }
+
+  function validIndex(idx){
+    const arr = getCards();
+    return typeof idx === "number" && idx >= 0 && idx < arr.length;
+  }
+
+  function getCard(idx){
+    const arr = getCards();
+    return validIndex(idx) ? arr[idx] : null;
+  }
+
+  function getTitle(idx){
+    const c = getCard(idx);
+    if(!c) return "CARD " + String(idx+1).padStart(3,"0");
+    return c.title || c.name || c.label || c.word || c.id || ("CARD " + String(idx+1).padStart(3,"0"));
+  }
+
+  function getSub(idx){
+    const c = getCard(idx);
+    if(!c) return "";
+    return c.subtitle || c.en || c.keyword || c.type || "";
+  }
+
+  function getImage(idx){
+    const c = getCard(idx);
+    if(!c) return "";
+    return c.image || c.img || c.src || c.url || c.front || c.frontImage || c.cardImage || "";
+  }
+
+  function getSampleText(idx){
+    const c = getCard(idx);
+    const title = getTitle(idx);
+    const sub = getSub(idx);
+
+    const real = c && (c.text || c.description || c.body || c.content || c.observe || c.story);
+    if(real) return String(real);
+
+    return `
+<h3>${esc(title)}</h3>
+${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを引いた瞬間、意味が少しだけ形になる。</div>`}
+
+<div class="section">
+<h3>OBSERVE</h3>
+人は、何かを見た瞬間に、それをただの情報としてではなく、自分の中の記憶や感情と結びつけて読む。
+</div>
+
+<div class="section">
+<h3>BUG</h3>
+意味は、対象そのものだけでは決まらない。見るタイミング、気分、場所によって、同じカードでも違うものに見えてしまう。
+</div>
+
+<div class="section">
+<h3>SCENE</h3>
+・会議<br>
+・SNS<br>
+・深夜の思考<br>
+・言えなかった一言<br>
+・なんとなく気になる沈黙
+</div>
+
+<div class="section">
+<h3>LOOK BACK</h3>
+それは本当にそこにあったのか。<br>
+それとも、見た瞬間に生まれてしまったのか。
+</div>
+
+<div class="section">
+<h3>🐻 LOOK BEAR</h3>
+「もう一回見ると、ちょっと違って見えるよね。」
+</div>`;
+  }
+
+  function els(){
+    return {
+      root: document.getElementById("binderViewer"),
+      card: document.getElementById("binderViewerCard"),
+      title: document.getElementById("binderViewerTitle"),
+      counter: document.getElementById("binderViewerCounter"),
+      text: document.getElementById("binderViewerTextPanel"),
+      inner: document.getElementById("binderViewerTextInner"),
+      close: document.getElementById("binderViewerClose")
+    };
+  }
+
+  function reloadOwned(){
+    owned = load(BINDER_KEY, []).filter(validIndex).sort((a,b)=>a-b);
+  }
+
+  function renderCard(anim){
+    const e = els();
+    if(!e.card || !e.title || !e.counter || !e.inner) return;
+    const idx = owned[pos];
+    const title = getTitle(idx);
+    const img = getImage(idx);
+    const no = String(idx+1).padStart(3,"0");
+
+    e.card.classList.remove("flip-view", "slide-left", "slide-right");
+
+    if(face === "front"){
+      e.card.innerHTML = img
+        ? `<img src="${esc(img)}" alt="${esc(title)}">`
+        : `<div class="viewer-placeholder">No.${no}<br>${esc(title)}</div>`;
+    }else{
+      e.card.innerHTML = `
+        <div class="viewer-card-back">
+          <div>
+            <div class="viewer-card-back-title">${esc(title)}</div>
+            <div class="viewer-card-back-sub">No.${no} / THE LOOKING BEAR</div>
+          </div>
+        </div>`;
+    }
+
+    e.title.textContent = title;
+    e.counter.textContent = `${pos+1} / ${owned.length}　No.${no}`;
+
+    e.inner.innerHTML = getSampleText(idx);
+
+    if(anim === "flip"){
+      void e.card.offsetWidth;
+      e.card.classList.add("flip-view");
+    }else if(anim){
+      void e.card.offsetWidth;
+      e.card.classList.add(anim === "next" ? "slide-left" : "slide-right");
+    }
+  }
+
+  function open(idx){
+    reloadOwned();
+    if(!owned.length) return;
+    const found = owned.indexOf(idx);
+    pos = found >= 0 ? found : 0;
+    face = "front";
+
+    const e = els();
+    if(!e.root) return;
+    e.root.hidden = false;
+
+    if(e.text){
+      e.text.classList.remove("expanded");
+    }
+
+    renderCard();
+  }
+
+  function close(){
+    const e = els();
+    if(e.root) e.root.hidden = true;
+  }
+
+  function move(dir){
+    if(!owned.length) return;
+    pos += dir;
+    if(pos < 0) pos = owned.length - 1;
+    if(pos >= owned.length) pos = 0;
+    face = "front";
+    const e = els();
+    if(e.text) e.text.classList.remove("expanded");
+    renderCard(dir > 0 ? "next" : "prev");
+  }
+
+  function flip(){
+    face = face === "front" ? "back" : "front";
+    renderCard("flip");
+  }
+
+  function bindViewer(){
+    const e = els();
+    if(!e.root || e.root.dataset.v108Bound) return;
+    e.root.dataset.v108Bound = "1";
+
+    if(e.close){
+      e.close.onclick = (ev)=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        close();
+      };
+    }
+
+    if(e.card){
+      e.card.addEventListener("click", ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        flip();
+      });
+    }
+
+    if(e.text){
+      e.text.addEventListener("touchstart", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        sx = t.clientX;
+        sy = t.clientY;
+        tracking = true;
+      }, {passive:true});
+
+      e.text.addEventListener("touchend", ev=>{
+        if(!tracking) return;
+        tracking = false;
+
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+
+        const dx = t.clientX - sx;
+        const dy = t.clientY - sy;
+
+        if(Math.abs(dy) > 46 && Math.abs(dy) > Math.abs(dx)){
+          if(dy < 0) e.text.classList.add("expanded");
+          else e.text.classList.remove("expanded");
+          return;
+        }
+
+        if(Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.2){
+          move(dx < 0 ? 1 : -1);
+        }
+      }, {passive:true});
+    }
+
+    e.root.addEventListener("click", ev=>{
+      if(ev.target === e.root) close();
+    });
+  }
+
+  function hookBinder(){
+    if(typeof window.renderBinder !== "function" || window.renderBinder.__v108Hooked) return;
+
+    const orig = window.renderBinder;
+    window.renderBinder = function(){
+      orig.apply(this, arguments);
+
+      setTimeout(()=>{
+        bindViewer();
+
+        document.querySelectorAll(".binder-item.owned-card").forEach(el=>{
+          el.onclick = null;
+          el.addEventListener("click", ev=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const idx = Number(el.dataset.cardIndex ?? el.dataset.idx);
+            if(Number.isFinite(idx)) open(idx);
+          }, true);
+        });
+      },0);
+    };
+
+    window.renderBinder.__v108Hooked = true;
+  }
+
+  function boot(){
+    bindViewer();
+    hookBinder();
+    setInterval(()=>{
+      bindViewer();
+      hookBinder();
+    },700);
+  }
+
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
