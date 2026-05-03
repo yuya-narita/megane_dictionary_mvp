@@ -6385,3 +6385,108 @@ init();
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();
+
+
+/* v107: text panel interaction */
+(function(){
+  const TEXT_KEY = "binderTextDataV107";
+
+  let sx=0, sy=0, tracking=false;
+  let panel, inner;
+  let expanded=false;
+
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g,ch=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[ch]));
+  }
+
+  function getCardText(idx){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards) && cards[idx]){
+        const c=cards[idx];
+        return c.text || c.description || c.body || c.content || "・・・";
+      }
+    }catch(e){}
+    return "・・・";
+  }
+
+  function renderText(idx){
+    if(!inner) return;
+    const txt = getCardText(idx);
+    inner.innerHTML = esc(txt).replace(/\n/g,"<br>");
+  }
+
+  function hookViewer(){
+    const viewer = document.getElementById("binderViewer");
+    panel = document.getElementById("binderViewerTextPanel");
+    inner = document.getElementById("binderViewerTextInner");
+    if(!viewer || !panel || viewer.dataset.v107Bound) return;
+
+    viewer.dataset.v107Bound = "1";
+
+    viewer.addEventListener("touchstart", e=>{
+      const t=e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+      sx=t.clientX; sy=t.clientY;
+      tracking=true;
+    }, {passive:true});
+
+    viewer.addEventListener("touchend", e=>{
+      if(!tracking) return;
+      tracking=false;
+      const t=e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+      const dx=t.clientX-sx;
+      const dy=t.clientY-sy;
+
+      if(Math.abs(dy)>48 && Math.abs(dy)>Math.abs(dx)){
+        if(dy < 0){
+          panel.classList.add("expanded");
+          expanded=true;
+        }else{
+          panel.classList.remove("expanded");
+          expanded=false;
+        }
+      }else if(Math.abs(dx)>48 && Math.abs(dx)>Math.abs(dy)){
+        // 左右でカード移動
+        if(typeof moveViewer === "function"){
+          moveViewer(dx<0 ? 1 : -1);
+          panel.classList.remove("expanded");
+          expanded=false;
+        }
+      }
+    }, {passive:true});
+  }
+
+  function hookRender(){
+    if(typeof renderViewer !== "function" || renderViewer.__v107) return;
+    const orig = renderViewer;
+    renderViewer = function(anim){
+      const r = orig.apply(this, arguments);
+      try{
+        if(typeof viewerPos !== "undefined" && typeof owned !== "undefined"){
+          const idx = owned[viewerPos];
+          renderText(idx);
+        }
+      }catch(e){}
+      return r;
+    };
+    renderViewer.__v107=true;
+  }
+
+  function boot(){
+    hookViewer();
+    hookRender();
+    setInterval(()=>{
+      hookViewer();
+      hookRender();
+    },700);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",boot);
+  }else{
+    boot();
+  }
+})();
