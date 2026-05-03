@@ -2295,3 +2295,8 @@ body[data-glass-theme="default"] {
   45% { transform: perspective(1000px) rotateY(42deg) scale(.985); filter: brightness(.88); }
   100% { transform: perspective(1000px) rotateY(0deg) scale(1); filter: brightness(1); }
 }
+
+/* v89: tutorial near card */
+.card-tutorial-hint {
+  bottom: 160px !important;
+}

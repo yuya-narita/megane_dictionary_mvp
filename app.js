@@ -5069,3 +5069,136 @@ init();
     bootV87();
   }
 })();
+
+/* v89: daily one-card lock */
+(function(){
+  const KEY = "meganeCardDailyV89";
+
+  function todayKey(){
+    const d = new Date();
+    return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+  }
+
+  function load(){
+    try { return JSON.parse(localStorage.getItem(KEY) || "{}"); }
+    catch(e){ return {}; }
+  }
+
+  function save(obj){
+    try { localStorage.setItem(KEY, JSON.stringify(obj)); } catch(e){}
+  }
+
+  function ensureDaily(){
+    const s = load();
+    const t = todayKey();
+    if(s.date !== t){
+      const next = { date: t, drawn: false, index: null };
+      save(next);
+      return next;
+    }
+    return s;
+  }
+
+  function setDrawn(idx){
+    const s = ensureDaily();
+    s.drawn = true;
+    s.index = idx;
+    save(s);
+  }
+
+  function getDrawn(){
+    const s = ensureDaily();
+    return s;
+  }
+
+  function isCardMode(){
+    return typeof appMode !== "undefined" && appMode === "cards";
+  }
+
+  function pickIndex(){
+    if(typeof data === "undefined" || !data.words) return null;
+    return Math.floor(Math.random()*data.words.length);
+  }
+
+  function applyLockedIndex(){
+    const s = getDrawn();
+    if(!isCardMode()) return;
+    if(s.drawn && typeof s.index === "number"){
+      if(typeof wordIndex !== "undefined"){
+        wordIndex = s.index;
+      }
+    }
+  }
+
+  // Hook into render to keep index locked once drawn
+  function hookRender(){
+    if(typeof render !== "function" || render.__v89Hooked) return;
+    const orig = render;
+    render = function(){
+      const res = orig.apply(this, arguments);
+      setTimeout(applyLockedIndex, 0);
+      return res;
+    };
+    render.__v89Hooked = true;
+  }
+
+  // Intercept first horizontal flip to "draw" card
+  let sx=0, sy=0, moved=false;
+
+  function bindGesture(){
+    document.addEventListener("touchstart", e=>{
+      if(!isCardMode()) return;
+      const t=e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+      sx=t.clientX; sy=t.clientY; moved=false;
+    }, {passive:true});
+
+    document.addEventListener("touchmove", e=>{
+      if(!isCardMode()) return;
+      const t=e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+      const dx=t.clientX-sx, dy=t.clientY-sy;
+      if(Math.abs(dx)>28 && Math.abs(dx)>Math.abs(dy)*1.2){
+        moved=true;
+      }
+    }, {passive:true});
+
+    document.addEventListener("touchend", e=>{
+      if(!isCardMode()) return;
+      const t=e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+
+      const dx=t.clientX-sx, dy=t.clientY-sy;
+
+      if(moved && Math.abs(dx)>42 && Math.abs(dx)>Math.abs(dy)*1.2){
+        const s = getDrawn();
+        if(!s.drawn){
+          const idx = pickIndex();
+          if(idx!==null){
+            if(typeof wordIndex !== "undefined"){
+              wordIndex = idx;
+            }
+            setDrawn(idx);
+            if(typeof render === "function") render("flash");
+          }
+        } else {
+          // already drawn: do nothing (keep same card)
+          applyLockedIndex();
+        }
+      }
+      moved=false;
+    }, {passive:true});
+  }
+
+  function boot(){
+    hookRender();
+    bindGesture();
+    setTimeout(applyLockedIndex, 200);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
