@@ -3530,3 +3530,182 @@ body[data-mode="cards"] #openBinderBtn {
     margin-top: 16px !important;
   }
 }
+
+
+/* v113: バインダー閲覧をカードモード再現ビューで作り直し */
+.binder-replay-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 14000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 86px 30px 34px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(120,150,180,.08), transparent 34%),
+    linear-gradient(180deg, rgba(18,22,25,.96), rgba(0,0,0,.94));
+  backdrop-filter: blur(8px);
+}
+
+.binder-replay-viewer[hidden] {
+  display: none !important;
+}
+
+.binder-replay-close {
+  position: fixed;
+  right: 34px;
+  top: 94px;
+  z-index: 14003;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.92);
+  font-size: 32px;
+  line-height: 1;
+}
+
+.binder-replay-flip-card {
+  width: min(70vw, 360px) !important;
+  height: auto !important;
+  aspect-ratio: 2 / 3;
+  perspective: 1200px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(255,255,255,.06);
+  box-shadow:
+    0 24px 64px rgba(0,0,0,.55),
+    0 0 0 1px rgba(255,255,255,.08) inset;
+}
+
+.binder-replay-flip-card .flip-inner {
+  width: 100%;
+  height: 100%;
+}
+
+.binder-replay-flip-card .bug-card-image {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+  background: white;
+}
+
+.binder-replay-title {
+  margin-top: 22px !important;
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  color: rgba(255,255,255,.92) !important;
+  letter-spacing: .02em !important;
+  text-align: center !important;
+  text-shadow: 0 2px 18px rgba(0,0,0,.55) !important;
+}
+
+.binder-replay-subtitle {
+  margin-top: 8px !important;
+  color: rgba(210,225,240,.82) !important;
+  font-size: 15px !important;
+  text-align: center !important;
+  font-weight: 800 !important;
+}
+
+.binder-replay-caption {
+  margin-top: 10px !important;
+  color: rgba(255,255,255,.88) !important;
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+  text-align: center !important;
+  font-weight: 800 !important;
+}
+
+.binder-replay-counter {
+  margin-top: 12px !important;
+  color: rgba(255,255,255,.36) !important;
+  font-size: 15px !important;
+  letter-spacing: .1em !important;
+  text-align: center !important;
+}
+
+/* カード下に隠れている本文。初期はほぼ見せない */
+.binder-replay-text-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 62%;
+  z-index: 14002;
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  border-top: 1px solid rgba(255,255,255,.16);
+  background:
+    linear-gradient(180deg, rgba(32,36,41,.76), rgba(7,9,12,.96));
+  box-shadow:
+    0 -18px 48px rgba(0,0,0,.62),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  backdrop-filter: blur(10px);
+  transform: translateY(86%);
+  transition: transform .3s cubic-bezier(.2,.9,.25,1);
+  color: rgba(255,255,255,.94);
+}
+
+.binder-replay-text-panel.expanded {
+  transform: translateY(0);
+}
+
+.binder-replay-text-panel .text-handle {
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.5);
+  margin: 10px auto 10px;
+}
+
+.binder-replay-text-panel .text-inner {
+  padding: 12px 32px 46px;
+  color: rgba(255,255,255,.94);
+  font-size: 15px;
+  line-height: 1.72;
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+}
+
+.binder-replay-text-panel .text-inner h3 {
+  color: rgba(255,255,255,.98);
+  font-size: 18px;
+  letter-spacing: .14em;
+  margin: 12px 0 8px;
+}
+
+.binder-replay-text-panel .text-inner .lead {
+  color: rgba(230,238,245,.95);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.binder-replay-text-panel .text-inner .section {
+  border-top: 1px solid rgba(255,255,255,.14);
+  margin-top: 16px;
+  padding-top: 12px;
+}
+
+.binder-replay-flip-card.flip-pop .flip-inner {
+  animation: flipPop .26s cubic-bezier(.34,1.56,.64,1);
+}
+
+@media (max-height: 740px) {
+  .binder-replay-viewer {
+    padding-top: 68px;
+  }
+  .binder-replay-flip-card {
+    width: min(64vw, 320px) !important;
+  }
+  .binder-replay-title {
+    font-size: 24px !important;
+    margin-top: 16px !important;
+  }
+}

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>メガネ辞書 MVP</title>
-  <link rel="stylesheet" href="./style.css?v=112" />
+  <link rel="stylesheet" href="./style.css?v=113" />
 </head>
 <body class="mode-dictionary">
   <main id="app" class="app">
@@ -127,7 +127,7 @@
     <div class="fullscreen-hint">上下:カード / 左右:めくる / タップで閉じる</div>
   </div>
 
-  <script src="./app.js?v=112"></script>
+  <script src="./app.js?v=113"></script>
   <audio id="mangaAudio" preload="metadata"></audio>
   <div id="mangaFullscreenOverlay" class="manga-fullscreen-overlay" hidden>
     <button id="mangaFullscreenClose" class="manga-fullscreen-close">← 戻る</button>
@@ -183,6 +183,31 @@ padding:20px;">
   </div>
   <div id="binderViewerTitle" class="binder-viewer-title"></div>
   <div id="binderViewerCounter" class="binder-viewer-counter"></div>
+</div>
+
+<div id="binderReplayViewer" class="binder-replay-viewer" hidden>
+  <button id="binderReplayClose" class="binder-replay-close">×</button>
+
+  <div id="binderReplayFlipCard" class="flip-card binder-replay-flip-card">
+    <div class="flip-inner">
+      <div class="flip-face flip-front">
+        <img id="binderReplayFront" class="bug-card-image" alt="" />
+      </div>
+      <div class="flip-face flip-back">
+        <img id="binderReplayBack" class="bug-card-image" alt="" />
+      </div>
+    </div>
+  </div>
+
+  <div id="binderReplayTitle" class="bug-card-title binder-replay-title"></div>
+  <div id="binderReplaySubtitle" class="bug-card-subtitle binder-replay-subtitle"></div>
+  <div id="binderReplayCaption" class="bug-card-caption binder-replay-caption"></div>
+  <div id="binderReplayCounter" class="counter binder-replay-counter"></div>
+
+  <div id="binderReplayTextPanel" class="binder-replay-text-panel">
+    <div class="text-handle"></div>
+    <div id="binderReplayTextInner" class="text-inner"></div>
+  </div>
 </div>
 </body>
 </html>
