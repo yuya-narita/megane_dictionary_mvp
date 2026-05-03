@@ -5571,3 +5571,314 @@ init();
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();
+
+
+/* v102: binder uses card data only */
+(function(){
+  const BINDER_KEY = "binderV98";
+  const NEW_KEY = "binderNewV100";
+
+  function load(key, fallback){
+    try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}
+    catch(e){return fallback;}
+  }
+  function save(key,val){
+    try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}
+  }
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g,ch=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[ch]));
+  }
+
+  function getCardArray(){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards) && cards.length) return cards;
+    }catch(e){}
+    return [];
+  }
+
+  function getCard(i){
+    const arr=getCardArray();
+    return arr[i] || null;
+  }
+
+  function getCardTitle(i){
+    const c=getCard(i);
+    if(!c) return "CARD " + String(i+1).padStart(3,"0");
+    return c.title || c.name || c.label || c.id || ("CARD " + String(i+1).padStart(3,"0"));
+  }
+
+  function getCardImage(i){
+    const c=getCard(i);
+    if(!c) return "";
+    return c.image || c.img || c.src || c.url || c.front || c.frontImage || c.cardImage || "";
+  }
+
+  function getTotal(){
+    const arr=getCardArray();
+    return Math.max(arr.length || 0, 60);
+  }
+
+  function renderOwnedCard(i, isNew){
+    const no=String(i+1).padStart(3,"0");
+    const title=getCardTitle(i);
+    const img=getCardImage(i);
+
+    return `
+      <div class="binder-item ${isNew ? "new-fill" : ""}" data-idx="${i}">
+        <span class="binder-mini-no">No.${no}</span>
+        ${isNew ? `<span class="binder-new-badge">NEW</span>` : ""}
+        <div class="binder-mini-card">
+          ${img ? `<img src="${esc(img)}" alt="${esc(title)}">` : `<span class="binder-mini-title fallback">${esc(title)}</span>`}
+        </div>
+      </div>`;
+  }
+
+  function renderLocked(i){
+    const no=String(i+1).padStart(3,"0");
+    return `
+      <div class="binder-item binder-locked" data-idx="${i}">
+        <span class="binder-mini-no">No.${no}</span>
+        <span>???</span>
+      </div>`;
+  }
+
+  window.renderBinder = function renderBinderV102(){
+    const grid=document.getElementById("binderGrid");
+    if(!grid) return;
+
+    const owned=load(BINDER_KEY, []);
+    const newOnes=load(NEW_KEY, []);
+    const total=getTotal();
+
+    let html="";
+    for(let i=0;i<total;i++){
+      const has=owned.includes(i);
+      const isNew=newOnes.includes(i);
+
+      html += has ? renderOwnedCard(i,isNew) : renderLocked(i);
+    }
+
+    grid.innerHTML=html;
+
+    if(newOnes.length){
+      setTimeout(()=>save(NEW_KEY, []), 1400);
+    }
+  };
+
+  function bindBinderOpenV102(){
+    const btn=document.getElementById("openBinderBtn");
+    const modal=document.getElementById("binderModal");
+    const close=document.getElementById("binderCloseBtn");
+
+    if(btn && !btn.dataset.v102){
+      btn.dataset.v102="1";
+      btn.onclick=(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        modal.style.display="block";
+        window.renderBinder();
+      };
+    }
+
+    if(close && !close.dataset.v102){
+      close.dataset.v102="1";
+      close.onclick=(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        modal.style.display="none";
+      };
+    }
+  }
+
+  function boot(){
+    bindBinderOpenV102();
+    setInterval(bindBinderOpenV102,700);
+  }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
+  else boot();
+})();
+
+
+/* v103: binder visible fallback + card-mode-only button */
+(function(){
+  const BINDER_KEY = "binderV98";
+  const NEW_KEY = "binderNewV100";
+
+  function load(key, fallback){
+    try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}
+    catch(e){return fallback;}
+  }
+  function save(key,val){
+    try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}
+  }
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g,ch=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[ch]));
+  }
+
+  function getMode(){
+    try{
+      if(typeof appMode !== "undefined") return appMode;
+    }catch(e){}
+    return "";
+  }
+
+  function updateBinderButtonVisibility(){
+    const btn=document.getElementById("openBinderBtn");
+    if(!btn) return;
+    const isCards = getMode() === "cards";
+    btn.style.display = isCards ? "block" : "none";
+  }
+
+  function getCardTitle(i){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards) && cards[i]){
+        const c=cards[i];
+        return c.title || c.name || c.label || c.id || ("CARD " + String(i+1).padStart(3,"0"));
+      }
+    }catch(e){}
+    return "CARD " + String(i+1).padStart(3,"0");
+  }
+
+  function getCardImageFromKnownData(i){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards) && cards[i]){
+        const c=cards[i];
+        return c.image || c.img || c.src || c.url || c.front || c.frontImage || c.cardImage || "";
+      }
+    }catch(e){}
+    return "";
+  }
+
+  function getCurrentCardImageFromDOM(){
+    const img =
+      document.querySelector(".card img") ||
+      document.querySelector(".flip-card img") ||
+      document.querySelector(".card-face img") ||
+      document.querySelector(".card-inner img");
+
+    return img ? (img.getAttribute("src") || img.src || "") : "";
+  }
+
+  function getTotal(){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards) && cards.length) return Math.max(cards.length,60);
+    }catch(e){}
+    return 60;
+  }
+
+  function renderOwnedCard(i,isNew){
+    const no=String(i+1).padStart(3,"0");
+    const title=getCardTitle(i);
+    let img=getCardImageFromKnownData(i);
+
+    // 画像がcards配列に無い場合でも、現在表示中カードならDOMから拾う
+    try{
+      if(!img && typeof cardIndex !== "undefined" && cardIndex === i){
+        img = getCurrentCardImageFromDOM();
+      }
+    }catch(e){}
+
+    const cardBody = img
+      ? `<div class="binder-mini-card"><img src="${esc(img)}" alt="${esc(title)}"></div>`
+      : `<div class="binder-mini-card placeholder-card"><span class="binder-placeholder-title">${esc(title)}</span></div>`;
+
+    return `
+      <div class="binder-item ${isNew ? "new-fill" : ""}" data-idx="${i}">
+        <span class="binder-mini-no">No.${no}</span>
+        ${isNew ? `<span class="binder-new-badge">NEW</span>` : ""}
+        ${cardBody}
+      </div>`;
+  }
+
+  function renderLocked(i){
+    const no=String(i+1).padStart(3,"0");
+    return `
+      <div class="binder-item binder-locked" data-idx="${i}">
+        <span class="binder-mini-no">No.${no}</span>
+        <span>???</span>
+      </div>`;
+  }
+
+  window.renderBinder = function renderBinderV103(){
+    const grid=document.getElementById("binderGrid");
+    if(!grid) return;
+
+    const owned=load(BINDER_KEY, []);
+    const newOnes=load(NEW_KEY, []);
+    const total=getTotal();
+
+    let html="";
+    for(let i=0;i<total;i++){
+      const has=owned.includes(i);
+      html += has ? renderOwnedCard(i,newOnes.includes(i)) : renderLocked(i);
+    }
+
+    grid.innerHTML=html;
+
+    if(newOnes.length){
+      setTimeout(()=>save(NEW_KEY, []), 1400);
+    }
+  };
+
+  function bindBinderV103(){
+    const btn=document.getElementById("openBinderBtn");
+    const modal=document.getElementById("binderModal");
+    const close=document.getElementById("binderCloseBtn");
+
+    if(btn && !btn.dataset.v103){
+      btn.dataset.v103="1";
+      btn.onclick=(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        if(!modal) return;
+        modal.style.display="block";
+        window.renderBinder();
+      };
+    }
+
+    if(close && !close.dataset.v103){
+      close.dataset.v103="1";
+      close.onclick=(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        if(modal) modal.style.display="none";
+      };
+    }
+
+    if(modal && !modal.dataset.v103){
+      modal.dataset.v103="1";
+      modal.addEventListener("click",(e)=>{
+        if(e.target===modal) modal.style.display="none";
+      });
+    }
+  }
+
+  function hookRenderV103(){
+    if(typeof render !== "function" || render.__v103Hooked) return;
+    const orig=render;
+    render=function(){
+      const r=orig.apply(this,arguments);
+      setTimeout(updateBinderButtonVisibility,0);
+      return r;
+    };
+    render.__v103Hooked=true;
+  }
+
+  function boot(){
+    bindBinderV103();
+    hookRenderV103();
+    updateBinderButtonVisibility();
+    setInterval(()=>{
+      bindBinderV103();
+      updateBinderButtonVisibility();
+    },700);
+  }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
+  else boot();
+})();
