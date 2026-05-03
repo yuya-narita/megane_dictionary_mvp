@@ -2593,3 +2593,184 @@ body[data-mode="cards"] #openBinderBtn {
   font-size: 8px;
   opacity: .62;
 }
+
+
+/* v105: バインダーを古い本・羊皮紙ページ風に */
+#binderModal {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 205, 118, .12), transparent 32%),
+    linear-gradient(180deg, rgba(10,5,3,.96), rgba(0,0,0,.92)) !important;
+  padding: 18px 16px 44px !important;
+}
+
+/* 本のページ全体 */
+#binderModal::before {
+  content: "";
+  position: fixed;
+  inset: 86px 18px 38px 18px;
+  pointer-events: none;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255,238,197,.18), transparent 34%),
+    linear-gradient(90deg, rgba(0,0,0,.22), transparent 8%, transparent 92%, rgba(0,0,0,.20)),
+    linear-gradient(180deg, rgba(239,210,159,.18), rgba(80,45,23,.10));
+  border: 1px solid rgba(206,162,92,.22);
+  box-shadow:
+    inset 0 0 42px rgba(255,220,160,.08),
+    inset 0 0 0 1px rgba(255,255,255,.04),
+    0 24px 80px rgba(0,0,0,.55);
+}
+
+.binder-head {
+  color: rgba(255,238,198,.96) !important;
+  text-shadow: 0 2px 12px rgba(0,0,0,.6);
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.82), rgba(0,0,0,.34)) !important;
+  border-bottom: 1px solid rgba(206,162,92,.18);
+}
+
+.binder-close {
+  border-color: rgba(218,180,112,.32) !important;
+  background: rgba(255,238,198,.08) !important;
+  color: rgba(255,238,198,.96) !important;
+}
+
+/* ページ上のグリッド */
+#binderGrid {
+  position: relative;
+  z-index: 1;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 12px 2px 96px !important;
+}
+
+/* スロットを縦長カード比率に */
+.binder-item {
+  aspect-ratio: 2 / 3 !important;
+  min-height: auto !important;
+  border-radius: 16px !important;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255,238,198,.10), transparent 32%),
+    linear-gradient(180deg, rgba(120,70,34,.22), rgba(25,14,10,.34)) !important;
+  border: 1px solid rgba(219,178,111,.22) !important;
+  box-shadow:
+    inset 0 0 18px rgba(255,226,166,.05),
+    inset 0 0 0 1px rgba(255,255,255,.03),
+    0 8px 24px rgba(0,0,0,.22);
+}
+
+/* 未取得枠 */
+.binder-locked {
+  opacity: 1 !important;
+  color: rgba(236,205,148,.38) !important;
+  background:
+    linear-gradient(135deg, rgba(255,238,198,.035), rgba(0,0,0,.12)),
+    radial-gradient(circle at 50% 35%, rgba(255,230,170,.10), transparent 38%) !important;
+  border: 1px dashed rgba(219,178,111,.20) !important;
+}
+
+.binder-locked span:not(.binder-mini-no) {
+  font-size: 14px;
+  letter-spacing: .14em;
+  opacity: .56;
+}
+
+/* No.表記 */
+.binder-mini-no {
+  color: rgba(236,205,148,.72) !important;
+  text-shadow: 0 1px 6px rgba(0,0,0,.6);
+  z-index: 2;
+}
+
+/* 取得済みカード */
+.binder-item.owned-card {
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255,224,158,.16), transparent 32%),
+    linear-gradient(180deg, rgba(145,88,42,.26), rgba(30,16,10,.52)) !important;
+  border: 1px solid rgba(241,199,124,.38) !important;
+}
+
+.binder-mini-card {
+  width: 82% !important;
+  height: 82% !important;
+  border-radius: 10px !important;
+  padding: 0 !important;
+  overflow: hidden;
+  background: rgba(30,16,10,.38) !important;
+  border: 1px solid rgba(255,231,176,.32) !important;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.42),
+    inset 0 0 0 1px rgba(255,255,255,.05);
+}
+
+.binder-mini-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 画像がない時もカードっぽく */
+.binder-mini-card .binder-placeholder-title,
+.binder-placeholder-title {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 6px;
+  box-sizing: border-box;
+  color: rgba(255,238,198,.9);
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: .04em;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255,230,170,.18), transparent 30%),
+    linear-gradient(160deg, rgba(110,63,31,.46), rgba(31,18,13,.92));
+}
+
+/* NEW */
+.binder-new-badge {
+  background: rgba(255, 222, 105, .96) !important;
+  color: #2b1700 !important;
+  box-shadow: 0 0 18px rgba(255,222,105,.62) !important;
+}
+
+/* tap表示は邪魔なので控えめ */
+.binder-open-hint {
+  color: rgba(236,205,148,.48) !important;
+  font-size: 8px !important;
+}
+
+/* スクロール時に少しページ感を出す */
+#binderModal {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+#binderGrid::before {
+  content: "";
+  position: absolute;
+  inset: 0 49% 0 49%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,.18), transparent);
+  opacity: .45;
+  z-index: -1;
+}
+
+/* 小さい画面では少し詰める */
+@media (max-width: 390px) {
+  #binderGrid {
+    gap: 10px !important;
+  }
+  .binder-mini-card {
+    width: 84% !important;
+    height: 84% !important;
+  }
+}

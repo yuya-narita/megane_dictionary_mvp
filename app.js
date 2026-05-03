@@ -6138,3 +6138,26 @@ init();
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();
+
+
+/* v105: binder book polish */
+(function(){
+  function polishBinderButton(){
+    const btn = document.getElementById("openBinderBtn");
+    if(!btn || btn.dataset.v105Polished) return;
+    btn.dataset.v105Polished = "1";
+    btn.title = "バインダー";
+    btn.setAttribute("aria-label", "バインダーを開く");
+  }
+
+  function bootV105(){
+    polishBinderButton();
+    setInterval(polishBinderButton, 800);
+  }
+
+  if(document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootV105);
+  } else {
+    bootV105();
+  }
+})();
