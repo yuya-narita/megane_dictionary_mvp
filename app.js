@@ -7543,3 +7543,78 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+/* v115: long press to open text panel (avoid iOS swipe conflict) */
+(function(){
+  let pressTimer = null;
+  let startX=0,startY=0;
+
+  function els(){
+    return {
+      card: document.getElementById("binderReplayFlipCard"),
+      panel: document.getElementById("binderReplayTextPanel")
+    };
+  }
+
+  function openPanel(){
+    const {panel} = els();
+    if(panel) panel.classList.add("expanded");
+  }
+
+  function closePanel(){
+    const {panel} = els();
+    if(panel) panel.classList.remove("expanded");
+  }
+
+  function bindLongPress(){
+    const {card, panel} = els();
+    if(!card || card.dataset.v115LongPress) return;
+    card.dataset.v115LongPress="1";
+
+    card.addEventListener("touchstart", e=>{
+      const t = e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+      startX=t.clientX;
+      startY=t.clientY;
+
+      clearTimeout(pressTimer);
+      pressTimer=setTimeout(()=>{
+        openPanel();
+      }, 420); // 長押し判定
+    }, {passive:true});
+
+    card.addEventListener("touchmove", e=>{
+      const t = e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+      const dx = Math.abs(t.clientX-startX);
+      const dy = Math.abs(t.clientY-startY);
+      if(dx>12 || dy>12){
+        clearTimeout(pressTimer);
+      }
+    }, {passive:true});
+
+    card.addEventListener("touchend", ()=>{
+      clearTimeout(pressTimer);
+    });
+
+    // パネル側タップで閉じる
+    if(panel){
+      panel.addEventListener("click", e=>{
+        if(e.target===panel){
+          closePanel();
+        }
+      });
+    }
+  }
+
+  function boot(){
+    bindLongPress();
+    setInterval(bindLongPress,700);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",boot);
+  }else{
+    boot();
+  }
+})();
