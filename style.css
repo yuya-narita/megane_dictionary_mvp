@@ -4283,43 +4283,23 @@ body.mode-content .content-card-v127 {
   user-select: none;
 }
 
-
-/* v135.1: モード別下部ボタン＋コンテンツ選択 */
-body.mode-content .content-grid-v127 {
-  gap: 18px !important;
+/* v136: minimal hotfix - selected content card + moved binder button */
+body.mode-cards #openBinderBtn,
+body[data-mode="cards"] #openBinderBtn {
+  display: none !important;
 }
 
 body.mode-content .content-card-v127 {
-  margin-bottom: 4px !important;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  margin-bottom: 10px !important;
 }
 
-body.mode-content .content-card-v127.selected-v1351 {
-  outline: 2px solid rgba(255,255,255,.58);
+body.mode-content .content-card-v127.selected-v136 {
+  outline: 2px solid rgba(255, 218, 92, .95) !important;
+  outline-offset: 3px !important;
+  border-color: rgba(255, 218, 92, .65) !important;
   box-shadow:
-    0 0 0 1px rgba(255,255,255,.16) inset,
-    0 12px 40px rgba(255,255,255,.12) !important;
-}
-
-/* コンテンツモードでは下部ボタンを表示して使う */
-body.mode-content .controls {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  z-index: 15000 !important;
-}
-
-body.mode-content .controls button {
-  display: inline-flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-
-body.mode-content .content-fav-on-v1351 {
-  background: rgba(255,255,255,.22) !important;
-  border-color: rgba(255,255,255,.46) !important;
-  color: rgba(255,255,255,.98) !important;
+    0 0 0 1px rgba(255, 218, 92, .25) inset,
+    0 18px 44px rgba(0,0,0,.30) !important;
 }
