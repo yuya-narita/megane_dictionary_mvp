@@ -3754,559 +3754,34 @@ body[data-mode="cards"] #openBinderBtn {
 }
 
 
-/* v116: manga/audio title -> episode library */
-.audio-mode-fallback {
-  position: fixed;
-  top: 118px;
-  right: 22px;
-  z-index: 20;
-}
-
-.library-overlay-v116 {
-  position: fixed;
-  inset: 0;
-  z-index: 15000;
-  background: rgba(0,0,0,.68);
-  backdrop-filter: blur(10px);
-  display: grid;
-  place-items: end center;
-  padding: 0 18px 18px;
-  box-sizing: border-box;
-}
-
-.library-overlay-v116[hidden] {
+/* v127: clean content rebuild inside the existing main card frame */
+body.mode-content #dictionaryView,
+body.mode-content #bugCardView,
+body.mode-content .hint {
   display: none !important;
 }
 
-.library-sheet-v116 {
-  width: min(94vw, 520px);
-  height: min(76vh, 720px);
-  border-radius: 26px;
-  border: 1px solid rgba(255,255,255,.16);
-  background:
-    radial-gradient(circle at 50% 0%, rgba(255,255,255,.09), transparent 34%),
-    linear-gradient(180deg, rgba(42,38,50,.96), rgba(10,8,14,.98));
-  box-shadow: 0 28px 90px rgba(0,0,0,.62);
-  overflow: hidden;
-  color: rgba(255,255,255,.94);
-  display: grid;
-  grid-template-rows: auto 1fr;
+body.mode-content #contentScreenV127 {
+  display: block !important;
 }
 
-.library-head-v116 {
-  display: grid;
-  grid-template-columns: 44px 1fr 44px;
-  gap: 10px;
-  align-items: center;
-  padding: 16px 16px 12px;
-  border-bottom: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.035);
+#contentScreenV127[hidden] {
+  display: none !important;
 }
 
-.library-title-v116 {
-  font-size: 20px;
-  font-weight: 900;
-  letter-spacing: .04em;
-  text-align: center;
-}
-
-.library-sub-v116 {
-  margin-top: 4px;
-  font-size: 12px;
-  opacity: .6;
-  text-align: center;
-}
-
-.library-back-v116,
-.library-close-v116 {
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.18);
-  background: rgba(255,255,255,.07);
-  color: rgba(255,255,255,.92);
-  font-size: 28px;
-  line-height: 1;
-}
-
-.library-back-v116[disabled] {
-  opacity: .25;
-}
-
-.library-list-v116 {
+.content-screen-v127 {
+  width: 100%;
+  height: 100%;
+  max-height: 68vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 14px 14px 34px;
-  display: grid;
-  gap: 12px;
-}
-
-.library-item-v116 {
-  min-height: 74px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.13);
-  background:
-    linear-gradient(135deg, rgba(255,255,255,.09), rgba(255,255,255,.035));
-  box-shadow: 0 10px 28px rgba(0,0,0,.22);
-  padding: 14px 16px;
+  padding: 12px 0 96px;
   box-sizing: border-box;
-  display: grid;
-  align-content: center;
-  gap: 5px;
-}
-
-.library-item-v116:active {
-  transform: scale(.985);
-}
-
-.library-item-title-v116 {
-  font-size: 16px;
-  font-weight: 900;
-  letter-spacing: .03em;
-}
-
-.library-item-meta-v116 {
-  font-size: 12px;
-  opacity: .62;
-  line-height: 1.45;
-}
-
-.library-badge-v116 {
-  display: inline-block;
-  width: fit-content;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.1);
-  border: 1px solid rgba(255,255,255,.12);
-  font-size: 11px;
-  opacity: .86;
-}
-
-
-/* v119: マンガ・音声をコンテンツへ統合 */
-#audioModeBtn,
-[data-mode-button="audio"] {
-  display: none !important;
-}
-
-.content-mode-fallback {
-  position: fixed;
-  top: 118px;
-  right: 22px;
-  z-index: 20;
-}
-
-/* 旧マンガ/音声ではなく、作品一覧として見せる */
-.library-title-v116::after {
-  content: "";
-}
-
-
-/* v120: コンテンツはモーダルではなく画面表示 */
-#libraryOverlayV116 {
-  display: none !important;
-}
-
-.content-screen-v120 {
-  width: min(92vw, 560px);
-  max-height: 74vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 0 0 92px;
-  box-sizing: border-box;
-}
-
-.content-screen-v120[hidden] {
-  display: none !important;
-}
-
-.content-hero-v120 {
-  min-height: 168px;
-  border-radius: 28px;
-  padding: 22px;
-  box-sizing: border-box;
-  color: white;
-  display: grid;
-  align-content: end;
-  overflow: hidden;
-  position: relative;
-  border: 1px solid rgba(255,255,255,.16);
-  background:
-    radial-gradient(circle at 82% 18%, rgba(255,228,95,.34), transparent 28%),
-    radial-gradient(circle at 16% 78%, rgba(130,190,255,.22), transparent 34%),
-    linear-gradient(135deg, rgba(80,38,120,.92), rgba(20,16,32,.96));
-  box-shadow:
-    0 18px 60px rgba(0,0,0,.42),
-    inset 0 0 0 1px rgba(255,255,255,.04);
-}
-
-.content-hero-v120::before {
-  content: "∞";
-  position: absolute;
-  right: 20px;
-  top: -18px;
-  font-size: 132px;
-  font-weight: 900;
-  opacity: .13;
-  line-height: 1;
-}
-
-.hero-kicker-v120 {
-  width: fit-content;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.14);
-  border: 1px solid rgba(255,255,255,.16);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: .08em;
-  margin-bottom: 8px;
-}
-
-.hero-title-v120 {
-  font-size: 30px;
-  font-weight: 1000;
-  letter-spacing: .02em;
-  text-shadow: 0 2px 18px rgba(0,0,0,.38);
-}
-
-.hero-meta-v120 {
-  margin-top: 4px;
-  color: rgba(255,255,255,.78);
-  font-weight: 800;
-  font-size: 13px;
-}
-
-.hero-copy-v120 {
-  margin-top: 10px;
-  line-height: 1.55;
-  color: rgba(255,255,255,.88);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.content-section-head-v120 {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin: 22px 4px 12px;
   color: rgba(255,255,255,.94);
-  font-size: 22px;
-  font-weight: 1000;
-  letter-spacing: .03em;
-}
-
-.content-section-head-v120 span:last-child {
-  font-size: 12px;
-  opacity: .54;
-  font-weight: 800;
-}
-
-.content-grid-v120 {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.content-card-v120 {
-  min-height: 190px;
-  border-radius: 22px;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.13);
-  background: rgba(255,255,255,.055);
-  box-shadow: 0 12px 36px rgba(0,0,0,.28);
-  display: grid;
-  grid-template-rows: 118px auto;
-}
-
-.content-thumb-v120 {
-  position: relative;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 55% 32%, var(--accent, rgba(255,220,120,.38)), transparent 28%),
-    linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.02));
-}
-
-.content-thumb-v120::before {
-  content: attr(data-mark);
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 42px;
-  font-weight: 1000;
-  color: rgba(255,255,255,.82);
-  text-shadow: 0 4px 24px rgba(0,0,0,.44);
-}
-
-.content-thumb-v120::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(135deg, transparent 0 58%, rgba(255,255,255,.10) 59%, transparent 60%),
-    radial-gradient(circle at 80% 20%, rgba(255,255,255,.18), transparent 22%);
-}
-
-.content-info-v120 {
-  padding: 12px 13px 14px;
-  display: grid;
-  gap: 6px;
-}
-
-.content-title-v120 {
-  color: rgba(255,255,255,.94);
-  font-size: 15px;
-  font-weight: 1000;
-  line-height: 1.35;
-  letter-spacing: .02em;
-}
-
-.content-status-v120 {
-  width: fit-content;
-  padding: 3px 8px;
-  border-radius: 999px;
-  color: rgba(255,255,255,.82);
-  background: rgba(255,255,255,.10);
-  border: 1px solid rgba(255,255,255,.12);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.content-desc-v120 {
-  color: rgba(255,255,255,.55);
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-body.mode-content #dictionaryView,
-body.mode-content #bugCardView,
-body.mode-content .hint {
-  display: none !important;
-}
-
-body.mode-content #contentScreenV120 {
-  display: block !important;
-}
-
-body.mode-content .controls button {
-  opacity: .38;
-}
-
-@media (max-width: 390px) {
-  .content-grid-v120 {
-    gap: 12px;
-  }
-  .content-card-v120 {
-    min-height: 180px;
-    grid-template-rows: 108px auto;
-  }
-  .hero-title-v120 {
-    font-size: 26px;
-  }
-}
-
-
-/* v121: content button reliable mode */
-body.mode-content #contentScreenV120 {
-  display: block !important;
-}
-
-body.mode-content #dictionaryView,
-body.mode-content #bugCardView,
-body.mode-content .hint {
-  display: none !important;
-}
-
-body.mode-content .content {
-  display: grid;
-  justify-items: center;
-  align-content: start;
-}
-
-
-/* v122: 既存上部ボタンに依存しない固定コンテンツボタン */
-.force-content-btn-v122 {
-  position: fixed;
-  top: 126px;
-  left: 50%;
-  transform: translateX(92px);
-  z-index: 16000;
-  padding: 13px 18px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.28);
-  background: rgba(255,255,255,.12);
-  color: rgba(255,255,255,.92);
-  font-weight: 900;
-  font-size: 15px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 28px rgba(0,0,0,.25);
-}
-
-/* 旧マンガ/音声が邪魔なら消す */
-#audioModeBtn,
-[data-mode-button="audio"] {
-  display: none !important;
-}
-
-body.mode-content #contentScreenV120 {
-  display: block !important;
-}
-
-body.mode-content #dictionaryView,
-body.mode-content #bugCardView,
-body.mode-content .hint {
-  display: none !important;
-}
-
-body.mode-content .content {
-  display: grid;
-  justify-items: center;
-  align-content: start;
-}
-
-/* コンテンツ画面が上に来るよう補強 */
-#contentScreenV120 {
-  position: relative;
-  z-index: 5;
-}
-
-
-/* v123: 上部ナビを専用化 */
-.mode-buttons,
-.top-buttons,
-.tabs,
-#forceContentBtnV122,
-#audioModeBtn,
-[data-mode-button="audio"] {
-  display: none !important;
-}
-
-.main-nav-v123 {
-  position: fixed;
-  top: 74px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 17000;
-  display: grid;
-  grid-template-columns: repeat(3, auto);
-  gap: 10px;
-  padding: 6px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.07);
-  border: 1px solid rgba(255,255,255,.12);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 12px 34px rgba(0,0,0,.24);
-}
-
-.nav-btn-v123 {
-  min-width: 86px;
-  padding: 12px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.07);
-  color: rgba(255,255,255,.78);
-  font-size: 15px;
-  font-weight: 900;
-  letter-spacing: .03em;
-}
-
-.nav-btn-v123.active {
-  background: rgba(255,255,255,.18);
-  color: rgba(255,255,255,.96);
-  border-color: rgba(255,255,255,.34);
-}
-
-body.mode-content #contentScreenV120 {
-  display: block !important;
-}
-
-body.mode-content #dictionaryView,
-body.mode-content #bugCardView,
-body.mode-content .hint {
-  display: none !important;
-}
-
-body.mode-content .content {
-  display: grid;
-  justify-items: center;
-  align-content: start;
-  padding-top: 90px;
-}
-
-body:not(.mode-content) #contentScreenV120 {
-  display: none !important;
-}
-
-
-/* v124: 専用ナビを廃止し、既存上部ボタンを使う */
-#mainNavV123,
-.main-nav-v123,
-.force-content-btn-v122,
-#forceContentBtnV122,
-#audioModeBtn,
-[data-mode-button="audio"] {
-  display: none !important;
-}
-
-/* v123で旧ボタンを透明化した補正を打ち消す */
-button {
-  pointer-events: auto;
-}
-
-/* コンテンツ画面 */
-body.mode-content #contentScreenV120 {
-  display: block !important;
-}
-
-body.mode-content #dictionaryView,
-body.mode-content #bugCardView,
-body.mode-content .hint {
-  display: none !important;
-}
-
-body.mode-content .content {
-  display: grid;
-  justify-items: center;
-  align-content: start;
-}
-
-body:not(.mode-content) #contentScreenV120 {
-  display: none !important;
-}
-
-
-/* v126: コンテンツ安定版。点滅・鼓動対策 */
-body.mode-content #contentScreenV126 {
-  display: block !important;
-}
-
-#contentScreenV126 {
-  position: fixed;
-  left: 50%;
-  top: 178px;
-  transform: translateX(-50%);
-  width: min(92vw, 560px);
-  height: calc(100vh - 230px);
-  z-index: 13000;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 0 0 96px;
-  box-sizing: border-box;
   overscroll-behavior: contain;
 }
 
-#contentScreenV126[hidden] {
-  display: none !important;
-}
-
-body.mode-content #dictionaryView,
-body.mode-content #bugCardView,
-body.mode-content .hint {
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
+/* コンテンツ中は下部操作や⭐︎を消す */
 body.mode-content .controls,
 body.mode-content #favoriteBtn,
 body.mode-content .favorite-btn,
@@ -4317,30 +3792,14 @@ body.mode-content button[aria-label*="favorite"] {
   display: none !important;
 }
 
-body.mode-content .content {
-  pointer-events: none !important;
-}
-
-body.mode-content #contentScreenV126,
-body.mode-content #contentScreenV126 * {
-  pointer-events: auto !important;
-}
-
-body.mode-content #contentScreenV120 {
-  display: none !important;
-}
-
+/* 上部ボタンは既存の見た目のまま。点滅防止 */
 body.mode-content button {
   animation: none !important;
-  transition: none !important;
 }
 
-.content-screen-stable-v126 {
-  color: rgba(255,255,255,.94);
-}
-
-.content-hero-v126 {
-  min-height: 154px;
+/* コンテンツ画面 */
+.content-hero-v127 {
+  min-height: 162px;
   border-radius: 28px;
   padding: 22px;
   box-sizing: border-box;
@@ -4353,10 +3812,10 @@ body.mode-content button {
     radial-gradient(circle at 82% 18%, rgba(255,228,95,.32), transparent 28%),
     radial-gradient(circle at 16% 78%, rgba(130,190,255,.20), transparent 34%),
     linear-gradient(135deg, rgba(80,38,120,.86), rgba(20,16,32,.96));
-  box-shadow: 0 18px 60px rgba(0,0,0,.42);
+  box-shadow: 0 18px 60px rgba(0,0,0,.34);
 }
 
-.content-hero-v126::before {
+.content-hero-v127::before {
   content: "∞";
   position: absolute;
   right: 20px;
@@ -4367,67 +3826,53 @@ body.mode-content button {
   line-height: 1;
 }
 
-.hero-kicker-v126 {
-  width: fit-content;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.14);
-  border: 1px solid rgba(255,255,255,.16);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: .08em;
-  margin-bottom: 8px;
-}
-
-.hero-title-v126 {
+.hero-title-v127 {
   font-size: 30px;
   font-weight: 1000;
   letter-spacing: .02em;
 }
 
-.hero-meta-v126,
-.hero-copy-v126 {
+.hero-meta-v127,
+.hero-copy-v127 {
   margin-top: 6px;
-  color: rgba(255,255,255,.78);
+  color: rgba(255,255,255,.80);
   font-weight: 800;
   font-size: 13px;
   line-height: 1.55;
 }
 
-.content-section-head-v126 {
+.content-section-head-v127 {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin: 22px 4px 12px;
-  font-size: 26px;
+  margin: 24px 6px 14px;
+  font-size: 28px;
   font-weight: 1000;
 }
 
-.content-section-head-v126 span:last-child {
+.content-section-head-v127 span:last-child {
   font-size: 13px;
   opacity: .6;
 }
 
-.content-grid-v126 {
+.content-grid-v127 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0,1fr));
   gap: 14px;
 }
 
-.content-card-v126 {
+.content-card-v127 {
   min-height: 190px;
   border-radius: 22px;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,.13);
   background: rgba(255,255,255,.055);
-  box-shadow: 0 12px 36px rgba(0,0,0,.28);
+  box-shadow: 0 12px 36px rgba(0,0,0,.24);
   display: grid;
   grid-template-rows: 118px auto;
-  transform: translateZ(0);
-  backface-visibility: hidden;
 }
 
-.content-thumb-v126 {
+.content-thumb-v127 {
   position: relative;
   overflow: hidden;
   background:
@@ -4435,7 +3880,7 @@ body.mode-content button {
     linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.02));
 }
 
-.content-thumb-v126::before {
+.content-thumb-v127::before {
   content: attr(data-mark);
   position: absolute;
   inset: 0;
@@ -4447,20 +3892,20 @@ body.mode-content button {
   text-shadow: 0 4px 24px rgba(0,0,0,.44);
 }
 
-.content-info-v126 {
+.content-info-v127 {
   padding: 12px 13px 14px;
   display: grid;
   gap: 6px;
 }
 
-.content-title-v126 {
+.content-title-v127 {
   color: rgba(255,255,255,.94);
   font-size: 15px;
   font-weight: 1000;
   line-height: 1.35;
 }
 
-.content-status-v126 {
+.content-status-v127 {
   width: fit-content;
   padding: 3px 8px;
   border-radius: 999px;
@@ -4471,20 +3916,24 @@ body.mode-content button {
   font-weight: 800;
 }
 
-.content-desc-v126 {
-  color: rgba(255,255,255,.55);
+.content-desc-v127 {
+  color: rgba(255,255,255,.58);
   font-size: 11px;
   line-height: 1.4;
 }
 
 @media (max-width: 390px) {
-  #contentScreenV126 {
-    top: 168px;
-    height: calc(100vh - 218px);
+  .content-screen-v127 {
+    max-height: 66vh;
   }
-  .content-grid-v126 { gap: 12px; }
-  .content-card-v126 {
-    min-height: 180px;
-    grid-template-rows: 108px auto;
+  .content-grid-v127 {
+    gap: 12px;
+  }
+  .content-card-v127 {
+    min-height: 178px;
+    grid-template-rows: 106px auto;
+  }
+  .hero-title-v127 {
+    font-size: 26px;
   }
 }

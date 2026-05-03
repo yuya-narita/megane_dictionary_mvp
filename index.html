@@ -4,10 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>メガネ辞書 MVP</title>
-  <link rel="stylesheet" href="./style.css?v=126" />
+  <link rel="stylesheet" href="./style.css?v=127" />
 </head>
 <body class="mode-dictionary">
-<main id="app" class="app">
+  <main id="app" class="app">
     <header class="topbar">
       <button id="prevWord" class="ghost">←</button>
       <div class="brand">MEGANE DICTIONARY</div>
@@ -24,7 +24,9 @@
       <div id="content" class="content">
         <div class="hint" id="hint">左右：単語 / 上下：メガネ / 長押し：一覧</div>
 
-        <div id="dictionaryView" class="dictionary-view">
+        
+<div id="contentScreenV127" class="content-screen-v127" hidden></div>
+<div id="dictionaryView" class="dictionary-view">
           <div id="glassName" class="glass-name"></div>
           <div id="character" class="character"></div>
           <h1 id="word" class="word"></h1>
@@ -127,7 +129,7 @@
     <div class="fullscreen-hint">上下:カード / 左右:めくる / タップで閉じる</div>
   </div>
 
-  <script src="./app.js?v=126"></script>
+  <script src="./app.js?v=127"></script>
   <audio id="mangaAudio" preload="metadata"></audio>
   <div id="mangaFullscreenOverlay" class="manga-fullscreen-overlay" hidden>
     <button id="mangaFullscreenClose" class="manga-fullscreen-close">← 戻る</button>
@@ -145,7 +147,7 @@
       <button id="collectionDialogClose" class="ghost">×</button>
     </div>
     <div class="collection-list">
-      <button class="collection-item" data-mode="manga">コンテンツ</button>
+      <button class="collection-item" data-mode="manga">マンガ</button>
       <button class="collection-item" data-mode="cards">カード</button>
       <button class="collection-item" data-mode="dictionary">辞書</button>
       <button class="collection-item disabled" disabled>音声作品（準備中）</button>
@@ -207,37 +209,6 @@ padding:20px;">
   <div id="binderReplayTextPanel" class="binder-replay-text-panel">
     <div class="text-handle"></div>
     <div id="binderReplayTextInner" class="text-inner"></div>
-  </div>
-</div>
-
-
-<div id="contentScreenV120" class="content-screen-v120" hidden>
-  <div class="content-hero-v120">
-    <div class="hero-kicker-v120">おすすめ</div>
-    <div class="hero-title-v120">H(x)∞origin</div>
-    <div class="hero-meta-v120">音声・マンガ化済み</div>
-    <div class="hero-copy-v120">意味が生まれる瞬間を、カード・音声・マンガで観測する。</div>
-  </div>
-
-  <div class="content-section-head-v120">
-    <span>作品一覧</span>
-    <span id="contentCountV120">11作品</span>
-  </div>
-
-  <div id="contentGridV120" class="content-grid-v120"></div>
-</div>
-
-<div id="libraryOverlayV116" class="library-overlay-v116" hidden>
-  <div class="library-sheet-v116">
-    <div class="library-head-v116">
-      <button id="libraryBackV116" class="library-back-v116">‹</button>
-      <div>
-        <div id="libraryTitleV116" class="library-title-v116">ライブラリ</div>
-        <div id="librarySubV116" class="library-sub-v116">タイトルを選択</div>
-      </div>
-      <button id="libraryCloseV116" class="library-close-v116">×</button>
-    </div>
-    <div id="libraryListV116" class="library-list-v116"></div>
   </div>
 </div>
 </body>
