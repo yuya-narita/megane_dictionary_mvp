@@ -4886,199 +4886,14 @@ init();
 /* v86 draw logic removed in v87 */
 
 
-/* v87: card tutorial + directional flip */
+
+
+/* v92: hard daily card lock */
 (function () {
-  let cardTouchedToday = false;
-  let lastCardMode = false;
-  let hintTimer = null;
-  let sx = 0;
-  let sy = 0;
-  let moved = false;
-  let bound = false;
-
-  function isCardMode() {
-    return typeof appMode !== "undefined" && appMode === "cards";
-  }
-
-  function getCardSurface() {
-    return document.querySelector(".card img") ||
-           document.querySelector(".card-face") ||
-           document.querySelector(".card-inner") ||
-           document.querySelector(".card");
-  }
-
-  function hintEl() {
-    return document.getElementById("cardTutorialHint");
-  }
-
-  function showHint(text, duration = 2200) {
-    const el = hintEl();
-    if (!el) return;
-
-    clearTimeout(hintTimer);
-    el.textContent = text;
-    el.hidden = false;
-
-    requestAnimationFrame(() => {
-      el.classList.add("show");
-    });
-
-    hintTimer = setTimeout(() => {
-      el.classList.remove("show");
-      setTimeout(() => {
-        if (!el.classList.contains("show")) el.hidden = true;
-      }, 360);
-    }, duration);
-  }
-
-  function onEnterCardMode() {
-    if (!cardTouchedToday) {
-      showHint("めくってみて", 2600);
-    } else {
-      showHint("またあした", 1800);
-    }
-  }
-
-  function markCardTouched() {
-    if (!cardTouchedToday) {
-      cardTouchedToday = true;
-      setTimeout(() => showHint("またあした", 1600), 420);
-    }
-  }
-
-  function playDirectionalFlip(direction) {
-    const surface = getCardSurface();
-    if (!surface) return;
-
-    const cls = direction === "left" ? "card-page-turn-left" : "card-page-turn-right";
-
-    surface.classList.remove("card-page-turn-left", "card-page-turn-right");
-    void surface.offsetWidth;
-    surface.classList.add(cls);
-
-    setTimeout(() => {
-      surface.classList.remove(cls);
-    }, 380);
-  }
-
-  function bindCardGestureObserver() {
-    if (bound) return;
-    bound = true;
-
-    document.addEventListener("touchstart", e => {
-      if (!isCardMode()) return;
-      const t = e.changedTouches && e.changedTouches[0];
-      if (!t) return;
-      sx = t.clientX;
-      sy = t.clientY;
-      moved = false;
-    }, { passive: true });
-
-    document.addEventListener("touchmove", e => {
-      if (!isCardMode()) return;
-      const t = e.changedTouches && e.changedTouches[0];
-      if (!t) return;
-
-      const dx = t.clientX - sx;
-      const dy = t.clientY - sy;
-
-      if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy) * 1.25) {
-        moved = true;
-      }
-    }, { passive: true });
-
-    document.addEventListener("touchend", e => {
-      if (!isCardMode()) return;
-      const t = e.changedTouches && e.changedTouches[0];
-      if (!t) return;
-
-      const dx = t.clientX - sx;
-      const dy = t.clientY - sy;
-
-      if (moved && Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        const dir = dx < 0 ? "left" : "right";
-        playDirectionalFlip(dir);
-        markCardTouched();
-      }
-
-      moved = false;
-    }, { passive: true });
-
-    // PC fallback
-    let mouseDown = false;
-    document.addEventListener("pointerdown", e => {
-      if (!isCardMode() || e.pointerType === "touch") return;
-      mouseDown = true;
-      sx = e.clientX;
-      sy = e.clientY;
-      moved = false;
-    });
-
-    document.addEventListener("pointerup", e => {
-      if (!isCardMode() || e.pointerType === "touch" || !mouseDown) return;
-      mouseDown = false;
-
-      const dx = e.clientX - sx;
-      const dy = e.clientY - sy;
-
-      if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        const dir = dx < 0 ? "left" : "right";
-        playDirectionalFlip(dir);
-        markCardTouched();
-      }
-    });
-  }
-
-  function hookRenderV87() {
-    if (typeof render !== "function" || render.__v87Hooked) return;
-
-    const original = render;
-    render = function () {
-      const wasCard = lastCardMode;
-      const result = original.apply(this, arguments);
-
-      setTimeout(() => {
-        const nowCard = isCardMode();
-
-        if (nowCard && !wasCard) {
-          onEnterCardMode();
-        }
-
-        lastCardMode = nowCard;
-      }, 0);
-
-      return result;
-    };
-
-    render.__v87Hooked = true;
-  }
-
-  function bootV87() {
-    bindCardGestureObserver();
-    hookRenderV87();
-
-    setTimeout(() => {
-      lastCardMode = isCardMode();
-      if (lastCardMode) onEnterCardMode();
-    }, 300);
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootV87);
-  } else {
-    bootV87();
-  }
-})();
-
-
-/* v91: daily card lock without blocking flip */
-(function () {
-  const KEY = "meganeCardDailyV91";
+  const KEY = "meganeCardDailyV92";
   let sx = 0;
   let sy = 0;
   let horizontal = false;
-  let lastCardMode = false;
-  let hintTimer = null;
 
   function todayKey() {
     const d = new Date();
@@ -5100,28 +4915,57 @@ init();
   }
 
   function saveState(s) {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(s));
-    } catch (e) {}
+    try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e) {}
   }
 
   function isCardMode() {
     return typeof appMode !== "undefined" && appMode === "cards";
   }
 
-  function getIndex() {
+  function currentIndex() {
     try {
-      if (typeof wordIndex !== "undefined") return wordIndex;
-    } catch (e) {}
-    return null;
+      if (typeof cardIndex !== "undefined") return cardIndex;
+    } catch(e) {}
+    return 0;
   }
 
   function setIndex(idx) {
     try {
-      if (typeof wordIndex !== "undefined" && typeof idx === "number") {
-        wordIndex = idx;
+      if (typeof cardIndex !== "undefined" && typeof idx === "number") {
+        cardIndex = idx;
       }
-    } catch (e) {}
+    } catch(e) {}
+  }
+
+  function renderSafe(anim = "flash") {
+    if (typeof render === "function") render(anim);
+  }
+
+  function flipPop() {
+    try {
+      if (typeof els !== "undefined" && els.flipCard) {
+        els.flipCard.classList.remove("flip-pop");
+        void els.flipCard.offsetWidth;
+        els.flipCard.classList.add("flip-pop");
+      }
+    } catch(e) {}
+  }
+
+  function getSurface() {
+    return document.querySelector(".card img") ||
+           document.querySelector(".card-face") ||
+           document.querySelector(".card-inner") ||
+           document.querySelector(".card");
+  }
+
+  function pageTurn(direction) {
+    const surface = getSurface();
+    if (!surface) return;
+    const cls = direction === "left" ? "card-page-turn-left" : "card-page-turn-right";
+    surface.classList.remove("card-page-turn-left", "card-page-turn-right");
+    void surface.offsetWidth;
+    surface.classList.add(cls);
+    setTimeout(() => surface.classList.remove(cls), 380);
   }
 
   function getHint() {
@@ -5131,9 +4975,6 @@ init();
   function showHint(text, mode) {
     const el = getHint();
     if (!el) return;
-
-    clearTimeout(hintTimer);
-
     el.textContent = text;
     el.hidden = false;
     el.classList.add("show");
@@ -5157,14 +4998,25 @@ init();
     }
 
     const s = loadState();
+
     if (!s.drawn) {
       showHint("めくってみて", "waiting");
-    } else {
+      return;
+    }
+
+    // 観覧の邪魔にならないよう、裏面の時だけ「またあした」
+    try {
+      if (typeof cardFlipped !== "undefined" && cardFlipped) {
+        showHint("またあした", "back");
+      } else {
+        hideHint();
+      }
+    } catch(e) {
       showHint("またあした", "back");
     }
   }
 
-  function applyLock() {
+  function lockToToday() {
     if (!isCardMode()) return;
     const s = loadState();
     if (s.drawn && typeof s.index === "number") {
@@ -5172,26 +5024,97 @@ init();
     }
   }
 
-  function lockCurrentAfterFlip() {
+  function markDrawnIfNeeded() {
     const s = loadState();
-
     if (s.drawn) {
-      applyLock();
-      return;
+      lockToToday();
+      return false;
     }
 
-    // 既存のめくり処理を先に通してから、表示中のカードを今日の1枚として記録
-    setTimeout(() => {
-      const idx = getIndex();
-      if (typeof idx !== "number") return;
-
-      const next = { date: todayKey(), drawn: true, index: idx };
-      saveState(next);
-      updateHint();
-    }, 180);
+    const idx = currentIndex();
+    const next = { date: todayKey(), drawn: true, index: idx };
+    saveState(next);
+    return true;
   }
 
-  function bindGestureObserver() {
+  // 既存関数をカードモードだけ上書きする
+  function overrideCardFunctions() {
+    if (typeof moveCard === "function" && !moveCard.__v92) {
+      const originalMoveCard = moveCard;
+      moveCard = function(step) {
+        if (!isCardMode()) return originalMoveCard(step);
+
+        const s = loadState();
+
+        if (s.drawn) {
+          setIndex(s.index);
+          try { cardFlipped = true; } catch(e) {}
+          renderSafe("flash");
+          updateHint();
+          return;
+        }
+
+        // 引く前だけ上下シャッフル許可
+        originalMoveCard(step);
+        setTimeout(updateHint, 260);
+      };
+      moveCard.__v92 = true;
+    }
+
+    if (typeof flipCurrentCard === "function" && !flipCurrentCard.__v92) {
+      const originalFlip = flipCurrentCard;
+      flipCurrentCard = function() {
+        if (!isCardMode()) return originalFlip();
+
+        const s = loadState();
+
+        if (s.drawn && typeof s.index === "number") {
+          setIndex(s.index);
+        }
+
+        // 既存の表裏めくりを使う
+        originalFlip();
+
+        // 初めて表にした時点で今日の1枚として固定
+        const justMarked = markDrawnIfNeeded();
+
+        if (justMarked) {
+          // 初回確定時は現在のカードを保持
+          setTimeout(() => {
+            lockToToday();
+            updateHint();
+          }, 0);
+        } else {
+          setTimeout(() => {
+            lockToToday();
+            updateHint();
+          }, 0);
+        }
+      };
+      flipCurrentCard.__v92 = true;
+    }
+
+    if (typeof randomWord === "function" && !randomWord.__v92) {
+      const originalRandom = randomWord;
+      randomWord = function() {
+        if (!isCardMode()) return originalRandom();
+
+        const s = loadState();
+        if (s.drawn) {
+          setIndex(s.index);
+          renderSafe("flash");
+          updateHint();
+          return;
+        }
+
+        originalRandom();
+        updateHint();
+      };
+      randomWord.__v92 = true;
+    }
+  }
+
+  function bindGestureForPageTurn() {
     document.addEventListener("touchstart", e => {
       if (!isCardMode()) return;
       const t = e.changedTouches && e.changedTouches[0];
@@ -5205,99 +5128,55 @@ init();
       if (!isCardMode()) return;
       const t = e.changedTouches && e.changedTouches[0];
       if (!t) return;
-
       const dx = t.clientX - sx;
       const dy = t.clientY - sy;
-
       if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy) * 1.2) {
         horizontal = true;
       }
     }, { passive: true });
 
     document.addEventListener("touchend", e => {
-      if (!isCardMode()) return;
+      if (!isCardMode() || !horizontal) return;
       const t = e.changedTouches && e.changedTouches[0];
       if (!t) return;
-
       const dx = t.clientX - sx;
       const dy = t.clientY - sy;
-      const isHorizontal = horizontal && Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.2;
-
-      if (isHorizontal) {
-        lockCurrentAfterFlip();
+      if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        pageTurn(dx < 0 ? "left" : "right");
+        setTimeout(updateHint, 120);
       }
-
       horizontal = false;
     }, { passive: true });
-
-    // PC fallback
-    let mouseDown = false;
-    document.addEventListener("pointerdown", e => {
-      if (!isCardMode() || e.pointerType === "touch") return;
-      mouseDown = true;
-      sx = e.clientX;
-      sy = e.clientY;
-    });
-
-    document.addEventListener("pointerup", e => {
-      if (!isCardMode() || e.pointerType === "touch" || !mouseDown) return;
-      mouseDown = false;
-
-      const dx = e.clientX - sx;
-      const dy = e.clientY - sy;
-
-      if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        lockCurrentAfterFlip();
-      }
-    });
   }
 
   function hookRender() {
-    if (typeof render !== "function" || render.__v91Hooked) return;
-
-    const original = render;
-    render = function () {
-      // 確定後だけrender前に固定
-      applyLock();
-
-      const result = original.apply(this, arguments);
-
+    if (typeof render !== "function" || render.__v92Hooked) return;
+    const originalRender = render;
+    render = function() {
+      lockToToday();
+      const res = originalRender.apply(this, arguments);
       setTimeout(() => {
-        applyLock();
-
-        const nowCard = isCardMode();
-        if (nowCard !== lastCardMode || nowCard) {
-          updateHint();
-          lastCardMode = nowCard;
-        }
+        lockToToday();
+        updateHint();
       }, 0);
-
-      return result;
+      return res;
     };
-
-    render.__v91Hooked = true;
+    render.__v92Hooked = true;
   }
 
   function boot() {
-    bindGestureObserver();
+    overrideCardFunctions();
+    bindGestureForPageTurn();
     hookRender();
-
     setTimeout(() => {
-      applyLock();
-      lastCardMode = isCardMode();
+      lockToToday();
       updateHint();
     }, 250);
-
-    // 保険：確定後に別カードへズレた時だけ戻す。ジェスチャー自体は止めない。
     setInterval(() => {
-      if (!isCardMode()) return;
-      const s = loadState();
-      if (s.drawn && typeof s.index === "number" && getIndex() !== s.index) {
-        setIndex(s.index);
-        if (typeof render === "function") render("flash");
-      }
+      overrideCardFunctions();
+      lockToToday();
       updateHint();
-    }, 1200);
+    }, 900);
   }
 
   if (document.readyState === "loading") {

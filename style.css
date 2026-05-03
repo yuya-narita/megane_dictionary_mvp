@@ -2297,22 +2297,22 @@ body[data-glass-theme="default"] {
 }
 
 
-/* v91: card tutorial persistent, non-blocking */
+/* v92: 今日の1枚固定・チュートリアル */
 .card-tutorial-hint {
   bottom: 190px !important;
 }
 
 .card-tutorial-hint.card-waiting {
-  animation: cardHintPulseV91 1.65s ease-in-out infinite;
+  animation: cardHintPulseV92 1.65s ease-in-out infinite;
 }
 
 .card-tutorial-hint.card-back-message {
   bottom: 170px !important;
-  opacity: .68;
+  opacity: .66;
   animation: none;
 }
 
-@keyframes cardHintPulseV91 {
+@keyframes cardHintPulseV92 {
   0%, 100% {
     opacity: .44;
     transform: translateX(-50%) translateY(0);
@@ -2321,4 +2321,14 @@ body[data-glass-theme="default"] {
     opacity: 1;
     transform: translateX(-50%) translateY(-3px);
   }
+}
+
+.card-page-turn-left {
+  animation: pageTurnLeftV87 .34s cubic-bezier(.22,.9,.26,1);
+  transform-origin: right center !important;
+}
+
+.card-page-turn-right {
+  animation: pageTurnRightV87 .34s cubic-bezier(.22,.9,.26,1);
+  transform-origin: left center !important;
 }
