@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>メガネ辞書 MVP</title>
-  <link rel="stylesheet" href="./style.css?v=114" />
+  <link rel="stylesheet" href="./style.css?v=116" />
 </head>
 <body class="mode-dictionary">
   <main id="app" class="app">
@@ -17,7 +17,7 @@
     <nav class="mode-toggle" id="modeToggle">
       <button id="dictionaryMode" class="mode active">辞書</button>
       <button id="cardMode" class="mode">カード</button>
-      <button id="mangaMode" class="mode">マンガ</button>
+      <button id="mangaMode" class="mode">マンガ</button><button id="audioModeBtn" class="mode-button" data-mode-button="audio">音声</button>
     </nav>
 
     <section id="card" class="card" aria-live="polite">
@@ -127,7 +127,7 @@
     <div class="fullscreen-hint">上下:カード / 左右:めくる / タップで閉じる</div>
   </div>
 
-  <script src="./app.js?v=114"></script>
+  <script src="./app.js?v=116"></script>
   <audio id="mangaAudio" preload="metadata"></audio>
   <div id="mangaFullscreenOverlay" class="manga-fullscreen-overlay" hidden>
     <button id="mangaFullscreenClose" class="manga-fullscreen-close">← 戻る</button>
@@ -207,6 +207,20 @@ padding:20px;">
   <div id="binderReplayTextPanel" class="binder-replay-text-panel">
     <div class="text-handle"></div>
     <div id="binderReplayTextInner" class="text-inner"></div>
+  </div>
+</div>
+
+<div id="libraryOverlayV116" class="library-overlay-v116" hidden>
+  <div class="library-sheet-v116">
+    <div class="library-head-v116">
+      <button id="libraryBackV116" class="library-back-v116">‹</button>
+      <div>
+        <div id="libraryTitleV116" class="library-title-v116">ライブラリ</div>
+        <div id="librarySubV116" class="library-sub-v116">タイトルを選択</div>
+      </div>
+      <button id="libraryCloseV116" class="library-close-v116">×</button>
+    </div>
+    <div id="libraryListV116" class="library-list-v116"></div>
   </div>
 </div>
 </body>
