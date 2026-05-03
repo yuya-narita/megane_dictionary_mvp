@@ -7882,3 +7882,106 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+
+
+/* v129: move content screen to body and prevent clipping */
+(function(){
+  function moveContentScreenToBody(){
+    const screen = document.getElementById("contentScreenV127");
+    if(screen && screen.parentElement !== document.body){
+      document.body.appendChild(screen);
+    }
+  }
+
+  function isContentMode(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function showFix(){
+    moveContentScreenToBody();
+    if(isContentMode()){
+      const screen = document.getElementById("contentScreenV127");
+      if(screen){
+        screen.hidden = false;
+        screen.style.display = "block";
+        screen.scrollTop = screen.scrollTop || 0;
+      }
+    }
+  }
+
+  function bindContentButtonFix(){
+    const buttons = Array.from(document.querySelectorAll("button")).filter(b=>{
+      const t=(b.textContent||"").replace(/\s+/g,"").trim();
+      return ["辞書","カード","コンテンツ"].includes(t);
+    });
+
+    buttons.forEach(btn=>{
+      const t=(btn.textContent||"").replace(/\s+/g,"").trim();
+      if(t === "コンテンツ" && !btn.dataset.v129){
+        btn.dataset.v129 = "1";
+        const h = ev=>{
+          setTimeout(showFix, 0);
+          setTimeout(showFix, 80);
+        };
+        btn.addEventListener("touchstart", h, {capture:true, passive:true});
+        btn.addEventListener("click", h, true);
+      }
+
+      if((t === "辞書" || t === "カード") && !btn.dataset.v129Leave){
+        btn.dataset.v129Leave = "1";
+        btn.addEventListener("click", ()=>{
+          const screen = document.getElementById("contentScreenV127");
+          if(screen) screen.hidden = true;
+        }, true);
+        btn.addEventListener("touchstart", ()=>{
+          const screen = document.getElementById("contentScreenV127");
+          if(screen) screen.hidden = true;
+        }, {capture:true, passive:true});
+      }
+    });
+  }
+
+  function stopOutsideContentGestures(ev){
+    if(!isContentMode()) return;
+
+    const screen = document.getElementById("contentScreenV127");
+    const path = ev.composedPath ? ev.composedPath() : [];
+
+    if(screen && path.includes(screen)) return;
+
+    const onTopButton = path.some(el=>{
+      if(!el || el.tagName !== "BUTTON") return false;
+      const t=(el.textContent||"").replace(/\s+/g,"").trim();
+      return ["辞書","カード","コンテンツ"].includes(t);
+    });
+
+    if(onTopButton) return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+    ev.stopImmediatePropagation?.();
+  }
+
+  function boot(){
+    moveContentScreenToBody();
+    bindContentButtonFix();
+
+    document.addEventListener("touchstart", stopOutsideContentGestures, {capture:true, passive:false});
+    document.addEventListener("touchmove", stopOutsideContentGestures, {capture:true, passive:false});
+
+    let count = 0;
+    const timer = setInterval(()=>{
+      count++;
+      moveContentScreenToBody();
+      bindContentButtonFix();
+      if(count > 12) clearInterval(timer);
+    }, 300);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();

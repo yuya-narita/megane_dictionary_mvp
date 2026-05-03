@@ -4020,3 +4020,100 @@ body.mode-content .deck-layer-3 {
     height: calc(100vh - 312px) !important;
   }
 }
+
+
+/* v129: コンテンツをカード枠内ではなく独立ページ表示にする */
+body.mode-content #contentScreenV127 {
+  display: block !important;
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 150px !important;
+  bottom: 0 !important;
+  transform: none !important;
+  width: 100vw !important;
+  height: auto !important;
+  max-height: none !important;
+  z-index: 14500 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  padding: 22px 30px 130px !important;
+  box-sizing: border-box !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(120,150,180,.08), transparent 34%),
+    linear-gradient(180deg, rgba(17,20,23,.98), rgba(5,6,8,.98)) !important;
+}
+
+/* 親フレーム・裏のカードを完全に隠す */
+body.mode-content #dictionaryView,
+body.mode-content #bugCardView,
+body.mode-content .hint,
+body.mode-content .controls,
+body.mode-content #favoriteBtn,
+body.mode-content .favorite-btn,
+body.mode-content [id*="favorite"],
+body.mode-content [class*="favorite"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* 大きいカード枠由来のクリップを避ける */
+body.mode-content .content {
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+
+body.mode-content #contentScreenV127,
+body.mode-content #contentScreenV127 * {
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* 旧/別バージョンのコンテンツ画面は非表示 */
+body.mode-content #contentScreenV120,
+body.mode-content #contentScreenV126 {
+  display: none !important;
+}
+
+/* コンテンツ表示中、上部ボタンは固定で見せる */
+body.mode-content button {
+  animation: none !important;
+}
+
+/* v129用に一覧幅を安定化 */
+body.mode-content .content-screen-v127 {
+  color: rgba(255,255,255,.94);
+}
+
+body.mode-content .content-hero-v127,
+body.mode-content .content-section-head-v127,
+body.mode-content .content-grid-v127 {
+  width: min(92vw, 560px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+body.mode-content .content-hero-v127 {
+  margin-top: 0 !important;
+}
+
+body.mode-content .content-grid-v127 {
+  padding-bottom: 60px;
+}
+
+/* スクロール中のチラつき軽減 */
+body.mode-content .content-card-v127,
+body.mode-content .content-hero-v127 {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@media (max-width: 390px) {
+  body.mode-content #contentScreenV127 {
+    top: 144px !important;
+    padding: 20px 28px 128px !important;
+  }
+}
