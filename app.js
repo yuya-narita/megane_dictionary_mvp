@@ -6890,3 +6890,41 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+
+/* v110: binder viewer card-mode style helper */
+(function(){
+  function forceTextPanelInitial(){
+    const panel = document.getElementById("binderViewerTextPanel");
+    if(!panel) return;
+    // 開いた直後は下に少しだけ見える状態
+    if(!panel.classList.contains("expanded")){
+      panel.style.transform = "";
+    }
+  }
+
+  function bindV110(){
+    const viewer = document.getElementById("binderViewer");
+    if(!viewer || viewer.dataset.v110Bound) return;
+    viewer.dataset.v110Bound = "1";
+
+    const observer = new MutationObserver(()=>{
+      if(!viewer.hidden){
+        setTimeout(forceTextPanelInitial, 50);
+      }
+    });
+
+    observer.observe(viewer, { attributes:true, attributeFilter:["hidden"] });
+  }
+
+  function boot(){
+    bindV110();
+    setInterval(bindV110, 800);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();

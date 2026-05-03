@@ -3071,3 +3071,149 @@ body[data-mode="cards"] #openBinderBtn {
   48% { transform: perspective(1100px) rotateY(82deg) translateX(10px) scale(.98); filter: brightness(.75); }
   100% { transform: perspective(1100px) rotateY(0deg) translateX(0) scale(1); filter: brightness(1); }
 }
+
+
+/* v110: バインダー閲覧をカードモード風に寄せる */
+.binder-viewer {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 84px 30px 34px !important;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(120,150,180,.08), transparent 34%),
+    linear-gradient(180deg, rgba(18,22,25,.96), rgba(0,0,0,.94)) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.binder-viewer-close {
+  top: 92px !important;
+  right: 34px !important;
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.22) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+
+/* カードモードと同じく、カード画像を主役に */
+.binder-viewer-card {
+  width: min(70vw, 360px) !important;
+  aspect-ratio: 2 / 3 !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,.06) !important;
+  border: 0 !important;
+  box-shadow:
+    0 24px 64px rgba(0,0,0,.55),
+    0 0 0 1px rgba(255,255,255,.08) inset !important;
+  overflow: hidden !important;
+}
+
+.binder-viewer-card img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  background: white;
+  border-radius: 0 !important;
+}
+
+.viewer-card-back {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255,255,255,.09), transparent 34%),
+    linear-gradient(180deg, rgba(40,48,52,.94), rgba(15,18,20,.98)) !important;
+  color: rgba(255,255,255,.92) !important;
+}
+
+.viewer-card-back-title {
+  color: rgba(255,255,255,.94) !important;
+}
+
+.viewer-card-back-sub {
+  color: rgba(210,225,240,.72) !important;
+}
+
+/* タイトル周りをカードモード風に */
+.binder-viewer-title {
+  margin-top: 22px !important;
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  color: rgba(255,255,255,.92) !important;
+  letter-spacing: .02em !important;
+  text-shadow: 0 2px 18px rgba(0,0,0,.55) !important;
+}
+
+.binder-viewer-counter {
+  margin-top: 14px !important;
+  color: rgba(255,255,255,.36) !important;
+  font-size: 16px !important;
+  letter-spacing: .12em !important;
+}
+
+/* テキストパネルはカードモード下部UI風 */
+.binder-viewer-text {
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 30% !important;
+  z-index: 12001 !important;
+  border-top-left-radius: 22px !important;
+  border-top-right-radius: 22px !important;
+  border-top: 1px solid rgba(255,255,255,.16) !important;
+  background:
+    linear-gradient(180deg, rgba(38,42,46,.78), rgba(8,10,12,.94)) !important;
+  box-shadow:
+    0 -18px 48px rgba(0,0,0,.62),
+    inset 0 1px 0 rgba(255,255,255,.06) !important;
+  backdrop-filter: blur(10px) !important;
+  transform: translateY(68%) !important;
+  transition: transform .28s cubic-bezier(.2,.9,.25,1) !important;
+}
+
+.binder-viewer-text.expanded {
+  transform: translateY(0) !important;
+}
+
+.text-handle {
+  background: rgba(255,255,255,.52) !important;
+}
+
+.text-inner {
+  padding: 12px 32px 38px !important;
+  color: rgba(255,255,255,.94) !important;
+  font-size: 15px !important;
+  line-height: 1.72 !important;
+}
+
+.text-inner h3 {
+  color: rgba(255,255,255,.98) !important;
+  font-size: 18px !important;
+  letter-spacing: .16em !important;
+}
+
+.text-inner .lead {
+  color: rgba(230,238,245,.94) !important;
+  font-weight: 800 !important;
+}
+
+.text-inner .section {
+  border-top-color: rgba(255,255,255,.14) !important;
+}
+
+/* パネルを閉じているとき、タイトル類は見える */
+.binder-viewer-text:not(.expanded) .text-inner {
+  max-height: 68px !important;
+  overflow: hidden !important;
+}
+
+/* 小さめ端末調整 */
+@media (max-height: 740px) {
+  .binder-viewer {
+    padding-top: 68px !important;
+  }
+  .binder-viewer-card {
+    width: min(64vw, 320px) !important;
+  }
+  .binder-viewer-title {
+    font-size: 24px !important;
+    margin-top: 16px !important;
+  }
+}
