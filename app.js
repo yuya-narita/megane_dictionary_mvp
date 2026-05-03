@@ -8849,3 +8849,207 @@ const CONTENTS_V118 = [
     boot();
   }
 })();
+
+
+
+/* v125: fix empty content screen + stop dictionary/card gestures while content is active */
+(function(){
+  const ITEMS = [
+    ["構文的イグノーベル賞","音声化予定","IG","くだらないけど深い観測シリーズ","rgba(255,210,90,.42)"],
+    ["細胞が綴る詩","音声化済み","CELL","生命・記憶・再生の詩的ログ","rgba(120,220,190,.38)"],
+    ["syntax frontier","音声化済み","SF","構文モデル×人工構文体の長編","rgba(100,160,255,.42)"],
+    ["syntax MBA","音声化済み","MBA","経営をλ→!→σ→Tで読む講義","rgba(255,150,90,.38)"],
+    ["詩の処方箋","音声化済み","POEM","言葉で状態を変える朗読シリーズ","rgba(210,140,255,.40)"],
+    ["H(x)∞origin","音声・マンガ化済み","H∞","意味バグの起源を観測する","rgba(255,230,120,.46)"],
+    ["貧乏メガネのシノ","テキストのみ","¥","貧しさと意味のズレを読む物語","rgba(150,210,120,.36)"],
+    ["syntax resonance","音声・マンガ化製作中","♪","音楽×言葉×構文バトル","rgba(255,100,170,.42)"],
+    ["ニクスのどうでもいい観測","音声化進行中","NXS","意味の手前の違和感を記録する","rgba(130,150,255,.40)"],
+    ["跳ねる前のこの感じ","音声作品製作中","!","発火直前の空気を聴く作品","rgba(255,180,80,.42)"],
+    ["ぴょこん日和","音声／紙芝居動画","PY","ゆるい音声と紙芝居的動画","rgba(110,230,255,.38)"]
+  ];
+
+  function ensureScreen(){
+    let screen = document.getElementById("contentScreenV120");
+    if(!screen){
+      screen = document.createElement("div");
+      screen.id = "contentScreenV120";
+      screen.className = "content-screen-v120";
+      document.body.appendChild(screen);
+    }
+
+    screen.innerHTML = `
+      <div class="content-hero-v120">
+        <div class="hero-kicker-v120">おすすめ</div>
+        <div class="hero-title-v120">H(x)∞origin</div>
+        <div class="hero-meta-v120">音声・マンガ化済み</div>
+        <div class="hero-copy-v120">意味が生まれる瞬間を、カード・音声・マンガで観測する。</div>
+      </div>
+
+      <div class="content-section-head-v120">
+        <span>作品一覧</span>
+        <span id="contentCountV120">${ITEMS.length}作品</span>
+      </div>
+
+      <div id="contentGridV120" class="content-grid-v120">
+        ${ITEMS.map(([title,status,mark,desc,accent],i)=>`
+          <div class="content-card-v120" data-index="${i}">
+            <div class="content-thumb-v120" data-mark="${mark}" style="--accent:${accent}"></div>
+            <div class="content-info-v120">
+              <div class="content-title-v120">${title}</div>
+              <div class="content-status-v120">${status}</div>
+              <div class="content-desc-v120">${desc}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+
+    screen.querySelectorAll(".content-card-v120").forEach(el=>{
+      el.onclick = () => {
+        const [title,status] = ITEMS[Number(el.dataset.index)];
+        alert(`${title}\n${status}\n\n次：作品詳細画面を接続`);
+      };
+    });
+
+    return screen;
+  }
+
+  function isContentMode(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function showContent(ev){
+    if(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation?.();
+    }
+
+    const screen = ensureScreen();
+
+    try { appMode = "content"; } catch(e) {}
+
+    document.body.classList.add("mode-content");
+    document.body.dataset.mode = "content";
+    screen.hidden = false;
+    screen.style.display = "block";
+
+    markActive("コンテンツ");
+  }
+
+  function hideContent(){
+    const screen = document.getElementById("contentScreenV120");
+    document.body.classList.remove("mode-content");
+    if(document.body.dataset.mode === "content") document.body.dataset.mode = "";
+    if(screen){
+      screen.hidden = true;
+      screen.style.display = "none";
+    }
+  }
+
+  function getModeButtons(){
+    const btns = Array.from(document.querySelectorAll("button")).filter(b=>{
+      const t=(b.textContent||"").replace(/\s+/g,"").trim();
+      return ["辞書","カード","マンガ","音声","コンテンツ"].includes(t);
+    });
+
+    return btns
+      .filter(b => b.offsetParent !== null)
+      .sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top || a.getBoundingClientRect().left - b.getBoundingClientRect().left)
+      .slice(0,3);
+  }
+
+  function markActive(label){
+    getModeButtons().forEach(b=>{
+      const t=(b.textContent||"").replace(/\s+/g,"").trim();
+      b.classList.toggle("active", t === label);
+      b.setAttribute("aria-pressed", t === label ? "true" : "false");
+    });
+  }
+
+  function setupButtons(){
+    const btns = getModeButtons();
+    if(btns.length < 3) return;
+
+    const dict = btns[0];
+    const card = btns[1];
+    const content = btns[2];
+
+    if(dict.textContent.trim() !== "辞書") dict.textContent = "辞書";
+    if(card.textContent.trim() !== "カード") card.textContent = "カード";
+    if(content.textContent.trim() !== "コンテンツ") content.textContent = "コンテンツ";
+
+    // 何度も付け直さない
+    if(!content.dataset.v125){
+      content.dataset.v125 = "1";
+      const h = ev => showContent(ev);
+      content.addEventListener("touchstart", h, {capture:true, passive:false});
+      content.addEventListener("click", h, true);
+      content.addEventListener("pointerdown", h, true);
+    }
+
+    if(!dict.dataset.v125){
+      dict.dataset.v125 = "1";
+      const h = ev => {
+        hideContent();
+        try { appMode = "dictionary"; if(typeof render === "function") render("flash"); } catch(e){}
+        markActive("辞書");
+      };
+      dict.addEventListener("touchstart", h, {capture:true, passive:true});
+      dict.addEventListener("click", h, true);
+    }
+
+    if(!card.dataset.v125){
+      card.dataset.v125 = "1";
+      const h = ev => {
+        hideContent();
+        try { appMode = "cards"; if(typeof render === "function") render("flash"); } catch(e){}
+        markActive("カード");
+      };
+      card.addEventListener("touchstart", h, {capture:true, passive:true});
+      card.addEventListener("click", h, true);
+    }
+  }
+
+  // コンテンツ中は、既存の上下スワイプや左右スワイプをcontent screen外では止める
+  function stopAppGesturesInContent(ev){
+    if(!isContentMode()) return;
+
+    const screen = document.getElementById("contentScreenV120");
+    const path = ev.composedPath ? ev.composedPath() : [];
+
+    const onScreen = screen && path.includes(screen);
+    const onModeButton = path.some(el=>{
+      if(!el || el.tagName !== "BUTTON") return false;
+      const t=(el.textContent||"").replace(/\s+/g,"").trim();
+      return ["辞書","カード","コンテンツ"].includes(t);
+    });
+
+    if(onScreen || onModeButton) return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+    ev.stopImmediatePropagation?.();
+  }
+
+  function boot(){
+    ensureScreen();
+    setupButtons();
+
+    document.addEventListener("touchstart", stopAppGesturesInContent, {capture:true, passive:false});
+    document.addEventListener("touchmove", stopAppGesturesInContent, {capture:true, passive:false});
+    document.addEventListener("pointerdown", stopAppGesturesInContent, true);
+    document.addEventListener("click", stopAppGesturesInContent, true);
+
+    setInterval(()=>{
+      setupButtons();
+      if(isContentMode()) ensureScreen();
+    }, 600);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();

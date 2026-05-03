@@ -4274,3 +4274,58 @@ body.mode-content .content {
 body:not(.mode-content) #contentScreenV120 {
   display: none !important;
 }
+
+
+/* v125: コンテンツ画面を既存カード/辞書レイヤーから独立させる */
+body.mode-content #contentScreenV120 {
+  display: block !important;
+  position: fixed !important;
+  left: 50% !important;
+  top: 132px !important;
+  transform: translateX(-50%) !important;
+  width: min(92vw, 560px) !important;
+  height: calc(100vh - 210px) !important;
+  max-height: none !important;
+  z-index: 12000 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 0 0 96px !important;
+  pointer-events: auto !important;
+}
+
+body.mode-content #dictionaryView,
+body.mode-content #bugCardView,
+body.mode-content .hint {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.mode-content .content {
+  pointer-events: none !important;
+}
+
+body.mode-content #contentScreenV120,
+body.mode-content #contentScreenV120 * {
+  pointer-events: auto !important;
+}
+
+body.mode-content .controls {
+  opacity: .22;
+  pointer-events: none !important;
+}
+
+/* 上部3ボタンのチラつき軽減 */
+body.mode-content button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.mode-content .content-card-v120,
+body.mode-content .content-hero-v120 {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* 既存の透明化/非表示補正を上書き */
+body.mode-content .content-screen-v120[hidden] {
+  display: block !important;
+}
