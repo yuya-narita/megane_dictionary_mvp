@@ -8872,3 +8872,382 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     render.__v137Fix = true;
   }
 })();
+
+/* v138: robust content-card tap debug popup + card center binder relabel */
+(function(){
+  let startX = 0;
+  let startY = 0;
+  let moved = false;
+  let startAt = 0;
+  let lastShown = 0;
+
+  function isContentMode(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function isCardMode(){
+    try { return appMode === "cards" || document.body.classList.contains("mode-cards") || document.body.dataset.mode === "cards"; }
+    catch(_) { return document.body.classList.contains("mode-cards") || document.body.dataset.mode === "cards"; }
+  }
+
+  function ensureToast(){
+    let toast = document.getElementById("contentTapDebugToastV138");
+    if(toast) return toast;
+    toast = document.createElement("div");
+    toast.id = "contentTapDebugToastV138";
+    toast.setAttribute("role", "status");
+    toast.style.cssText = [
+      "position:fixed",
+      "left:50%",
+      "bottom:92px",
+      "transform:translateX(-50%) translateY(12px)",
+      "z-index:2147483647",
+      "max-width:86vw",
+      "padding:12px 16px",
+      "border-radius:16px",
+      "background:rgba(20,20,28,.94)",
+      "color:#fff",
+      "font-size:14px",
+      "line-height:1.45",
+      "box-shadow:0 12px 36px rgba(0,0,0,.35)",
+      "border:1px solid rgba(255,255,255,.18)",
+      "opacity:0",
+      "pointer-events:none",
+      "transition:opacity .16s ease, transform .16s ease",
+      "white-space:pre-line",
+      "text-align:center"
+    ].join(";");
+    document.body.appendChild(toast);
+    return toast;
+  }
+
+  function getCardFromEvent(ev){
+    let card = ev.target && ev.target.closest ? ev.target.closest(".content-card-v127") : null;
+    if(card) return card;
+
+    const point = ev.changedTouches && ev.changedTouches[0] ? ev.changedTouches[0] : ev;
+    if(typeof point.clientX === "number" && typeof point.clientY === "number"){
+      const el = document.elementFromPoint(point.clientX, point.clientY);
+      if(el && el.closest) return el.closest(".content-card-v127");
+    }
+    return null;
+  }
+
+  function titleOf(card){
+    return card.querySelector(".content-title-v127")?.textContent?.trim() ||
+      card.querySelector(".content-status-v127")?.textContent?.trim() ||
+      "コンテンツカード";
+  }
+
+  function showSelected(card, ev){
+    if(!card || !isContentMode()) return;
+    const now = Date.now();
+    if(now - lastShown < 260) return;
+    lastShown = now;
+
+    if(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    }
+
+    document.querySelectorAll("#contentScreenV127 .content-card-v127").forEach(el=>{
+      const selected = el === card;
+      el.classList.toggle("selected-v136", selected);
+      el.classList.toggle("selected-v137", selected);
+      el.classList.toggle("selected-v138", selected);
+      el.setAttribute("aria-selected", selected ? "true" : "false");
+    });
+
+    window.selectedContentIndex = Number(card.dataset.index || 0);
+    window.selectedContentCard = card;
+
+    const toast = ensureToast();
+    toast.textContent = "選択できています\n" + titleOf(card);
+    toast.style.opacity = "1";
+    toast.style.transform = "translateX(-50%) translateY(0)";
+    clearTimeout(toast.__hideTimer);
+    toast.__hideTimer = setTimeout(()=>{
+      toast.style.opacity = "0";
+      toast.style.transform = "translateX(-50%) translateY(12px)";
+    }, 1300);
+  }
+
+  function bindContentDelegation(){
+    const screen = document.getElementById("contentScreenV127");
+    if(!screen || screen.__v138DelegatedTap) return;
+    screen.__v138DelegatedTap = true;
+
+    screen.addEventListener("touchstart", ev=>{
+      if(!isContentMode()) return;
+      const t = ev.changedTouches && ev.changedTouches[0];
+      if(!t) return;
+      startX = t.clientX;
+      startY = t.clientY;
+      moved = false;
+      startAt = Date.now();
+    }, {capture:true, passive:true});
+
+    screen.addEventListener("touchmove", ev=>{
+      if(!isContentMode()) return;
+      const t = ev.changedTouches && ev.changedTouches[0];
+      if(!t) return;
+      if(Math.abs(t.clientX - startX) > 12 || Math.abs(t.clientY - startY) > 12) moved = true;
+    }, {capture:true, passive:true});
+
+    screen.addEventListener("touchend", ev=>{
+      if(!isContentMode()) return;
+      if(moved || Date.now() - startAt > 700) return;
+      showSelected(getCardFromEvent(ev), ev);
+    }, {capture:true, passive:false});
+
+    screen.addEventListener("pointerdown", ev=>{
+      if(!isContentMode()) return;
+      startX = ev.clientX;
+      startY = ev.clientY;
+      moved = false;
+      startAt = Date.now();
+    }, true);
+
+    screen.addEventListener("pointermove", ev=>{
+      if(!isContentMode()) return;
+      if(Math.abs(ev.clientX - startX) > 12 || Math.abs(ev.clientY - startY) > 12) moved = true;
+    }, true);
+
+    screen.addEventListener("pointerup", ev=>{
+      if(!isContentMode()) return;
+      if(moved || Date.now() - startAt > 700) return;
+      showSelected(getCardFromEvent(ev), ev);
+    }, true);
+
+    screen.addEventListener("click", ev=>{
+      if(!isContentMode()) return;
+      showSelected(getCardFromEvent(ev), ev);
+    }, true);
+  }
+
+  function fixCardCenter(){
+    const btn = document.getElementById("randomWord");
+    if(!btn || !isCardMode()) return;
+    btn.textContent = "📘";
+    btn.setAttribute("aria-label", "バインダーを開く");
+  }
+
+  function apply(){
+    bindContentDelegation();
+    fixCardCenter();
+  }
+
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", apply);
+  else apply();
+
+  setInterval(apply, 200);
+
+  if(typeof render === "function" && !render.__v138ContentPopupFix){
+    const oldRender = render;
+    render = function(){
+      const result = oldRender.apply(this, arguments);
+      setTimeout(apply, 0);
+      setTimeout(apply, 80);
+      return result;
+    };
+    render.__v138ContentPopupFix = true;
+  }
+})();
+
+/* v139: minimal recovery - card center binder capture + content title episodes popup */
+(function(){
+  let sx = 0;
+  let sy = 0;
+  let moved = false;
+  let lastPopupAt = 0;
+
+  function isCardModeV139(){
+    try {
+      return appMode === "cards" || document.body.classList.contains("mode-cards") || document.body.dataset.mode === "cards";
+    } catch(_) {
+      return document.body.classList.contains("mode-cards") || document.body.dataset.mode === "cards";
+    }
+  }
+
+  function isContentModeV139(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function openBinderV139(ev){
+    if(!isCardModeV139()) return;
+    if(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    }
+
+    const modal = document.getElementById("binderModal");
+    if(!modal) return;
+
+    if(typeof window.renderBinder === "function") {
+      try { window.renderBinder(); } catch(_) {}
+    }
+
+    modal.style.display = "block";
+    modal.hidden = false;
+  }
+
+  function labelCardCenterV139(){
+    const btn = document.getElementById("randomWord");
+    if(!btn || !isCardModeV139()) return;
+    btn.textContent = "📘";
+    btn.setAttribute("aria-label", "バインダーを開く");
+  }
+
+  function ensureEpisodePopupV139(){
+    let popup = document.getElementById("contentEpisodePopupV139");
+    if(popup) return popup;
+
+    popup = document.createElement("div");
+    popup.id = "contentEpisodePopupV139";
+    popup.style.cssText = [
+      "position:fixed",
+      "left:50%",
+      "bottom:96px",
+      "transform:translateX(-50%) translateY(10px)",
+      "z-index:2147483647",
+      "width:min(320px,86vw)",
+      "padding:16px 18px",
+      "border-radius:18px",
+      "background:rgba(18,18,26,.96)",
+      "color:white",
+      "box-shadow:0 14px 40px rgba(0,0,0,.38)",
+      "border:1px solid rgba(255,255,255,.18)",
+      "font-size:15px",
+      "line-height:1.7",
+      "opacity:0",
+      "pointer-events:auto",
+      "transition:opacity .16s ease, transform .16s ease",
+      "text-align:left"
+    ].join(";");
+
+    popup.innerHTML = `
+      <div style="font-weight:700;margin-bottom:8px;">話数</div>
+      <button type="button" data-ep="1" style="display:block;width:100%;padding:10px 12px;margin:6px 0;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;text-align:left;">1話</button>
+      <button type="button" data-ep="2" style="display:block;width:100%;padding:10px 12px;margin:6px 0;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;text-align:left;">2話</button>
+      <button type="button" data-ep="3" style="display:block;width:100%;padding:10px 12px;margin:6px 0;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;text-align:left;">3話</button>
+    `;
+
+    popup.addEventListener("click", function(e){
+      e.stopPropagation();
+    }, true);
+
+    document.body.appendChild(popup);
+    return popup;
+  }
+
+  function showEpisodesV139(titleEl, ev){
+    if(!isContentModeV139() || !titleEl) return;
+    const now = Date.now();
+    if(now - lastPopupAt < 180) return;
+    lastPopupAt = now;
+
+    if(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    }
+
+    const card = titleEl.closest(".content-card-v127");
+    if(card){
+      document.querySelectorAll("#contentScreenV127 .content-card-v127").forEach(el=>{
+        const selected = el === card;
+        el.classList.toggle("selected-v139", selected);
+        el.classList.toggle("selected-v138", selected);
+        el.classList.toggle("selected-v137", selected);
+        el.classList.toggle("selected-v136", selected);
+        el.setAttribute("aria-selected", selected ? "true" : "false");
+      });
+      window.selectedContentIndex = Number(card.dataset.index || 0);
+      window.selectedContentCard = card;
+    }
+
+    const popup = ensureEpisodePopupV139();
+    const title = titleEl.textContent.trim() || "作品";
+    const head = popup.querySelector("div");
+    if(head) head.textContent = title + "｜話数";
+
+    popup.style.opacity = "1";
+    popup.style.transform = "translateX(-50%) translateY(0)";
+  }
+
+  function hideEpisodesV139(){
+    const popup = document.getElementById("contentEpisodePopupV139");
+    if(!popup) return;
+    popup.style.opacity = "0";
+    popup.style.transform = "translateX(-50%) translateY(10px)";
+  }
+
+  function bindGlobalV139(){
+    if(document.__v139Bound) return;
+    document.__v139Bound = true;
+
+    document.addEventListener("pointerdown", function(e){
+      sx = e.clientX;
+      sy = e.clientY;
+      moved = false;
+    }, true);
+
+    document.addEventListener("pointermove", function(e){
+      if(Math.abs(e.clientX - sx) > 12 || Math.abs(e.clientY - sy) > 12) moved = true;
+    }, true);
+
+    document.addEventListener("pointerup", function(e){
+      const btn = e.target && e.target.closest ? e.target.closest("#randomWord") : null;
+      if(btn && isCardModeV139()) {
+        openBinderV139(e);
+        return;
+      }
+
+      if(moved) return;
+      const title = e.target && e.target.closest ? e.target.closest(".content-title-v127") : null;
+      if(title && isContentModeV139()) {
+        showEpisodesV139(title, e);
+      }
+    }, true);
+
+    document.addEventListener("click", function(e){
+      const btn = e.target && e.target.closest ? e.target.closest("#randomWord") : null;
+      if(btn && isCardModeV139()) {
+        openBinderV139(e);
+        return;
+      }
+
+      const title = e.target && e.target.closest ? e.target.closest(".content-title-v127") : null;
+      if(title && isContentModeV139()) {
+        showEpisodesV139(title, e);
+        return;
+      }
+
+      const popup = document.getElementById("contentEpisodePopupV139");
+      if(popup && !popup.contains(e.target) && isContentModeV139()) hideEpisodesV139();
+    }, true);
+  }
+
+  function applyV139(){
+    bindGlobalV139();
+    labelCardCenterV139();
+  }
+
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", applyV139);
+  else applyV139();
+
+  setInterval(applyV139, 160);
+
+  if(typeof render === "function" && !render.__v139Recovery){
+    const originalRender = render;
+    render = function(){
+      const result = originalRender.apply(this, arguments);
+      setTimeout(applyV139, 0);
+      setTimeout(applyV139, 80);
+      return result;
+    };
+    render.__v139Recovery = true;
+  }
+})();

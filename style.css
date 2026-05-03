@@ -4316,3 +4316,11 @@ body.mode-content .content-card-v127.selected-v137 {
   border-color: rgba(255, 218, 92, .75) !important;
   box-shadow: 0 0 0 2px rgba(255, 218, 92, .28) inset, 0 18px 44px rgba(0,0,0,.34) !important;
 }
+
+/* v138: visible selected content card */
+body.mode-content .content-card-v127.selected-v138 {
+  outline: 3px solid rgba(255, 230, 90, .98) !important;
+  outline-offset: 5px !important;
+  border-color: rgba(255, 230, 90, .82) !important;
+  box-shadow: 0 0 0 2px rgba(255, 230, 90, .30) inset, 0 20px 48px rgba(0,0,0,.38) !important;
+}
