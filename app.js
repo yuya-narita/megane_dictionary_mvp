@@ -4882,3 +4882,43 @@ init();
     bootV85();
   }
 })();
+
+/* v86: card draw logic */
+(function(){
+  function drawCard(){
+    try{
+      if(typeof wordIndex !== "undefined" && typeof data !== "undefined"){
+        wordIndex = Math.floor(Math.random()*data.words.length);
+      }
+      if(typeof render === "function"){
+        render("flash");
+      }
+
+      const card = document.querySelector(".card, .card-item, .main-card");
+      if(card){
+        card.classList.remove("card-draw-anim");
+        void card.offsetWidth;
+        card.classList.add("card-draw-anim");
+      }
+    }catch(e){}
+  }
+
+  function bindDraw(){
+    const btn = document.getElementById("drawCardBtn");
+    if(!btn || btn.dataset.v86) return;
+    btn.dataset.v86 = "1";
+
+    btn.addEventListener("click", drawCard);
+  }
+
+  function bootV86(){
+    bindDraw();
+    setInterval(bindDraw, 800);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded", bootV86);
+  }else{
+    bootV86();
+  }
+})();
