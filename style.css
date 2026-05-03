@@ -2990,3 +2990,84 @@ body[data-mode="cards"] #openBinderBtn {
   padding-top: 10px;
   border-top: 1px solid rgba(255,231,176,.18);
 }
+
+
+/* v109: バインダー閲覧をカードモード寄りに調整 */
+.binder-viewer {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255,220,155,.10), transparent 34%),
+    linear-gradient(180deg, rgba(10,7,5,.96), rgba(0,0,0,.94)) !important;
+}
+
+.binder-viewer-card {
+  width: min(74vw, 360px) !important;
+  border-radius: 22px !important;
+  background: rgba(255,255,255,.08) !important;
+  box-shadow:
+    0 28px 70px rgba(0,0,0,.64),
+    0 0 0 1px rgba(255,238,198,.18) inset !important;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+.binder-viewer-card img {
+  border-radius: 18px;
+}
+
+/* カードモードっぽい下部テキスト */
+.binder-viewer-text {
+  height: 28% !important;
+  background:
+    linear-gradient(180deg, rgba(63,35,20,.58), rgba(10,6,4,.90)) !important;
+  border-top: 1px solid rgba(255,231,176,.22) !important;
+  border-top-left-radius: 22px !important;
+  border-top-right-radius: 22px !important;
+  box-shadow:
+    0 -14px 44px rgba(0,0,0,.58),
+    inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+
+.binder-viewer-text.expanded {
+  transform: translateY(-54%) !important;
+}
+
+.text-inner {
+  color: rgba(255,238,198,.96) !important;
+  font-size: 14px !important;
+  line-height: 1.72 !important;
+}
+
+.text-inner h3 {
+  font-size: 16px !important;
+  letter-spacing: .14em !important;
+  color: rgba(255,238,198,1) !important;
+}
+
+.text-inner .lead {
+  font-size: 15px;
+  line-height: 1.75;
+  color: rgba(255,255,255,.92);
+}
+
+/* バインダー閲覧内の物理フリップ */
+.binder-viewer-card.viewer-flip-left {
+  transform-origin: right center !important;
+  animation: binderViewerFlipLeftV109 .46s cubic-bezier(.18,.9,.24,1);
+}
+
+.binder-viewer-card.viewer-flip-right {
+  transform-origin: left center !important;
+  animation: binderViewerFlipRightV109 .46s cubic-bezier(.18,.9,.24,1);
+}
+
+@keyframes binderViewerFlipLeftV109 {
+  0% { transform: perspective(1100px) rotateY(0deg) translateX(0) scale(1); filter: brightness(1); }
+  48% { transform: perspective(1100px) rotateY(-82deg) translateX(-10px) scale(.98); filter: brightness(.75); }
+  100% { transform: perspective(1100px) rotateY(0deg) translateX(0) scale(1); filter: brightness(1); }
+}
+
+@keyframes binderViewerFlipRightV109 {
+  0% { transform: perspective(1100px) rotateY(0deg) translateX(0) scale(1); filter: brightness(1); }
+  48% { transform: perspective(1100px) rotateY(82deg) translateX(10px) scale(.98); filter: brightness(.75); }
+  100% { transform: perspective(1100px) rotateY(0deg) translateX(0) scale(1); filter: brightness(1); }
+}
