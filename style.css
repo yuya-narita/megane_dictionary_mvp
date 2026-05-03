@@ -4361,3 +4361,172 @@ body.mode-content button[aria-label*="binder"] {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+
+/* v139: バインダーNaN防御と表示安定 */
+body:not(.binder-open-v139) #binderOverlay,
+body:not(.binder-open-v139) #binderModal,
+body:not(.binder-open-v139) #binderView,
+body:not(.binder-open-v139) .binder-overlay,
+body:not(.binder-open-v139) .binder-modal,
+body:not(.binder-open-v139) .binder-view {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+body.binder-open-v139 #binderOverlay,
+body.binder-open-v139 #binderModal,
+body.binder-open-v139 #binderView,
+body.binder-open-v139 .binder-overlay,
+body.binder-open-v139 .binder-modal,
+body.binder-open-v139 .binder-view {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* 📘ボタンはコンテンツ外で復活 */
+body:not(.mode-content) .binder-button,
+body:not(.mode-content) .binder-btn,
+body:not(.mode-content) button[aria-label*="バインダー"],
+body:not(.mode-content) button[aria-label*="binder"] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* コンテンツ中はバインダー関係は非表示 */
+body.mode-content #binderOverlay,
+body.mode-content #binderModal,
+body.mode-content #binderView,
+body.mode-content .binder-overlay,
+body.mode-content .binder-modal,
+body.mode-content .binder-view,
+body.mode-content .binder-button,
+body.mode-content .binder-btn,
+body.mode-content button[aria-label*="バインダー"],
+body.mode-content button[aria-label*="binder"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+
+/* v140: バインダーを安全な独自フローに再構築 */
+body:not(.binder-modal-open-v140) #binderModal {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+body.binder-modal-open-v140 #binderModal {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* 古いviewerはv140の許可がある時だけ表示 */
+body:not(.binder-replay-open-v140) #binderReplayViewer,
+body:not(.binder-replay-open-v140) #binderViewer {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+body.binder-replay-open-v140 #binderReplayViewer {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* グリッド */
+#binderGrid.v140-binder-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px 0 80px;
+}
+
+.v140-binder-item {
+  min-height: 132px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.055);
+  overflow: hidden;
+  position: relative;
+  color: rgba(255,255,255,.86);
+}
+
+.v140-binder-item.locked {
+  opacity: .38;
+}
+
+.v140-binder-no {
+  position: absolute;
+  left: 8px;
+  top: 7px;
+  z-index: 2;
+  font-size: 11px;
+  font-weight: 900;
+  opacity: .72;
+}
+
+.v140-binder-thumb {
+  height: 92px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255,255,255,.14), transparent 30%),
+    linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+}
+
+.v140-binder-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.v140-binder-mark {
+  font-size: 26px;
+  font-weight: 1000;
+}
+
+.v140-binder-title {
+  padding: 8px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.v140-binder-locked-title {
+  padding: 50px 6px 8px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 1000;
+  opacity: .55;
+}
+
+/* replayのNaNを出さない */
+#binderReplayViewer .binder-replay-title,
+#binderReplayViewer .binder-replay-counter,
+#binderReplayViewer .binder-replay-caption {
+  word-break: keep-all;
+}
+
+/* コンテンツ中はバインダー非表示 */
+body.mode-content #binderModal,
+body.mode-content #binderReplayViewer,
+body.mode-content #binderViewer {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

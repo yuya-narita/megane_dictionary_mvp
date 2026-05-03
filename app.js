@@ -8922,3 +8922,700 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+
+
+/* v139: binder NaN guard + safe open/close */
+(function(){
+  const CARD_FALLBACK = [
+    {
+      id: "fallback-card",
+      no: 1,
+      title: "サンプルカード",
+      subtitle: "THE LOOKING BEAR",
+      meaning: "カードを取得すると、ここに表示されます。",
+      front: "",
+      back: ""
+    }
+  ];
+
+  function isContentMode(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function isBinderOverlay(el){
+    if(!el || !el.classList) return false;
+    const id = (el.id || "").toLowerCase();
+    const cls = (el.className || "").toString().toLowerCase();
+    return (
+      id === "binderoverlay" ||
+      id === "bindermodal" ||
+      id === "binderview" ||
+      cls.includes("binder-overlay") ||
+      cls.includes("binder-modal") ||
+      cls.includes("binder-view")
+    );
+  }
+
+  function isBinderButton(el){
+    if(!el || el.tagName !== "BUTTON") return false;
+    if(isBinderOverlay(el)) return false;
+
+    const txt = (el.textContent || "").trim();
+    const label = (el.getAttribute("aria-label") || "").toLowerCase();
+    const id = (el.id || "").toLowerCase();
+    const cls = (el.className || "").toString().toLowerCase();
+
+    return (
+      txt === "📘" ||
+      label.includes("binder") ||
+      label.includes("バインダー") ||
+      cls.includes("binder-button") ||
+      cls.includes("binder-btn") ||
+      id.includes("binderbutton") ||
+      id.includes("binderbtn")
+    );
+  }
+
+  function getPotentialCards(){
+    const names = [
+      "cards",
+      "CARD_DATA",
+      "cardData",
+      "CARD_LIST",
+      "cardList",
+      "bugCards",
+      "lookBearCards",
+      "dailyCards"
+    ];
+
+    for(const name of names){
+      try{
+        const v = window[name];
+        if(Array.isArray(v) && v.length) return v;
+      }catch(e){}
+    }
+
+    // localStorageのカード取得済みデータ候補
+    const storageKeys = [
+      "binderCards",
+      "collectedCards",
+      "ownedCards",
+      "dailyCardHistory",
+      "drawnCards",
+      "lookBearBinder",
+      "cardBinder"
+    ];
+
+    for(const key of storageKeys){
+      try{
+        const v = JSON.parse(localStorage.getItem(key) || "null");
+        if(Array.isArray(v) && v.length) return v;
+      }catch(e){}
+    }
+
+    return CARD_FALLBACK;
+  }
+
+  function normalizeCard(raw, index){
+    if(!raw || typeof raw !== "object"){
+      return {
+        id: `card-${index+1}`,
+        no: index + 1,
+        title: `CARD ${index+1}`,
+        subtitle: "THE LOOKING BEAR",
+        meaning: "カードを取得すると、ここに表示されます。",
+        front: "",
+        back: ""
+      };
+    }
+
+    const no = Number(raw.no ?? raw.number ?? raw.index ?? raw.id ?? index + 1);
+    return {
+      ...raw,
+      no: Number.isFinite(no) && no > 0 ? no : index + 1,
+      title: raw.title || raw.name || raw.jp || `CARD ${index+1}`,
+      subtitle: raw.subtitle || raw.en || raw.type || "THE LOOKING BEAR",
+      meaning: raw.meaning || raw.description || raw.text || raw.copy || "カードを引いた瞬間、意味が少しだけ形になる。",
+      front: raw.front || raw.image || raw.img || raw.src || "",
+      back: raw.back || raw.backImage || raw.backSrc || ""
+    };
+  }
+
+  function safeBinderInit(){
+    const rawCards = getPotentialCards();
+    const cards = rawCards.length ? rawCards.map(normalizeCard) : CARD_FALLBACK.map(normalizeCard);
+
+    window.__binderCardsV139 = cards;
+
+    if(!Array.isArray(window.cards) || !window.cards.length){
+      window.cards = cards;
+    }
+
+    let idx = Number(window.currentCardIndex);
+    if(!Number.isFinite(idx) || idx < 0 || idx >= cards.length){
+      idx = 0;
+    }
+    window.currentCardIndex = idx;
+
+    return {cards, index: idx};
+  }
+
+  function findBinderRoot(){
+    return Array.from(document.querySelectorAll("div,section,aside")).find(isBinderOverlay) || null;
+  }
+
+  function writeTextSafe(root, selectorList, value){
+    for(const sel of selectorList){
+      const el = root.querySelector(sel);
+      if(el){
+        el.textContent = value;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function writeImageSafe(root, card){
+    const img = root.querySelector("img");
+    if(!img) return false;
+    const src = card.front || card.image || card.img || "";
+    if(src){
+      img.src = src;
+      img.alt = card.title || "card";
+      img.style.display = "";
+      return true;
+    }
+    img.removeAttribute("src");
+    img.alt = card.title || "card";
+    return false;
+  }
+
+  function patchBinderDom(){
+    const root = findBinderRoot();
+    const {cards, index} = safeBinderInit();
+    const total = Math.max(cards.length, 1);
+    const card = cards[index] || normalizeCard(null, 0);
+    if(!root) return;
+
+    const noText = `No.${String(card.no || index + 1).padStart(3, "0")}`;
+    const cardText = card.title || `CARD ${index + 1}`;
+    const subText = card.subtitle || "THE LOOKING BEAR";
+    const countText = `${index + 1} / ${total}  ${noText}`;
+
+    writeTextSafe(root, [
+      ".binder-no",
+      ".binder-number",
+      ".card-no",
+      ".card-number",
+      "[data-binder-no]",
+      "[data-card-no]"
+    ], noText);
+
+    writeTextSafe(root, [
+      ".binder-card-title",
+      ".binder-title",
+      ".card-title",
+      "[data-binder-title]",
+      "[data-card-title]"
+    ], cardText);
+
+    writeTextSafe(root, [
+      ".binder-subtitle",
+      ".card-subtitle",
+      ".binder-meta",
+      "[data-binder-subtitle]",
+      "[data-card-subtitle]"
+    ], subText);
+
+    writeTextSafe(root, [
+      ".binder-count",
+      ".binder-counter",
+      ".card-count",
+      ".card-counter",
+      "[data-binder-count]",
+      "[data-card-count]"
+    ], countText);
+
+    writeTextSafe(root, [
+      ".binder-body",
+      ".binder-text",
+      ".card-body",
+      ".card-text",
+      "[data-binder-text]",
+      "[data-card-text]"
+    ], card.meaning || "");
+
+    writeImageSafe(root, card);
+
+    // 最後の保険：root全体にNaNが残っていたら置換
+    Array.from(root.querySelectorAll("*")).forEach(el=>{
+      if(el.children.length) return;
+      const txt = el.textContent || "";
+      if(txt.includes("NaN")){
+        el.textContent = txt
+          .replace(/No\.NaN/g, noText)
+          .replace(/CARD NaN/g, cardText)
+          .replace(/NaN/g, String(index + 1))
+          .replace(/1\s*\/\s*0/g, `${index + 1} / ${total}`);
+      }
+    });
+  }
+
+  function closeBinder(){
+    document.body.classList.remove("binder-open-v138");
+    document.body.classList.remove("binder-open-v139");
+
+    Array.from(document.querySelectorAll("div,section,aside")).forEach(el=>{
+      if(!isBinderOverlay(el)) return;
+      el.hidden = true;
+      el.style.display = "none";
+      el.style.visibility = "hidden";
+      el.style.opacity = "0";
+      el.style.pointerEvents = "none";
+    });
+  }
+
+  function openBinder(){
+    if(isContentMode()) return;
+
+    safeBinderInit();
+    document.body.classList.add("binder-open-v139");
+    document.body.classList.add("binder-open-v138");
+
+    Array.from(document.querySelectorAll("div,section,aside")).forEach(el=>{
+      if(!isBinderOverlay(el)) return;
+      el.hidden = false;
+      el.style.display = "";
+      el.style.visibility = "";
+      el.style.opacity = "";
+      el.style.pointerEvents = "";
+    });
+
+    setTimeout(patchBinderDom, 0);
+    setTimeout(patchBinderDom, 80);
+    setTimeout(patchBinderDom, 180);
+  }
+
+  function restoreBinderButtonsOnly(){
+    if(isContentMode()) return;
+
+    Array.from(document.querySelectorAll("button")).forEach(btn=>{
+      if(!isBinderButton(btn)) return;
+      btn.style.display = "";
+      btn.style.visibility = "";
+      btn.style.opacity = "";
+      btn.style.pointerEvents = "";
+    });
+  }
+
+  function bindBinderButtons(){
+    Array.from(document.querySelectorAll("button")).forEach(btn=>{
+      if(!isBinderButton(btn)) return;
+      if(btn.dataset.v139Binder) return;
+      btn.dataset.v139Binder = "1";
+
+      const h = ev=>{
+        // 既存処理と競合しないよう少し後で安全表示
+        setTimeout(openBinder, 0);
+      };
+
+      btn.addEventListener("click", h, true);
+      btn.addEventListener("touchstart", h, {capture:true, passive:true});
+    });
+  }
+
+  function bindClose(){
+    Array.from(document.querySelectorAll("button")).forEach(btn=>{
+      const txt = (btn.textContent || "").trim();
+      const label = (btn.getAttribute("aria-label") || "").toLowerCase();
+      if(!(txt === "×" || txt === "✕" || txt === "✖" || label.includes("close") || label.includes("閉じる"))) return;
+      if(btn.dataset.v139Close) return;
+      btn.dataset.v139Close = "1";
+
+      const h = ()=>setTimeout(closeBinder, 30);
+      btn.addEventListener("click", h, true);
+      btn.addEventListener("touchstart", h, {capture:true, passive:true});
+    });
+  }
+
+  function bindModeButtons(){
+    Array.from(document.querySelectorAll("button")).forEach(btn=>{
+      const txt = (btn.textContent || "").replace(/\s+/g,"").trim();
+      if(!["辞書","カード","コンテンツ"].includes(txt)) return;
+      if(btn.dataset.v139Mode) return;
+      btn.dataset.v139Mode = "1";
+
+      const h = ()=>{
+        // モード切替時は必ずバインダーを閉じる
+        setTimeout(()=>{
+          closeBinder();
+          restoreBinderButtonsOnly();
+        }, 80);
+      };
+
+      btn.addEventListener("click", h, true);
+      btn.addEventListener("touchstart", h, {capture:true, passive:true});
+    });
+  }
+
+  function boot(){
+    safeBinderInit();
+    closeBinder();
+    restoreBinderButtonsOnly();
+    bindBinderButtons();
+    bindClose();
+    bindModeButtons();
+
+    let n = 0;
+    const timer = setInterval(()=>{
+      n++;
+      if(!document.body.classList.contains("binder-open-v139")){
+        closeBinder();
+      }else{
+        patchBinderDom();
+      }
+      restoreBinderButtonsOnly();
+      bindBinderButtons();
+      bindClose();
+      bindModeButtons();
+      if(n > 16) clearInterval(timer);
+    }, 250);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();
+
+
+
+/* v140: rebuild binder flow and block NaN viewer */
+(function(){
+  const BINDER_KEY = "binderCardsV104";
+
+  function isContentMode(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g,ch=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[ch]));
+  }
+
+  function getCardsSafe(){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards) && cards.length){
+        return cards;
+      }
+    }catch(e){}
+    return [
+      {
+        title:"CARD",
+        subtitle:"THE LOOKING BEAR",
+        caption:"カードを引いた瞬間、意味が少しだけ形になる。",
+        image:"",
+        back:"images/cards/card_back.png"
+      }
+    ];
+  }
+
+  function getOwnedSafe(){
+    const arr = getCardsSafe();
+    let raw = [];
+    try{ raw = JSON.parse(localStorage.getItem(BINDER_KEY) || "[]"); }catch(e){ raw = []; }
+
+    // 数値化、NaN排除、範囲外排除、重複排除
+    const clean = [...new Set(
+      (Array.isArray(raw) ? raw : [])
+        .map(v => Number(v))
+        .filter(v => Number.isInteger(v) && v >= 0 && v < arr.length)
+    )].sort((a,b)=>a-b);
+
+    return clean;
+  }
+
+  function closeAllBinder(){
+    document.body.classList.remove("binder-open-v138");
+    document.body.classList.remove("binder-open-v139");
+    document.body.classList.remove("binder-modal-open-v140");
+    document.body.classList.remove("binder-replay-open-v140");
+
+    ["binderModal","binderViewer","binderReplayViewer"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.hidden = true;
+      el.style.display = "none";
+      el.style.visibility = "hidden";
+      el.style.opacity = "0";
+      el.style.pointerEvents = "none";
+    });
+  }
+
+  function showBinderModal(){
+    if(isContentMode()) return;
+
+    const modal = document.getElementById("binderModal");
+    if(!modal) return;
+
+    closeReplayOnly();
+    renderBinderGridV140();
+
+    document.body.classList.add("binder-modal-open-v140");
+    modal.hidden = false;
+    modal.style.display = "block";
+    modal.style.visibility = "visible";
+    modal.style.opacity = "1";
+    modal.style.pointerEvents = "auto";
+  }
+
+  function closeBinderModal(){
+    document.body.classList.remove("binder-modal-open-v140");
+    const modal = document.getElementById("binderModal");
+    if(modal){
+      modal.hidden = true;
+      modal.style.display = "none";
+      modal.style.visibility = "hidden";
+      modal.style.opacity = "0";
+      modal.style.pointerEvents = "none";
+    }
+  }
+
+  function closeReplayOnly(){
+    document.body.classList.remove("binder-replay-open-v140");
+    ["binderViewer","binderReplayViewer"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.hidden = true;
+      el.style.display = "none";
+      el.style.visibility = "hidden";
+      el.style.opacity = "0";
+      el.style.pointerEvents = "none";
+    });
+  }
+
+  function cardMark(c, idx){
+    const t = c.title || "";
+    if(t.includes("H(x)")) return "H∞";
+    if(t.includes("白クマ")) return "WB";
+    if(t.includes("ダブル")) return "DB";
+    if(t.includes("再帰")) return "RE";
+    if(t.includes("教義")) return "DO";
+    return String(idx + 1).padStart(2,"0");
+  }
+
+  function renderBinderGridV140(){
+    const grid = document.getElementById("binderGrid");
+    if(!grid) return;
+
+    const arr = getCardsSafe();
+    const owned = getOwnedSafe();
+    grid.classList.add("v140-binder-grid");
+
+    grid.innerHTML = arr.map((c, i)=>{
+      const has = owned.includes(i);
+      const no = String(i + 1).padStart(3,"0");
+      const img = c.image || c.img || c.src || "";
+      const title = c.title || `CARD ${i+1}`;
+
+      if(!has){
+        return `
+          <div class="v140-binder-item locked" data-card-index="${i}">
+            <span class="v140-binder-no">No.${no}</span>
+            <div class="v140-binder-locked-title">???</div>
+          </div>
+        `;
+      }
+
+      return `
+        <button class="v140-binder-item owned-card" data-card-index="${i}" type="button">
+          <span class="v140-binder-no">No.${no}</span>
+          <div class="v140-binder-thumb">
+            ${img ? `<img src="${esc(img)}" alt="${esc(title)}">` : `<span class="v140-binder-mark">${esc(cardMark(c,i))}</span>`}
+          </div>
+          <div class="v140-binder-title">${esc(title)}</div>
+        </button>
+      `;
+    }).join("");
+
+    grid.querySelectorAll(".v140-binder-item.owned-card").forEach(btn=>{
+      btn.addEventListener("click", ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+        const idx = Number(btn.dataset.cardIndex);
+        if(Number.isInteger(idx)) openReplayV140(idx);
+      }, true);
+
+      btn.addEventListener("touchend", ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+        const idx = Number(btn.dataset.cardIndex);
+        if(Number.isInteger(idx)) openReplayV140(idx);
+      }, {capture:true, passive:false});
+    });
+  }
+
+  function sampleText(c){
+    const real = c.text || c.description || c.body || c.content || c.observe || c.story;
+    if(real) return String(real);
+
+    return `
+<h3>${esc(c.title || "CARD")}</h3>
+<div class="lead">${esc(c.subtitle || c.caption || "")}</div>
+
+<div class="section">
+<h3>OBSERVE</h3>
+人は、何かを見た瞬間に、それをただの情報としてではなく、自分の中の記憶や感情と結びつけて読む。
+</div>
+
+<div class="section">
+<h3>BUG</h3>
+意味は、対象そのものだけでは決まらない。見るタイミング、気分、場所によって、同じカードでも違うものに見えてしまう。
+</div>
+
+<div class="section">
+<h3>LOOK BACK</h3>
+それは本当にそこにあったのか。<br>
+それとも、見た瞬間に生まれてしまったのか。
+</div>
+
+<div class="section">
+<h3>🐻 LOOK BEAR</h3>
+「もう一回見ると、ちょっと違って見えるよね。」
+</div>`;
+  }
+
+  function openReplayV140(idx){
+    const arr = getCardsSafe();
+    const owned = getOwnedSafe();
+    if(!Number.isInteger(idx) || idx < 0 || idx >= arr.length) return;
+
+    const pos = Math.max(0, owned.indexOf(idx));
+    const c = arr[idx];
+    const viewer = document.getElementById("binderReplayViewer");
+    if(!viewer) return;
+
+    const front = document.getElementById("binderReplayFront");
+    const back = document.getElementById("binderReplayBack");
+    const title = document.getElementById("binderReplayTitle");
+    const subtitle = document.getElementById("binderReplaySubtitle");
+    const caption = document.getElementById("binderReplayCaption");
+    const counter = document.getElementById("binderReplayCounter");
+    const text = document.getElementById("binderReplayTextInner");
+    const flip = document.getElementById("binderReplayFlipCard");
+    const panel = document.getElementById("binderReplayTextPanel");
+
+    const no = String(idx + 1).padStart(3,"0");
+    const total = Math.max(owned.length, 1);
+    const safeTitle = c.title || `CARD ${idx+1}`;
+
+    if(front){
+      const img = c.image || c.img || c.src || "";
+      if(img) front.src = img;
+      else front.removeAttribute("src");
+      front.alt = safeTitle;
+    }
+
+    if(back){
+      back.src = c.back || "images/cards/card_back.png";
+      back.alt = `${safeTitle} 裏面`;
+    }
+
+    if(flip) flip.classList.remove("flipped");
+    if(panel) panel.classList.remove("expanded");
+
+    if(title) title.textContent = safeTitle;
+    if(subtitle) subtitle.textContent = c.subtitle || "";
+    if(caption) caption.textContent = c.caption || "";
+    if(counter) counter.textContent = `${pos + 1} / ${total}　No.${no}`;
+    if(text) text.innerHTML = sampleText(c);
+
+    closeBinderModal();
+
+    document.body.classList.add("binder-replay-open-v140");
+    viewer.hidden = false;
+    viewer.style.display = "block";
+    viewer.style.visibility = "visible";
+    viewer.style.opacity = "1";
+    viewer.style.pointerEvents = "auto";
+  }
+
+  function isBinderButton(btn){
+    if(!btn || btn.tagName !== "BUTTON") return false;
+    if(btn.closest("#binderModal") || btn.closest("#binderReplayViewer") || btn.closest("#binderViewer")) return false;
+
+    const txt = (btn.textContent || "").trim();
+    const label = (btn.getAttribute("aria-label") || "").toLowerCase();
+    const id = (btn.id || "").toLowerCase();
+    const cls = (btn.className || "").toString().toLowerCase();
+
+    return txt === "📘" || label.includes("binder") || label.includes("バインダー") || id.includes("binder") || cls.includes("binder");
+  }
+
+  function bindButtons(){
+    document.querySelectorAll("button").forEach(btn=>{
+      if(isBinderButton(btn) && !btn.dataset.v140Binder){
+        btn.dataset.v140Binder = "1";
+        const h = ev=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          ev.stopImmediatePropagation?.();
+          showBinderModal();
+        };
+        btn.addEventListener("click", h, true);
+        btn.addEventListener("touchstart", h, {capture:true, passive:false});
+      }
+
+      const txt = (btn.textContent || "").trim();
+      const label = (btn.getAttribute("aria-label") || "").toLowerCase();
+      const isClose = txt === "×" || txt === "✕" || txt === "✖" || label.includes("close") || label.includes("閉じる");
+
+      if(isClose && !btn.dataset.v140Close){
+        btn.dataset.v140Close = "1";
+        const h = ev=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          ev.stopImmediatePropagation?.();
+          closeAllBinder();
+        };
+        btn.addEventListener("click", h, true);
+        btn.addEventListener("touchstart", h, {capture:true, passive:false});
+      }
+
+      const modeTxt = (btn.textContent || "").replace(/\s+/g,"").trim();
+      if(["辞書","カード","コンテンツ"].includes(modeTxt) && !btn.dataset.v140Mode){
+        btn.dataset.v140Mode = "1";
+        const h = ()=>setTimeout(closeAllBinder, 0);
+        btn.addEventListener("click", h, true);
+        btn.addEventListener("touchstart", h, {capture:true, passive:true});
+      }
+    });
+  }
+
+  function boot(){
+    closeAllBinder();
+    bindButtons();
+
+    let n = 0;
+    const timer = setInterval(()=>{
+      n++;
+      bindButtons();
+      if(!document.body.classList.contains("binder-modal-open-v140") &&
+         !document.body.classList.contains("binder-replay-open-v140")){
+        closeAllBinder();
+      }
+      if(n > 16) clearInterval(timer);
+    }, 250);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();
