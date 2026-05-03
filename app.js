@@ -9619,3 +9619,185 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+
+
+/* v141: favorite close recovery + binder viewer center/flip recovery */
+(function(){
+  function isBinderOpen(){
+    return document.body.classList.contains("binder-modal-open-v140") ||
+           document.body.classList.contains("binder-replay-open-v140");
+  }
+
+  function isFavoriteOverlay(el){
+    if(!el) return false;
+    const id = (el.id || "").toLowerCase();
+    const cls = (el.className || "").toString().toLowerCase();
+    const txt = (el.textContent || "");
+    return id.includes("favorite") ||
+           id.includes("favorites") ||
+           cls.includes("favorite") ||
+           cls.includes("favorites") ||
+           txt.includes("お気に入り");
+  }
+
+  function closeFavoriteOnly(){
+    Array.from(document.querySelectorAll("div,section,aside")).forEach(el=>{
+      if(!isFavoriteOverlay(el)) return;
+      if(el.closest("#binderModal") || el.closest("#binderReplayViewer") || el.closest("#binderViewer")) return;
+
+      // rootっぽいものだけ閉じる
+      const id = (el.id || "").toLowerCase();
+      const cls = (el.className || "").toString().toLowerCase();
+      if(id.includes("modal") || id.includes("overlay") || cls.includes("modal") || cls.includes("overlay") || cls.includes("favorite")){
+        el.hidden = true;
+        el.style.display = "none";
+        el.style.visibility = "hidden";
+        el.style.opacity = "0";
+        el.style.pointerEvents = "none";
+      }
+    });
+  }
+
+  function bindFavoriteClose(){
+    Array.from(document.querySelectorAll("button")).forEach(btn=>{
+      if(btn.dataset.v141FavClose) return;
+
+      const txt = (btn.textContent || "").trim();
+      const label = (btn.getAttribute("aria-label") || "").toLowerCase();
+      const isClose = txt === "×" || txt === "✕" || txt === "✖" || label.includes("close") || label.includes("閉じる");
+
+      if(!isClose) return;
+      if(btn.closest("#binderModal") || btn.closest("#binderReplayViewer") || btn.closest("#binderViewer")) return;
+
+      // お気に入り内の×だけ補助
+      const parent = btn.closest("div,section,aside");
+      if(!isFavoriteOverlay(parent)) return;
+
+      btn.dataset.v141FavClose = "1";
+      const h = ev=>{
+        if(isBinderOpen()) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+        closeFavoriteOnly();
+      };
+      btn.addEventListener("click", h, true);
+      btn.addEventListener("touchstart", h, {capture:true, passive:false});
+    });
+  }
+
+  function centerBinderViewer(){
+    const viewer = document.getElementById("binderReplayViewer") || document.getElementById("binderViewer");
+    if(!viewer) return;
+
+    if(document.body.classList.contains("binder-replay-open-v140")){
+      viewer.style.left = "0";
+      viewer.style.right = "0";
+      viewer.style.top = "0";
+      viewer.style.bottom = "0";
+      viewer.style.transform = "none";
+    }
+
+    const flip = document.getElementById("binderReplayFlipCard");
+    if(flip){
+      flip.style.marginLeft = "auto";
+      flip.style.marginRight = "auto";
+      flip.style.transformOrigin = "center center";
+      flip.style.pointerEvents = "auto";
+      flip.style.touchAction = "pan-y";
+    }
+  }
+
+  function bindFlipRecovery(){
+    const flip = document.getElementById("binderReplayFlipCard");
+    if(!flip || flip.dataset.v141Flip) return;
+    flip.dataset.v141Flip = "1";
+
+    let sx = 0, sy = 0, moved = false;
+
+    flip.addEventListener("touchstart", ev=>{
+      const t = ev.changedTouches && ev.changedTouches[0];
+      if(!t) return;
+      sx = t.clientX;
+      sy = t.clientY;
+      moved = false;
+    }, {capture:true, passive:true});
+
+    flip.addEventListener("touchmove", ev=>{
+      const t = ev.changedTouches && ev.changedTouches[0];
+      if(!t) return;
+      const dx = Math.abs(t.clientX - sx);
+      const dy = Math.abs(t.clientY - sy);
+      if(dx > 18 || dy > 18) moved = true;
+    }, {capture:true, passive:true});
+
+    flip.addEventListener("touchend", ev=>{
+      if(moved) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation?.();
+      flip.classList.toggle("flipped");
+    }, {capture:true, passive:false});
+
+    flip.addEventListener("click", ev=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation?.();
+      flip.classList.toggle("flipped");
+    }, true);
+  }
+
+  function bindBinderCloseScoped(){
+    Array.from(document.querySelectorAll("#binderModal button, #binderReplayViewer button, #binderViewer button")).forEach(btn=>{
+      if(btn.dataset.v141BinderClose) return;
+      const txt = (btn.textContent || "").trim();
+      const label = (btn.getAttribute("aria-label") || "").toLowerCase();
+      const isClose = txt === "×" || txt === "✕" || txt === "✖" || label.includes("close") || label.includes("閉じる");
+      if(!isClose) return;
+
+      btn.dataset.v141BinderClose = "1";
+      const h = ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+        document.body.classList.remove("binder-modal-open-v140");
+        document.body.classList.remove("binder-replay-open-v140");
+        ["binderModal","binderReplayViewer","binderViewer"].forEach(id=>{
+          const el = document.getElementById(id);
+          if(!el) return;
+          el.hidden = true;
+          el.style.display = "none";
+          el.style.visibility = "hidden";
+          el.style.opacity = "0";
+          el.style.pointerEvents = "none";
+        });
+      };
+      btn.addEventListener("click", h, true);
+      btn.addEventListener("touchstart", h, {capture:true, passive:false});
+    });
+  }
+
+  function boot(){
+    bindFavoriteClose();
+    centerBinderViewer();
+    bindFlipRecovery();
+    bindBinderCloseScoped();
+
+    let n = 0;
+    const timer = setInterval(()=>{
+      n++;
+      bindFavoriteClose();
+      centerBinderViewer();
+      bindFlipRecovery();
+      bindBinderCloseScoped();
+      if(n > 18) clearInterval(timer);
+    }, 250);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();
