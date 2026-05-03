@@ -2569,3 +2569,27 @@ body[data-mode="cards"] #openBinderBtn {
   font-weight: 800;
   letter-spacing: .03em;
 }
+
+
+/* v104: バインダーはカード専用表示 */
+.binder-item.owned-card {
+  cursor: pointer;
+}
+
+.binder-item.owned-card:active {
+  transform: scale(.96);
+}
+
+.binder-mini-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.binder-open-hint {
+  position: absolute;
+  left: 6px;
+  bottom: 5px;
+  font-size: 8px;
+  opacity: .62;
+}

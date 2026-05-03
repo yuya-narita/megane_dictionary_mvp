@@ -5882,3 +5882,259 @@ init();
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
+
+
+/* v104: binder card-only storage + tap to open */
+(function(){
+  const BINDER_KEY = "binderCardsV104";
+  const NEW_KEY = "binderCardsNewV104";
+  const DAILY_KEYS = [
+    "meganeCardDailyV92",
+    "meganeCardDailyV91",
+    "meganeCardDailyV90",
+    "meganeCardDailyV89"
+  ];
+
+  function load(key, fallback){
+    try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}
+    catch(e){return fallback;}
+  }
+
+  function save(key,val){
+    try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}
+  }
+
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g,ch=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[ch]));
+  }
+
+  function getCards(){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards)) return cards;
+    }catch(e){}
+    return [];
+  }
+
+  function validCardIndex(idx){
+    const arr = getCards();
+    return typeof idx === "number" && idx >= 0 && idx < arr.length;
+  }
+
+  function getCard(idx){
+    const arr = getCards();
+    return validCardIndex(idx) ? arr[idx] : null;
+  }
+
+  function getCardTitle(idx){
+    const c = getCard(idx);
+    if(!c) return "CARD " + String(idx+1).padStart(3,"0");
+    return c.title || c.name || c.label || c.id || ("CARD " + String(idx+1).padStart(3,"0"));
+  }
+
+  function getCardImage(idx){
+    const c = getCard(idx);
+    if(!c) return "";
+    return c.image || c.img || c.src || c.url || c.front || c.frontImage || c.cardImage || "";
+  }
+
+  function addBinderCard(idx){
+    if(!validCardIndex(idx)) return;
+
+    const owned = load(BINDER_KEY, []);
+    const news = load(NEW_KEY, []);
+
+    if(!owned.includes(idx)){
+      owned.push(idx);
+      owned.sort((a,b)=>a-b);
+      save(BINDER_KEY, owned);
+
+      if(!news.includes(idx)){
+        news.push(idx);
+        save(NEW_KEY, news);
+      }
+    }
+  }
+
+  function syncDailyToBinder(){
+    for(const key of DAILY_KEYS){
+      const s = load(key, null);
+      if(s && s.drawn && validCardIndex(s.index)){
+        addBinderCard(s.index);
+        return;
+      }
+    }
+
+    // 保険：カードモードで表が見えているなら現在カードも登録
+    try{
+      if(typeof appMode !== "undefined" && appMode === "cards" &&
+         typeof cardIndex !== "undefined" && typeof cardFlipped !== "undefined" &&
+         cardFlipped === false){
+        addBinderCard(cardIndex);
+      }
+    }catch(e){}
+  }
+
+  // これ以降、古いbinderV98は読まない。辞書index混入を遮断。
+  window.renderBinder = function renderBinderV104(){
+    syncDailyToBinder();
+
+    const grid = document.getElementById("binderGrid");
+    if(!grid) return;
+
+    const arr = getCards();
+    const total = arr.length || 5;
+    const owned = load(BINDER_KEY, []).filter(validCardIndex);
+    const news = load(NEW_KEY, []).filter(validCardIndex);
+
+    // 不正indexを整理して保存
+    save(BINDER_KEY, owned);
+    save(NEW_KEY, news);
+
+    let html = "";
+
+    for(let i=0;i<total;i++){
+      const has = owned.includes(i);
+      const isNew = news.includes(i);
+      const no = String(i+1).padStart(3,"0");
+      const title = getCardTitle(i);
+      const img = getCardImage(i);
+
+      if(has){
+        html += `
+          <div class="binder-item owned-card ${isNew ? "new-fill" : ""}" data-card-index="${i}">
+            <span class="binder-mini-no">No.${no}</span>
+            ${isNew ? `<span class="binder-new-badge">NEW</span>` : ""}
+            <div class="binder-mini-card">
+              ${img ? `<img src="${esc(img)}" alt="${esc(title)}">` : `<span class="binder-placeholder-title">${esc(title)}</span>`}
+            </div>
+            <span class="binder-open-hint">tap</span>
+          </div>`;
+      }else{
+        html += `
+          <div class="binder-item binder-locked" data-card-index="${i}">
+            <span class="binder-mini-no">No.${no}</span>
+            <span>???</span>
+          </div>`;
+      }
+    }
+
+    grid.innerHTML = html;
+
+    grid.querySelectorAll(".owned-card").forEach(el=>{
+      el.addEventListener("click", e=>{
+        e.preventDefault();
+        e.stopPropagation();
+
+        const idx = Number(el.dataset.cardIndex);
+        if(!validCardIndex(idx)) return;
+
+        try{
+          appMode = "cards";
+          cardIndex = idx;
+          cardFlipped = false;
+          const modal = document.getElementById("binderModal");
+          if(modal) modal.style.display = "none";
+          if(typeof render === "function") render("flash");
+        }catch(err){}
+      });
+    });
+
+    if(news.length){
+      setTimeout(()=>save(NEW_KEY, []), 1400);
+    }
+  };
+
+  function hookFlipForBinder(){
+    if(typeof flipCurrentCard !== "function" || flipCurrentCard.__v104Binder) return;
+
+    const orig = flipCurrentCard;
+    flipCurrentCard = function(){
+      const r = orig.apply(this, arguments);
+
+      setTimeout(()=>{
+        try{
+          if(typeof appMode !== "undefined" && appMode === "cards" &&
+             typeof cardIndex !== "undefined" &&
+             typeof cardFlipped !== "undefined" &&
+             cardFlipped === false){
+            addBinderCard(cardIndex);
+          }
+        }catch(e){}
+      }, 120);
+
+      return r;
+    };
+
+    flipCurrentCard.__v104Binder = true;
+  }
+
+  function bindBinderOpenV104(){
+    const btn = document.getElementById("openBinderBtn");
+    const modal = document.getElementById("binderModal");
+    const close = document.getElementById("binderCloseBtn");
+
+    if(btn && !btn.dataset.v104){
+      btn.dataset.v104 = "1";
+      btn.onclick = e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        if(!modal) return;
+        modal.style.display = "block";
+        window.renderBinder();
+      };
+    }
+
+    if(close && !close.dataset.v104){
+      close.dataset.v104 = "1";
+      close.onclick = e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        if(modal) modal.style.display = "none";
+      };
+    }
+
+    if(modal && !modal.dataset.v104){
+      modal.dataset.v104 = "1";
+      modal.addEventListener("click", e=>{
+        if(e.target === modal) modal.style.display = "none";
+      });
+    }
+  }
+
+  function updateBinderButtonVisibilityV104(){
+    const btn = document.getElementById("openBinderBtn");
+    if(!btn) return;
+
+    let isCards = false;
+    try{ isCards = typeof appMode !== "undefined" && appMode === "cards"; }catch(e){}
+    btn.style.display = isCards ? "block" : "none";
+  }
+
+  function hookRenderV104(){
+    if(typeof render !== "function" || render.__v104BinderHook) return;
+    const orig = render;
+    render = function(){
+      const r = orig.apply(this, arguments);
+      setTimeout(updateBinderButtonVisibilityV104, 0);
+      return r;
+    };
+    render.__v104BinderHook = true;
+  }
+
+  function boot(){
+    hookFlipForBinder();
+    bindBinderOpenV104();
+    hookRenderV104();
+    updateBinderButtonVisibilityV104();
+    setInterval(()=>{
+      hookFlipForBinder();
+      bindBinderOpenV104();
+      updateBinderButtonVisibilityV104();
+    }, 700);
+  }
+
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
