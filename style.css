@@ -3319,3 +3319,214 @@ body[data-mode="cards"] #openBinderBtn {
 .text-inner .section {
   border-top: 1px solid rgba(255,255,255,.14) !important;
 }
+
+
+/* v112: バインダー閲覧をカードモード再生装置へ寄せる */
+.binder-viewer {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 86px 30px 34px !important;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(120,150,180,.07), transparent 34%),
+    linear-gradient(180deg, rgba(13,17,20,.96), rgba(0,0,0,.94)) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.binder-viewer-close {
+  top: 94px !important;
+  right: 34px !important;
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.22) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+
+.binder-viewer-card {
+  width: min(70vw, 360px) !important;
+  aspect-ratio: 2 / 3 !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,.06) !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 24px 64px rgba(0,0,0,.55),
+    0 0 0 1px rgba(255,255,255,.08) inset !important;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  position: relative;
+}
+
+.binder-viewer-card img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  background: white;
+  border-radius: 0 !important;
+  display: block;
+}
+
+/* 裏面はカードモードの裏面画像/DOMを優先。なければ画像なしのカード裏風 */
+.viewer-card-back {
+  width: 100%;
+  height: 100%;
+  padding: 0 !important;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255,220,155,.13), transparent 34%),
+    linear-gradient(160deg, rgba(48,30,20,.98), rgba(13,8,6,.98)) !important;
+  border-radius: 20px !important;
+  overflow: hidden;
+}
+
+.viewer-card-back .replay-back-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 22px;
+  box-sizing: border-box;
+  color: rgba(255,238,198,.92);
+  position: relative;
+}
+
+.viewer-card-back .replay-back-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  border: 1px solid rgba(255,230,170,.25);
+  border-radius: 16px;
+}
+
+.replay-back-mark {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 12px;
+  place-items: center;
+}
+
+.replay-back-bear {
+  font-size: 34px;
+  opacity: .84;
+}
+
+.replay-back-title {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+
+.replay-back-sub {
+  font-size: 11px;
+  letter-spacing: .12em;
+  opacity: .66;
+}
+
+/* カードモードと同じセンター寄せのタイトル領域 */
+.binder-viewer-title {
+  margin-top: 22px !important;
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  color: rgba(255,255,255,.92) !important;
+  letter-spacing: .02em !important;
+  text-align: center !important;
+  text-shadow: 0 2px 18px rgba(0,0,0,.55) !important;
+}
+
+.binder-viewer-counter {
+  margin-top: 12px !important;
+  color: rgba(255,255,255,.42) !important;
+  font-size: 15px !important;
+  letter-spacing: .1em !important;
+  text-align: center !important;
+}
+
+/* v112: テキストは別パネルではなく「カード下に隠れている」見え方 */
+.binder-viewer-text {
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 62% !important;
+  z-index: 12001 !important;
+  border-top-left-radius: 22px !important;
+  border-top-right-radius: 22px !important;
+  border-top: 1px solid rgba(255,255,255,.16) !important;
+  background:
+    linear-gradient(180deg, rgba(32,36,41,.76), rgba(7,9,12,.96)) !important;
+  box-shadow:
+    0 -18px 48px rgba(0,0,0,.62),
+    inset 0 1px 0 rgba(255,255,255,.06) !important;
+  backdrop-filter: blur(10px) !important;
+  transform: translateY(72%) !important;
+  transition: transform .3s cubic-bezier(.2,.9,.25,1) !important;
+  color: rgba(255,255,255,.94) !important;
+}
+
+/* 少しだけカードの下にテキストが隠れている状態 */
+.binder-viewer-text:not(.expanded) .text-inner {
+  max-height: 92px !important;
+  overflow: hidden !important;
+}
+
+.binder-viewer-text.expanded {
+  transform: translateY(0) !important;
+}
+
+.text-handle {
+  width: 42px !important;
+  height: 4px !important;
+  border-radius: 999px !important;
+  background: rgba(255,255,255,.5) !important;
+  margin: 10px auto 10px !important;
+}
+
+.text-inner {
+  padding: 12px 32px 46px !important;
+  color: rgba(255,255,255,.94) !important;
+  font-size: 15px !important;
+  line-height: 1.72 !important;
+  max-height: calc(100% - 32px) !important;
+  overflow-y: auto !important;
+}
+
+.text-inner h3 {
+  color: rgba(255,255,255,.98) !important;
+  font-size: 18px !important;
+  letter-spacing: .14em !important;
+  margin: 12px 0 8px !important;
+}
+
+.text-inner .lead {
+  color: rgba(230,238,245,.95) !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+}
+
+.text-inner .section {
+  border-top: 1px solid rgba(255,255,255,.14) !important;
+  margin-top: 16px !important;
+  padding-top: 12px !important;
+}
+
+/* 既存の茶色裏面改変を抑える */
+.viewer-card-back-title,
+.viewer-card-back-sub,
+.viewer-card-back-bear {
+  display: none !important;
+}
+
+/* 小さめ端末 */
+@media (max-height: 740px) {
+  .binder-viewer {
+    padding-top: 68px !important;
+  }
+  .binder-viewer-card {
+    width: min(64vw, 320px) !important;
+  }
+  .binder-viewer-title {
+    font-size: 24px !important;
+    margin-top: 16px !important;
+  }
+}

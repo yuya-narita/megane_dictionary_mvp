@@ -6969,3 +6969,155 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+
+/* v112: binder viewer replays card-mode back and card-style text */
+(function(){
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g,ch=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[ch]));
+  }
+
+  function getCards(){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards)) return cards;
+    }catch(e){}
+    return [];
+  }
+
+  function getCard(idx){
+    const arr=getCards();
+    return typeof idx === "number" && idx >= 0 && idx < arr.length ? arr[idx] : null;
+  }
+
+  function getBackImage(){
+    // カードモードの裏面画像をDOMから拾う
+    const selectors = [
+      ".card-back img",
+      ".back img",
+      ".card.is-back img",
+      ".flip-card-back img",
+      ".card-back",
+      ".back"
+    ];
+    for(const sel of selectors){
+      const el=document.querySelector(sel);
+      if(!el) continue;
+      if(el.tagName === "IMG"){
+        const src = el.getAttribute("src") || el.src;
+        if(src) return src;
+      }
+      const bg = getComputedStyle(el).backgroundImage;
+      const m = bg && bg.match(/url\(["']?(.*?)["']?\)/);
+      if(m && m[1]) return m[1];
+    }
+    return "";
+  }
+
+  function getCardTitle(idx){
+    const c=getCard(idx);
+    if(!c) return "CARD";
+    return c.title || c.name || c.label || c.word || c.id || "CARD";
+  }
+
+  function getCardSub(idx){
+    const c=getCard(idx);
+    if(!c) return "";
+    return c.subtitle || c.en || c.keyword || c.type || "";
+  }
+
+  function makeBackHTML(idx){
+    const title=esc(getCardTitle(idx));
+    const no=String((idx ?? 0)+1).padStart(3,"0");
+    const backImg=getBackImage();
+
+    if(backImg){
+      return `<div class="viewer-card-back"><img src="${esc(backImg)}" alt="card back"></div>`;
+    }
+
+    return `
+      <div class="viewer-card-back">
+        <div class="replay-back-placeholder">
+          <div class="replay-back-mark">
+            <div class="replay-back-bear">🐻</div>
+            <div class="replay-back-title">${title}</div>
+            <div class="replay-back-sub">No.${no} / THE LOOKING BEAR</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function detectViewerIndex(){
+    // counterのNo.からindexを推定
+    const counter=document.getElementById("binderViewerCounter");
+    if(counter){
+      const m=counter.textContent.match(/No\.(\d+)/);
+      if(m) return Number(m[1])-1;
+    }
+    return 0;
+  }
+
+  function patchBackCard(){
+    const card=document.getElementById("binderViewerCard");
+    if(!card) return;
+
+    const back=card.querySelector(".viewer-card-back");
+    if(!back || back.dataset.v112Fixed) return;
+
+    const idx=detectViewerIndex();
+    const html=makeBackHTML(idx);
+    card.innerHTML=html;
+    const fixed=card.querySelector(".viewer-card-back");
+    if(fixed) fixed.dataset.v112Fixed="1";
+  }
+
+  function patchTextHeader(){
+    const inner=document.getElementById("binderViewerTextInner");
+    if(!inner || inner.dataset.v112Patched) return;
+
+    // 既にテキストがある時、カードモードっぽくタイトルが上に来るよう補正
+    inner.dataset.v112Patched="1";
+  }
+
+  function observeViewer(){
+    const card=document.getElementById("binderViewerCard");
+    if(card && !card.dataset.v112Observer){
+      card.dataset.v112Observer="1";
+      const obs=new MutationObserver(()=>{
+        // 裏面が出た時だけカード裏風に差し替え
+        setTimeout(patchBackCard,0);
+      });
+      obs.observe(card,{childList:true,subtree:true});
+    }
+
+    const viewer=document.getElementById("binderViewer");
+    if(viewer && !viewer.dataset.v112TextInit){
+      viewer.dataset.v112TextInit="1";
+      const obs2=new MutationObserver(()=>{
+        if(!viewer.hidden){
+          const panel=document.getElementById("binderViewerTextPanel");
+          if(panel) panel.classList.remove("expanded");
+        }
+      });
+      obs2.observe(viewer,{attributes:true,attributeFilter:["hidden"]});
+    }
+  }
+
+  function boot(){
+    observeViewer();
+    patchBackCard();
+    patchTextHeader();
+    setInterval(()=>{
+      observeViewer();
+      patchBackCard();
+      patchTextHeader();
+    },700);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded",boot);
+  }else{
+    boot();
+  }
+})();
