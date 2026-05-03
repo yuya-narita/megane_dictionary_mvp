@@ -7798,47 +7798,51 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
 
 
 
-/* v128: prevent underlying app gestures while scrolling content */
+/* v130: stable in-frame content interactions */
 (function(){
   function isContentMode(){
     return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
   }
 
-  function isInsideContent(ev){
-    const screen = document.getElementById("contentScreenV127");
-    if(!screen) return false;
-    const path = ev.composedPath ? ev.composedPath() : [];
-    return path.includes(screen);
+  function getScreen(){
+    return document.getElementById("contentScreenV127");
   }
 
-  function isTopModeButton(ev){
-    const path = ev.composedPath ? ev.composedPath() : [];
-    return path.some(el=>{
-      if(!el || el.tagName !== "BUTTON") return false;
-      const t=(el.textContent||"").replace(/\s+/g,"").trim();
-      return ["辞書","カード","コンテンツ"].includes(t);
+  function ensureCardsClickable(){
+    const screen = getScreen();
+    if(!screen) return;
+
+    screen.querySelectorAll(".content-card-v127").forEach(el=>{
+      if(el.dataset.v130Click) return;
+      el.dataset.v130Click = "1";
+
+      const open = ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+
+        const title = el.querySelector(".content-title-v127")?.textContent || "作品";
+        const status = el.querySelector(".content-status-v127")?.textContent || "";
+        alert(`${title}\n${status}\n\n次：作品詳細画面を接続`);
+      };
+
+      el.addEventListener("click", open, true);
+      el.addEventListener("touchend", open, {capture:true, passive:false});
     });
   }
 
-  // コンテンツ内スクロールは許可。ただし親のスワイプ処理には渡さない。
-  function stopInsideContentPropagation(ev){
-    if(!isContentMode()) return;
-    if(!isInsideContent(ev)) return;
-    ev.stopPropagation();
-    ev.stopImmediatePropagation?.();
+  function showContentFix(){
+    const screen = getScreen();
+    if(!screen) return;
+
+    screen.hidden = false;
+    screen.style.display = "block";
+    screen.style.transform = "none";
+    screen.style.overflowX = "hidden";
+    ensureCardsClickable();
   }
 
-  // コンテンツ外のスワイプは全部止める。
-  function blockOutsideContent(ev){
-    if(!isContentMode()) return;
-    if(isInsideContent(ev) || isTopModeButton(ev)) return;
-
-    ev.preventDefault();
-    ev.stopPropagation();
-    ev.stopImmediatePropagation?.();
-  }
-
-  function resetContentTransform(){
+  function resetUnderlyingTransform(){
     if(!isContentMode()) return;
     const content = document.getElementById("content") || document.querySelector(".content");
     if(content){
@@ -7847,108 +7851,18 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     }
   }
 
-  function patchShowContent(){
-    // 既存showContentは閉じたスコープなので、DOM変化後に補正する
-    const screen = document.getElementById("contentScreenV127");
-    if(screen){
-      screen.addEventListener("touchstart", stopInsideContentPropagation, {capture:true, passive:true});
-      screen.addEventListener("touchmove", stopInsideContentPropagation, {capture:true, passive:true});
-      screen.addEventListener("pointerdown", stopInsideContentPropagation, true);
-      screen.addEventListener("click", stopInsideContentPropagation, true);
-    }
-  }
-
-  function boot(){
-    patchShowContent();
-
-    document.addEventListener("touchstart", blockOutsideContent, {capture:true, passive:false});
-    document.addEventListener("touchmove", blockOutsideContent, {capture:true, passive:false});
-    document.addEventListener("pointerdown", blockOutsideContent, true);
-    document.addEventListener("click", blockOutsideContent, true);
-
-    // 画面が開いた後だけ短時間補正。連続再描画はしない。
-    let count = 0;
-    const timer = setInterval(()=>{
-      count++;
-      patchShowContent();
-      resetContentTransform();
-      if(count > 20) clearInterval(timer);
-    }, 300);
-  }
-
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", boot);
-  }else{
-    boot();
-  }
-})();
-
-
-
-/* v129: move content screen to body and prevent clipping */
-(function(){
-  function moveContentScreenToBody(){
-    const screen = document.getElementById("contentScreenV127");
-    if(screen && screen.parentElement !== document.body){
-      document.body.appendChild(screen);
-    }
-  }
-
-  function isContentMode(){
-    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
-  }
-
-  function showFix(){
-    moveContentScreenToBody();
-    if(isContentMode()){
-      const screen = document.getElementById("contentScreenV127");
-      if(screen){
-        screen.hidden = false;
-        screen.style.display = "block";
-        screen.scrollTop = screen.scrollTop || 0;
-      }
-    }
-  }
-
-  function bindContentButtonFix(){
-    const buttons = Array.from(document.querySelectorAll("button")).filter(b=>{
-      const t=(b.textContent||"").replace(/\s+/g,"").trim();
-      return ["辞書","カード","コンテンツ"].includes(t);
-    });
-
-    buttons.forEach(btn=>{
-      const t=(btn.textContent||"").replace(/\s+/g,"").trim();
-      if(t === "コンテンツ" && !btn.dataset.v129){
-        btn.dataset.v129 = "1";
-        const h = ev=>{
-          setTimeout(showFix, 0);
-          setTimeout(showFix, 80);
-        };
-        btn.addEventListener("touchstart", h, {capture:true, passive:true});
-        btn.addEventListener("click", h, true);
-      }
-
-      if((t === "辞書" || t === "カード") && !btn.dataset.v129Leave){
-        btn.dataset.v129Leave = "1";
-        btn.addEventListener("click", ()=>{
-          const screen = document.getElementById("contentScreenV127");
-          if(screen) screen.hidden = true;
-        }, true);
-        btn.addEventListener("touchstart", ()=>{
-          const screen = document.getElementById("contentScreenV127");
-          if(screen) screen.hidden = true;
-        }, {capture:true, passive:true});
-      }
-    });
-  }
-
-  function stopOutsideContentGestures(ev){
+  function stopUnderlyingGestures(ev){
     if(!isContentMode()) return;
 
-    const screen = document.getElementById("contentScreenV127");
+    const screen = getScreen();
     const path = ev.composedPath ? ev.composedPath() : [];
 
-    if(screen && path.includes(screen)) return;
+    if(screen && path.includes(screen)){
+      // コンテンツ内の縦スクロールは許可。ただし親へは流さない。
+      ev.stopPropagation();
+      ev.stopImmediatePropagation?.();
+      return;
+    }
 
     const onTopButton = path.some(el=>{
       if(!el || el.tagName !== "BUTTON") return false;
@@ -7963,19 +7877,60 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     ev.stopImmediatePropagation?.();
   }
 
+  function bindTopContent(){
+    const buttons = Array.from(document.querySelectorAll("button")).filter(b=>{
+      const t=(b.textContent||"").replace(/\s+/g,"").trim();
+      return ["辞書","カード","コンテンツ"].includes(t);
+    });
+
+    buttons.forEach(btn=>{
+      const t=(btn.textContent||"").replace(/\s+/g,"").trim();
+
+      if(t === "コンテンツ" && !btn.dataset.v130){
+        btn.dataset.v130 = "1";
+        const h = ev=>{
+          setTimeout(()=>{
+            document.body.classList.add("mode-content");
+            document.body.dataset.mode = "content";
+            showContentFix();
+            resetUnderlyingTransform();
+          }, 0);
+        };
+        btn.addEventListener("touchstart", h, {capture:true, passive:true});
+        btn.addEventListener("click", h, true);
+      }
+
+      if((t === "辞書" || t === "カード") && !btn.dataset.v130Leave){
+        btn.dataset.v130Leave = "1";
+        const h = ()=>{
+          const screen = getScreen();
+          if(screen) screen.hidden = true;
+          document.body.classList.remove("mode-content");
+          if(document.body.dataset.mode === "content") document.body.dataset.mode = "";
+        };
+        btn.addEventListener("touchstart", h, {capture:true, passive:true});
+        btn.addEventListener("click", h, true);
+      }
+    });
+  }
+
   function boot(){
-    moveContentScreenToBody();
-    bindContentButtonFix();
+    bindTopContent();
+    ensureCardsClickable();
 
-    document.addEventListener("touchstart", stopOutsideContentGestures, {capture:true, passive:false});
-    document.addEventListener("touchmove", stopOutsideContentGestures, {capture:true, passive:false});
+    document.addEventListener("touchstart", stopUnderlyingGestures, {capture:true, passive:false});
+    document.addEventListener("touchmove", stopUnderlyingGestures, {capture:true, passive:false});
+    document.addEventListener("pointerdown", stopUnderlyingGestures, true);
+    document.addEventListener("click", stopUnderlyingGestures, true);
 
+    // 初期バインドのみ短時間
     let count = 0;
     const timer = setInterval(()=>{
       count++;
-      moveContentScreenToBody();
-      bindContentButtonFix();
-      if(count > 12) clearInterval(timer);
+      bindTopContent();
+      ensureCardsClickable();
+      resetUnderlyingTransform();
+      if(count > 10) clearInterval(timer);
     }, 300);
   }
 

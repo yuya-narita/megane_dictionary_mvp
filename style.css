@@ -3939,22 +3939,26 @@ body.mode-content button {
 }
 
 
-/* v128: コンテンツスクロール安定化 */
+/* v130: コンテンツを枠内表示に戻して安定化 */
+body.mode-content {
+  overflow-x: hidden !important;
+}
+
 body.mode-content #contentScreenV127 {
   display: block !important;
-  position: fixed !important;
-  left: 50% !important;
-  top: 250px !important;
-  transform: translateX(-50%) !important;
-  width: min(84vw, 560px) !important;
-  height: calc(100vh - 330px) !important;
-  max-height: none !important;
-  z-index: 14000 !important;
+  position: relative !important;
+  width: 100% !important;
+  height: 66vh !important;
+  max-height: 66vh !important;
   overflow-y: auto !important;
+  overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior: contain !important;
   touch-action: pan-y !important;
   padding: 0 0 110px !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  z-index: 30 !important;
   pointer-events: auto !important;
 }
 
@@ -3963,7 +3967,6 @@ body.mode-content #contentScreenV127 * {
   pointer-events: auto !important;
 }
 
-/* 裏側の辞書・カード操作面を完全停止 */
 body.mode-content #dictionaryView,
 body.mode-content #bugCardView,
 body.mode-content .hint,
@@ -3971,17 +3974,25 @@ body.mode-content .controls,
 body.mode-content #favoriteBtn,
 body.mode-content .favorite-btn,
 body.mode-content [id*="favorite"],
-body.mode-content [class*="favorite"] {
+body.mode-content [class*="favorite"],
+body.mode-content .deck-layer,
+body.mode-content #flowCard,
+body.mode-content .flow-card,
+body.mode-content .deck-layer-1,
+body.mode-content .deck-layer-2,
+body.mode-content .deck-layer-3 {
   display: none !important;
+  visibility: hidden !important;
   pointer-events: none !important;
 }
 
-/* コンテンツ表示中、既存のドラッグ対象は触らせない */
+/* 親フレームが横に動かないよう固定 */
 body.mode-content .content {
+  overflow: hidden !important;
+  touch-action: none !important;
   transform: none !important;
   animation: none !important;
   transition: none !important;
-  pointer-events: none !important;
 }
 
 body.mode-content .content.dragging,
@@ -3990,110 +4001,14 @@ body.mode-content .content.snap-back {
   animation: none !important;
 }
 
-/* ただしコンテンツ一覧だけは触れる */
+/* ただしコンテンツ一覧だけは縦スクロール可 */
 body.mode-content #contentScreenV127 {
-  pointer-events: auto !important;
-}
-
-/* 上下スワイプで裏のフレームが出るのを抑える */
-body.mode-content .deck-layer,
-body.mode-content #flowCard,
-body.mode-content .flow-card,
-body.mode-content .deck-layer-1,
-body.mode-content .deck-layer-2,
-body.mode-content .deck-layer-3 {
-  display: none !important;
-}
-
-/* スマホ高さ調整 */
-@media (max-height: 760px) {
-  body.mode-content #contentScreenV127 {
-    top: 230px !important;
-    height: calc(100vh - 300px) !important;
-  }
-}
-
-@media (max-width: 390px) {
-  body.mode-content #contentScreenV127 {
-    width: min(86vw, 560px) !important;
-    top: 238px !important;
-    height: calc(100vh - 312px) !important;
-  }
-}
-
-
-/* v129: コンテンツをカード枠内ではなく独立ページ表示にする */
-body.mode-content #contentScreenV127 {
-  display: block !important;
-  position: fixed !important;
-  left: 0 !important;
-  right: 0 !important;
-  top: 150px !important;
-  bottom: 0 !important;
-  transform: none !important;
-  width: 100vw !important;
-  height: auto !important;
-  max-height: none !important;
-  z-index: 14500 !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  overscroll-behavior: contain !important;
   touch-action: pan-y !important;
-  padding: 22px 30px 130px !important;
-  box-sizing: border-box !important;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(120,150,180,.08), transparent 34%),
-    linear-gradient(180deg, rgba(17,20,23,.98), rgba(5,6,8,.98)) !important;
 }
 
-/* 親フレーム・裏のカードを完全に隠す */
-body.mode-content #dictionaryView,
-body.mode-content #bugCardView,
-body.mode-content .hint,
-body.mode-content .controls,
-body.mode-content #favoriteBtn,
-body.mode-content .favorite-btn,
-body.mode-content [id*="favorite"],
-body.mode-content [class*="favorite"] {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-/* 大きいカード枠由来のクリップを避ける */
-body.mode-content .content {
-  overflow: visible !important;
-  pointer-events: none !important;
-}
-
-body.mode-content #contentScreenV127,
-body.mode-content #contentScreenV127 * {
-  visibility: visible !important;
-  pointer-events: auto !important;
-}
-
-/* 旧/別バージョンのコンテンツ画面は非表示 */
-body.mode-content #contentScreenV120,
-body.mode-content #contentScreenV126 {
-  display: none !important;
-}
-
-/* コンテンツ表示中、上部ボタンは固定で見せる */
-body.mode-content button {
-  animation: none !important;
-}
-
-/* v129用に一覧幅を安定化 */
+/* 枠内で上から自然に見せる */
 body.mode-content .content-screen-v127 {
   color: rgba(255,255,255,.94);
-}
-
-body.mode-content .content-hero-v127,
-body.mode-content .content-section-head-v127,
-body.mode-content .content-grid-v127 {
-  width: min(92vw, 560px);
-  margin-left: auto;
-  margin-right: auto;
 }
 
 body.mode-content .content-hero-v127 {
@@ -4101,19 +4016,37 @@ body.mode-content .content-hero-v127 {
 }
 
 body.mode-content .content-grid-v127 {
-  padding-bottom: 60px;
+  padding-bottom: 80px !important;
 }
 
-/* スクロール中のチラつき軽減 */
-body.mode-content .content-card-v127,
-body.mode-content .content-hero-v127 {
-  transform: translateZ(0);
-  backface-visibility: hidden;
+/* 横方向には絶対はみ出さない */
+body.mode-content .content-hero-v127,
+body.mode-content .content-section-head-v127,
+body.mode-content .content-grid-v127 {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+body.mode-content .content-card-v127 {
+  min-width: 0 !important;
+}
+
+/* 点滅・鼓動対策 */
+body.mode-content #contentScreenV127 * {
+  animation: none;
+}
+
+@media (max-height: 760px) {
+  body.mode-content #contentScreenV127 {
+    height: 64vh !important;
+    max-height: 64vh !important;
+  }
 }
 
 @media (max-width: 390px) {
   body.mode-content #contentScreenV127 {
-    top: 144px !important;
-    padding: 20px 28px 128px !important;
+    height: 63vh !important;
+    max-height: 63vh !important;
   }
 }
