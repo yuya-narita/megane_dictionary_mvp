@@ -5260,3 +5260,43 @@ init();
   document.addEventListener("DOMContentLoaded",boot);
  }else{boot()}
 })();
+
+/* v99 binder fill animation logic */
+(function(){
+ const KEY="binderV98";
+
+ function load(){
+  try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return []}
+ }
+
+ function animateFill(idx){
+  setTimeout(()=>{
+    const el=document.querySelector(`.binder-item[data-idx="${idx}"]`);
+    if(el){
+      el.classList.add("filled");
+    }
+  },50);
+ }
+
+ function renderBinderAnim(){
+  const grid=document.getElementById("binderGrid");
+  if(!grid)return;
+  const owned=load();
+  let html="";
+  const total=60;
+  for(let i=0;i<total;i++){
+    const has=owned.includes(i);
+    html+=`
+    <div class="binder-item ${has?"":"binder-locked"}" data-idx="${i}">
+      ${has?("No."+String(i+1).padStart(3,"0")):"???"}
+    </div>`;
+  }
+  grid.innerHTML=html;
+
+  // animate newly filled
+  owned.forEach(i=>animateFill(i));
+ }
+
+ // override renderBinder
+ window.renderBinder=renderBinderAnim;
+})();

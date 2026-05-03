@@ -2370,3 +2370,13 @@ color:white;
 .binder-locked{
 opacity:.2;
 }
+
+/* v99 binder fill animation */
+.binder-item.filled {
+  animation: binderFill .4s ease;
+}
+@keyframes binderFill {
+  0% { transform: scale(.6); opacity:0; }
+  70% { transform: scale(1.1); opacity:1; }
+  100% { transform: scale(1); }
+}
