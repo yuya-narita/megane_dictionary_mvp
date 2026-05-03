@@ -7940,3 +7940,205 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+
+
+/* v131: prevent accidental title tap while scrolling content */
+(function(){
+  let startX = 0;
+  let startY = 0;
+  let moved = false;
+  let scrolling = false;
+  let scrollTimer = null;
+
+  function isContentMode(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function getScreen(){
+    return document.getElementById("contentScreenV127");
+  }
+
+  function bindCardsSafely(){
+    const screen = getScreen();
+    if(!screen) return;
+
+    screen.querySelectorAll(".content-card-v127").forEach(el=>{
+      if(el.dataset.v131SafeTap) return;
+      el.dataset.v131SafeTap = "1";
+
+      // 既存onclickを無効化して、移動量判定付きに差し替え
+      el.onclick = null;
+
+      el.addEventListener("touchstart", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        startX = t.clientX;
+        startY = t.clientY;
+        moved = false;
+        el.classList.remove("scrolling");
+      }, {capture:true, passive:true});
+
+      el.addEventListener("touchmove", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        const dx = Math.abs(t.clientX - startX);
+        const dy = Math.abs(t.clientY - startY);
+        if(dx > 8 || dy > 8){
+          moved = true;
+          scrolling = true;
+          el.classList.add("scrolling");
+          clearTimeout(scrollTimer);
+          scrollTimer = setTimeout(()=>{ scrolling = false; }, 180);
+        }
+      }, {capture:true, passive:true});
+
+      el.addEventListener("touchend", ev=>{
+        if(moved || scrolling){
+          ev.preventDefault();
+          ev.stopPropagation();
+          ev.stopImmediatePropagation?.();
+          el.classList.remove("scrolling");
+          moved = false;
+          return;
+        }
+
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+
+        const title = el.querySelector(".content-title-v127")?.textContent || "作品";
+        const status = el.querySelector(".content-status-v127")?.textContent || "";
+        alert(`${title}\n${status}\n\n次：作品詳細画面を接続`);
+      }, {capture:true, passive:false});
+
+      el.addEventListener("click", ev=>{
+        if(moved || scrolling){
+          ev.preventDefault();
+          ev.stopPropagation();
+          ev.stopImmediatePropagation?.();
+          moved = false;
+          return;
+        }
+
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+
+        const title = el.querySelector(".content-title-v127")?.textContent || "作品";
+        const status = el.querySelector(".content-status-v127")?.textContent || "";
+        alert(`${title}\n${status}\n\n次：作品詳細画面を接続`);
+      }, true);
+    });
+  }
+
+  function patchContentScroll(){
+    const screen = getScreen();
+    if(!screen || screen.dataset.v131Scroll) return;
+    screen.dataset.v131Scroll = "1";
+
+    screen.addEventListener("touchstart", ev=>{
+      const t = ev.changedTouches && ev.changedTouches[0];
+      if(!t) return;
+      startX = t.clientX;
+      startY = t.clientY;
+      moved = false;
+    }, {capture:true, passive:true});
+
+    screen.addEventListener("touchmove", ev=>{
+      const t = ev.changedTouches && ev.changedTouches[0];
+      if(!t) return;
+
+      const dx = Math.abs(t.clientX - startX);
+      const dy = Math.abs(t.clientY - startY);
+
+      // 横移動は裏のカード操作に渡さず、縦スクロールだけ許可
+      if(dx > dy && dx > 10){
+        ev.preventDefault();
+      }
+
+      if(dy > 8){
+        moved = true;
+        scrolling = true;
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(()=>{ scrolling = false; }, 180);
+      }
+
+      ev.stopPropagation();
+      ev.stopImmediatePropagation?.();
+    }, {capture:true, passive:false});
+
+    screen.addEventListener("scroll", ()=>{
+      scrolling = true;
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(()=>{ scrolling = false; }, 220);
+    }, {passive:true});
+  }
+
+  function stopUnderlyingGestures(ev){
+    if(!isContentMode()) return;
+
+    const screen = getScreen();
+    const path = ev.composedPath ? ev.composedPath() : [];
+
+    if(screen && path.includes(screen)){
+      // コンテンツ内は許可。ただし裏へ流さない。
+      ev.stopPropagation();
+      ev.stopImmediatePropagation?.();
+      return;
+    }
+
+    const onTopButton = path.some(el=>{
+      if(!el || el.tagName !== "BUTTON") return false;
+      const t=(el.textContent||"").replace(/\s+/g,"").trim();
+      return ["辞書","カード","コンテンツ"].includes(t);
+    });
+
+    if(onTopButton) return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+    ev.stopImmediatePropagation?.();
+  }
+
+  function ensureContentLayout(){
+    if(!isContentMode()) return;
+
+    const content = document.getElementById("content") || document.querySelector(".content");
+    if(content){
+      content.style.transform = "none";
+      content.classList.remove("dragging", "snap-back");
+    }
+
+    const screen = getScreen();
+    if(screen){
+      screen.hidden = false;
+      screen.style.display = "block";
+      screen.style.transform = "none";
+    }
+  }
+
+  function boot(){
+    bindCardsSafely();
+    patchContentScroll();
+
+    document.addEventListener("touchstart", stopUnderlyingGestures, {capture:true, passive:false});
+    document.addEventListener("touchmove", stopUnderlyingGestures, {capture:true, passive:false});
+    document.addEventListener("pointerdown", stopUnderlyingGestures, true);
+
+    let count = 0;
+    const timer = setInterval(()=>{
+      count++;
+      bindCardsSafely();
+      patchContentScroll();
+      ensureContentLayout();
+      if(count > 12) clearInterval(timer);
+    }, 250);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();

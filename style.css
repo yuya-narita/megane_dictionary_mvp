@@ -4050,3 +4050,139 @@ body.mode-content #contentScreenV127 * {
     max-height: 63vh !important;
   }
 }
+
+
+/* v131: コンテンツ枠内レイアウト調整＋スクロール誤タップ対策 */
+body.mode-content #contentScreenV127 {
+  display: block !important;
+  position: relative !important;
+  width: calc(100% - 24px) !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  margin: 0 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  padding: 0 0 92px !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  z-index: 40 !important;
+  pointer-events: auto !important;
+}
+
+/* 枠の中に余白を作って、端で切れないようにする */
+body.mode-content .content {
+  padding: 26px 22px 24px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+body.mode-content #contentScreenV127,
+body.mode-content #contentScreenV127 * {
+  pointer-events: auto !important;
+}
+
+body.mode-content .content-hero-v127 {
+  min-height: 136px !important;
+  border-radius: 24px !important;
+  padding: 18px !important;
+  margin: 0 0 22px !important;
+}
+
+body.mode-content .hero-title-v127 {
+  font-size: 26px !important;
+  line-height: 1.1 !important;
+}
+
+body.mode-content .hero-meta-v127,
+body.mode-content .hero-copy-v127 {
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+
+body.mode-content .content-section-head-v127 {
+  margin: 0 4px 14px !important;
+  font-size: 25px !important;
+}
+
+body.mode-content .content-grid-v127 {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding-bottom: 96px !important;
+}
+
+body.mode-content .content-card-v127 {
+  min-height: 168px !important;
+  grid-template-rows: 96px auto !important;
+  border-radius: 20px !important;
+}
+
+body.mode-content .content-thumb-v127::before {
+  font-size: 36px !important;
+}
+
+body.mode-content .content-info-v127 {
+  padding: 10px 11px 12px !important;
+  gap: 5px !important;
+}
+
+body.mode-content .content-title-v127 {
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+body.mode-content .content-status-v127 {
+  font-size: 10px !important;
+  padding: 2px 7px !important;
+}
+
+body.mode-content .content-desc-v127 {
+  font-size: 10px !important;
+  line-height: 1.35 !important;
+}
+
+/* スクロール中は押下感を出さない */
+body.mode-content .content-card-v127.scrolling {
+  transform: none !important;
+}
+
+/* 既存カード・辞書の裏レイヤーは完全に停止 */
+body.mode-content #dictionaryView,
+body.mode-content #bugCardView,
+body.mode-content .hint,
+body.mode-content .controls,
+body.mode-content #favoriteBtn,
+body.mode-content .favorite-btn,
+body.mode-content [id*="favorite"],
+body.mode-content [class*="favorite"],
+body.mode-content .deck-layer,
+body.mode-content #flowCard,
+body.mode-content .flow-card,
+body.mode-content .deck-layer-1,
+body.mode-content .deck-layer-2,
+body.mode-content .deck-layer-3 {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 390px) {
+  body.mode-content .content {
+    padding: 22px 20px 22px !important;
+  }
+
+  body.mode-content #contentScreenV127 {
+    width: calc(100% - 18px) !important;
+  }
+
+  body.mode-content .content-card-v127 {
+    min-height: 160px !important;
+    grid-template-rows: 90px auto !important;
+  }
+}
