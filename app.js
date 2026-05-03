@@ -8142,3 +8142,309 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+
+
+/* v132: content polish - safe tap, active tab, hide leftovers */
+(function(){
+  let startX = 0;
+  let startY = 0;
+  let downTime = 0;
+  let moved = false;
+  let scrolling = false;
+  let scrollTimer = null;
+
+  function isContentMode(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function screen(){
+    return document.getElementById("contentScreenV127");
+  }
+
+  function topButtons(){
+    return Array.from(document.querySelectorAll("button"))
+      .filter(b=>{
+        const t=(b.textContent||"").replace(/\s+/g,"").trim();
+        return ["辞書","カード","コンテンツ"].includes(t);
+      })
+      .filter(b=>b.offsetParent !== null)
+      .sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top || a.getBoundingClientRect().left-b.getBoundingClientRect().left)
+      .slice(0,3);
+  }
+
+  function markModeButtons(){
+    const btns = topButtons();
+    if(btns.length < 3) return;
+
+    const dict = btns[0], card = btns[1], content = btns[2];
+    dict.classList.add("mode-btn-dict-v132");
+    card.classList.add("mode-btn-card-v132");
+    content.classList.add("mode-btn-content-v132");
+
+    dict.textContent = "辞書";
+    card.textContent = "カード";
+    content.textContent = "コンテンツ";
+
+    if(isContentMode()){
+      dict.classList.remove("active");
+      card.classList.remove("active");
+      content.classList.add("active");
+      dict.setAttribute("aria-pressed","false");
+      card.setAttribute("aria-pressed","false");
+      content.setAttribute("aria-pressed","true");
+    }
+  }
+
+  function hideLeftovers(){
+    if(!isContentMode()) return;
+
+    Array.from(document.querySelectorAll("button")).forEach(b=>{
+      if(b.closest("#contentScreenV127")) return;
+      if(b.classList.contains("mode-btn-dict-v132") || b.classList.contains("mode-btn-card-v132") || b.classList.contains("mode-btn-content-v132")) return;
+
+      const t=(b.textContent||"").trim();
+      const label=(b.getAttribute("aria-label")||"").toLowerCase();
+      if(t === "📘" || label.includes("binder") || label.includes("バインダー")){
+        b.style.display = "none";
+        b.style.visibility = "hidden";
+        b.style.pointerEvents = "none";
+      }
+    });
+
+    Array.from(document.querySelectorAll("div,span,p")).forEach(el=>{
+      if(el.closest("#contentScreenV127")) return;
+      const txt=(el.textContent||"").trim();
+      if(/^(\d+\/\d+\s*[・•]\s*)?\d+\/\d+$/.test(txt) || /^\d+\/\d+\s*[・•]\s*\d+\/\d+$/.test(txt)){
+        el.style.display = "none";
+        el.style.visibility = "hidden";
+      }
+    });
+  }
+
+  function openContentDetail(el){
+    const title = el.querySelector(".content-title-v127")?.textContent || "作品";
+    const status = el.querySelector(".content-status-v127")?.textContent || "";
+    alert(`${title}\n${status}\n\n次：作品詳細画面を接続`);
+  }
+
+  function rebindContentCards(){
+    const s = screen();
+    if(!s) return;
+
+    s.querySelectorAll(".content-card-v127").forEach(old=>{
+      if(old.dataset.v132Bound) return;
+
+      const el = old.cloneNode(true);
+      old.parentNode.replaceChild(el, old);
+      el.dataset.v132Bound = "1";
+
+      el.addEventListener("pointerdown", ev=>{
+        startX = ev.clientX;
+        startY = ev.clientY;
+        downTime = Date.now();
+        moved = false;
+      }, {capture:true});
+
+      el.addEventListener("pointermove", ev=>{
+        const dx = Math.abs(ev.clientX - startX);
+        const dy = Math.abs(ev.clientY - startY);
+        if(dx > 10 || dy > 10){
+          moved = true;
+          scrolling = true;
+          clearTimeout(scrollTimer);
+          scrollTimer = setTimeout(()=>{ scrolling = false; }, 260);
+        }
+      }, {capture:true});
+
+      el.addEventListener("pointerup", ev=>{
+        const dx = Math.abs(ev.clientX - startX);
+        const dy = Math.abs(ev.clientY - startY);
+        const elapsed = Date.now() - downTime;
+
+        if(dx > 10 || dy > 10 || moved || scrolling || elapsed > 700){
+          ev.preventDefault();
+          ev.stopPropagation();
+          ev.stopImmediatePropagation?.();
+          moved = false;
+          return;
+        }
+
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+        openContentDetail(el);
+      }, {capture:true});
+
+      el.addEventListener("click", ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+      }, true);
+
+      el.addEventListener("touchend", ev=>{
+        if(moved || scrolling){
+          ev.preventDefault();
+          ev.stopPropagation();
+          ev.stopImmediatePropagation?.();
+        }
+      }, {capture:true, passive:false});
+    });
+  }
+
+  function patchContentScreenScroll(){
+    const s = screen();
+    if(!s || s.dataset.v132Scroll) return;
+    s.dataset.v132Scroll = "1";
+
+    s.addEventListener("scroll", ()=>{
+      scrolling = true;
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(()=>{ scrolling = false; }, 300);
+    }, {passive:true});
+
+    s.addEventListener("touchstart", ev=>{
+      const t = ev.changedTouches && ev.changedTouches[0];
+      if(!t) return;
+      startX = t.clientX;
+      startY = t.clientY;
+      moved = false;
+    }, {capture:true, passive:true});
+
+    s.addEventListener("touchmove", ev=>{
+      const t = ev.changedTouches && ev.changedTouches[0];
+      if(!t) return;
+      const dx = Math.abs(t.clientX - startX);
+      const dy = Math.abs(t.clientY - startY);
+
+      if(dy > 8 || dx > 10){
+        moved = true;
+        scrolling = true;
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(()=>{ scrolling = false; }, 300);
+      }
+
+      if(dx > dy && dx > 10){
+        ev.preventDefault();
+      }
+
+      ev.stopPropagation();
+      ev.stopImmediatePropagation?.();
+    }, {capture:true, passive:false});
+  }
+
+  function patchTopHandlers(){
+    const btns = topButtons();
+    if(btns.length < 3) return;
+
+    const dict = btns[0], card = btns[1], content = btns[2];
+
+    if(!content.dataset.v132Content){
+      content.dataset.v132Content = "1";
+      const h = ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+
+        document.body.classList.add("mode-content");
+        document.body.dataset.mode = "content";
+
+        const s = screen();
+        if(s){
+          s.hidden = false;
+          s.style.display = "block";
+        }
+
+        setTimeout(()=>{
+          markModeButtons();
+          hideLeftovers();
+          rebindContentCards();
+          patchContentScreenScroll();
+        }, 0);
+      };
+
+      content.addEventListener("touchstart", h, {capture:true, passive:false});
+      content.addEventListener("click", h, true);
+      content.addEventListener("pointerdown", h, true);
+    }
+
+    if(!dict.dataset.v132Leave){
+      dict.dataset.v132Leave = "1";
+      const h = ()=>{
+        document.body.classList.remove("mode-content");
+        if(document.body.dataset.mode === "content") document.body.dataset.mode = "";
+        const s = screen();
+        if(s) s.hidden = true;
+        try { appMode = "dictionary"; if(typeof render === "function") render("flash"); } catch(e){}
+      };
+      dict.addEventListener("click", h, true);
+      dict.addEventListener("touchstart", h, {capture:true, passive:true});
+    }
+
+    if(!card.dataset.v132Leave){
+      card.dataset.v132Leave = "1";
+      const h = ()=>{
+        document.body.classList.remove("mode-content");
+        if(document.body.dataset.mode === "content") document.body.dataset.mode = "";
+        const s = screen();
+        if(s) s.hidden = true;
+        try { appMode = "cards"; if(typeof render === "function") render("flash"); } catch(e){}
+      };
+      card.addEventListener("click", h, true);
+      card.addEventListener("touchstart", h, {capture:true, passive:true});
+    }
+  }
+
+  function stopUnderlying(ev){
+    if(!isContentMode()) return;
+
+    const s = screen();
+    const path = ev.composedPath ? ev.composedPath() : [];
+
+    if(s && path.includes(s)){
+      ev.stopPropagation();
+      ev.stopImmediatePropagation?.();
+      return;
+    }
+
+    const onTop = path.some(el=>{
+      if(!el || el.tagName !== "BUTTON") return false;
+      const t=(el.textContent||"").replace(/\s+/g,"").trim();
+      return ["辞書","カード","コンテンツ"].includes(t);
+    });
+    if(onTop) return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+    ev.stopImmediatePropagation?.();
+  }
+
+  function boot(){
+    markModeButtons();
+    patchTopHandlers();
+    rebindContentCards();
+    patchContentScreenScroll();
+
+    document.addEventListener("touchstart", stopUnderlying, {capture:true, passive:false});
+    document.addEventListener("touchmove", stopUnderlying, {capture:true, passive:false});
+    document.addEventListener("click", stopUnderlying, true);
+    document.addEventListener("pointerdown", stopUnderlying, true);
+
+    let n = 0;
+    const timer = setInterval(()=>{
+      n++;
+      markModeButtons();
+      patchTopHandlers();
+      rebindContentCards();
+      patchContentScreenScroll();
+      hideLeftovers();
+      if(n > 12) clearInterval(timer);
+    }, 250);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();

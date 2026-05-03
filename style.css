@@ -4186,3 +4186,66 @@ body.mode-content .deck-layer-3 {
     grid-template-rows: 90px auto !important;
   }
 }
+
+
+/* v132: コンテンツ表示時の残骸/選択表示/誤タップ対策 */
+body.mode-content .mode-btn-dict-v132,
+body.mode-content .mode-btn-card-v132 {
+  background: rgba(255,255,255,.06) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.52) !important;
+  box-shadow: none !important;
+}
+
+body.mode-content .mode-btn-content-v132 {
+  background: rgba(255,255,255,.18) !important;
+  border-color: rgba(255,255,255,.38) !important;
+  color: rgba(255,255,255,.96) !important;
+  box-shadow: 0 0 24px rgba(255,255,255,.12) inset !important;
+}
+
+/* 辞書/カードのページャーやバインダーボタンをコンテンツ中は隠す */
+body.mode-content .counter,
+body.mode-content .pager,
+body.mode-content .page-counter,
+body.mode-content .card-counter,
+body.mode-content [id*="counter"],
+body.mode-content [class*="counter"],
+body.mode-content [id*="binder"],
+body.mode-content [class*="binder"],
+body.mode-content button[aria-label*="バインダー"],
+body.mode-content button[aria-label*="binder"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* ただしコンテンツ内は表示 */
+body.mode-content #contentScreenV127,
+body.mode-content #contentScreenV127 * {
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+body.mode-content #contentScreenV127 .content-card-v127 {
+  display: grid !important;
+}
+
+/* 📘などの浮遊ボタン対策 */
+body.mode-content button {
+  animation: none !important;
+}
+
+body.mode-content button:not(.mode-btn-dict-v132):not(.mode-btn-card-v132):not(.mode-btn-content-v132) {
+  pointer-events: none;
+  opacity: 0 !important;
+}
+
+/* コンテンツ内は横ズレ禁止 */
+body.mode-content #contentScreenV127 {
+  overflow-x: hidden !important;
+}
+
+body.mode-content #contentScreenV127 * {
+  touch-action: pan-y;
+}
