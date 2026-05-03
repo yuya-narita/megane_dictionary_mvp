@@ -8145,11 +8145,10 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
 
 
 
-/* v132: content polish - safe tap, active tab, hide leftovers */
+/* v134: recover from v133, safer content card tap */
 (function(){
-  let startX = 0;
-  let startY = 0;
-  let downTime = 0;
+  let sx = 0;
+  let sy = 0;
   let moved = false;
   let scrolling = false;
   let scrollTimer = null;
@@ -8173,174 +8172,83 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
       .slice(0,3);
   }
 
-  function markModeButtons(){
+  function markContentActive(){
     const btns = topButtons();
-    if(btns.length < 3) return;
-
-    const dict = btns[0], card = btns[1], content = btns[2];
-    dict.classList.add("mode-btn-dict-v132");
-    card.classList.add("mode-btn-card-v132");
-    content.classList.add("mode-btn-content-v132");
-
-    dict.textContent = "辞書";
-    card.textContent = "カード";
-    content.textContent = "コンテンツ";
-
-    if(isContentMode()){
-      dict.classList.remove("active");
-      card.classList.remove("active");
-      content.classList.add("active");
-      dict.setAttribute("aria-pressed","false");
-      card.setAttribute("aria-pressed","false");
-      content.setAttribute("aria-pressed","true");
+    btns.forEach(b=>b.classList.remove("mode-content-tab-v134"));
+    if(isContentMode() && btns[2]){
+      btns[2].classList.add("mode-content-tab-v134");
+      btns[0]?.classList.remove("active");
+      btns[1]?.classList.remove("active");
     }
   }
 
-  function hideLeftovers(){
-    if(!isContentMode()) return;
-
-    Array.from(document.querySelectorAll("button")).forEach(b=>{
-      if(b.closest("#contentScreenV127")) return;
-      if(b.classList.contains("mode-btn-dict-v132") || b.classList.contains("mode-btn-card-v132") || b.classList.contains("mode-btn-content-v132")) return;
-
-      const t=(b.textContent||"").trim();
-      const label=(b.getAttribute("aria-label")||"").toLowerCase();
-      if(t === "📘" || label.includes("binder") || label.includes("バインダー")){
-        b.style.display = "none";
-        b.style.visibility = "hidden";
-        b.style.pointerEvents = "none";
-      }
-    });
-
-    Array.from(document.querySelectorAll("div,span,p")).forEach(el=>{
-      if(el.closest("#contentScreenV127")) return;
-      const txt=(el.textContent||"").trim();
-      if(/^(\d+\/\d+\s*[・•]\s*)?\d+\/\d+$/.test(txt) || /^\d+\/\d+\s*[・•]\s*\d+\/\d+$/.test(txt)){
-        el.style.display = "none";
-        el.style.visibility = "hidden";
-      }
-    });
-  }
-
-  function openContentDetail(el){
+  function openDetail(el){
     const title = el.querySelector(".content-title-v127")?.textContent || "作品";
     const status = el.querySelector(".content-status-v127")?.textContent || "";
     alert(`${title}\n${status}\n\n次：作品詳細画面を接続`);
   }
 
-  function rebindContentCards(){
+  function bindCards(){
     const s = screen();
     if(!s) return;
 
-    s.querySelectorAll(".content-card-v127").forEach(old=>{
-      if(old.dataset.v132Bound) return;
+    s.querySelectorAll(".content-card-v127").forEach(el=>{
+      if(el.dataset.v134Bound) return;
+      el.dataset.v134Bound = "1";
 
-      const el = old.cloneNode(true);
-      old.parentNode.replaceChild(el, old);
-      el.dataset.v132Bound = "1";
+      // 既存clickを殺して安全なtapだけ通す
+      el.onclick = null;
 
-      el.addEventListener("pointerdown", ev=>{
-        startX = ev.clientX;
-        startY = ev.clientY;
-        downTime = Date.now();
+      el.addEventListener("touchstart", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        sx = t.clientX;
+        sy = t.clientY;
         moved = false;
-      }, {capture:true});
+      }, {capture:true, passive:true});
 
-      el.addEventListener("pointermove", ev=>{
-        const dx = Math.abs(ev.clientX - startX);
-        const dy = Math.abs(ev.clientY - startY);
-        if(dx > 10 || dy > 10){
+      el.addEventListener("touchmove", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        const dx = Math.abs(t.clientX - sx);
+        const dy = Math.abs(t.clientY - sy);
+        if(dx > 14 || dy > 14){
           moved = true;
           scrolling = true;
           clearTimeout(scrollTimer);
-          scrollTimer = setTimeout(()=>{ scrolling = false; }, 260);
+          scrollTimer = setTimeout(()=>{ scrolling = false; }, 300);
         }
-      }, {capture:true});
+      }, {capture:true, passive:true});
 
-      el.addEventListener("pointerup", ev=>{
-        const dx = Math.abs(ev.clientX - startX);
-        const dy = Math.abs(ev.clientY - startY);
-        const elapsed = Date.now() - downTime;
-
-        if(dx > 10 || dy > 10 || moved || scrolling || elapsed > 700){
-          ev.preventDefault();
-          ev.stopPropagation();
-          ev.stopImmediatePropagation?.();
+      el.addEventListener("touchend", ev=>{
+        if(moved || scrolling){
           moved = false;
           return;
         }
-
         ev.preventDefault();
         ev.stopPropagation();
         ev.stopImmediatePropagation?.();
-        openContentDetail(el);
-      }, {capture:true});
+        openDetail(el);
+      }, {capture:true, passive:false});
 
       el.addEventListener("click", ev=>{
         ev.preventDefault();
         ev.stopPropagation();
         ev.stopImmediatePropagation?.();
       }, true);
-
-      el.addEventListener("touchend", ev=>{
-        if(moved || scrolling){
-          ev.preventDefault();
-          ev.stopPropagation();
-          ev.stopImmediatePropagation?.();
-        }
-      }, {capture:true, passive:false});
     });
   }
 
-  function patchContentScreenScroll(){
-    const s = screen();
-    if(!s || s.dataset.v132Scroll) return;
-    s.dataset.v132Scroll = "1";
-
-    s.addEventListener("scroll", ()=>{
-      scrolling = true;
-      clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(()=>{ scrolling = false; }, 300);
-    }, {passive:true});
-
-    s.addEventListener("touchstart", ev=>{
-      const t = ev.changedTouches && ev.changedTouches[0];
-      if(!t) return;
-      startX = t.clientX;
-      startY = t.clientY;
-      moved = false;
-    }, {capture:true, passive:true});
-
-    s.addEventListener("touchmove", ev=>{
-      const t = ev.changedTouches && ev.changedTouches[0];
-      if(!t) return;
-      const dx = Math.abs(t.clientX - startX);
-      const dy = Math.abs(t.clientY - startY);
-
-      if(dy > 8 || dx > 10){
-        moved = true;
-        scrolling = true;
-        clearTimeout(scrollTimer);
-        scrollTimer = setTimeout(()=>{ scrolling = false; }, 300);
-      }
-
-      if(dx > dy && dx > 10){
-        ev.preventDefault();
-      }
-
-      ev.stopPropagation();
-      ev.stopImmediatePropagation?.();
-    }, {capture:true, passive:false});
-  }
-
-  function patchTopHandlers(){
+  function bindTop(){
     const btns = topButtons();
     if(btns.length < 3) return;
 
-    const dict = btns[0], card = btns[1], content = btns[2];
+    const dict = btns[0];
+    const card = btns[1];
+    const content = btns[2];
 
-    if(!content.dataset.v132Content){
-      content.dataset.v132Content = "1";
+    if(!content.dataset.v134Content){
+      content.dataset.v134Content = "1";
       const h = ev=>{
         ev.preventDefault();
         ev.stopPropagation();
@@ -8348,28 +8256,22 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
 
         document.body.classList.add("mode-content");
         document.body.dataset.mode = "content";
-
         const s = screen();
         if(s){
           s.hidden = false;
           s.style.display = "block";
         }
-
         setTimeout(()=>{
-          markModeButtons();
-          hideLeftovers();
-          rebindContentCards();
-          patchContentScreenScroll();
+          markContentActive();
+          bindCards();
         }, 0);
       };
-
       content.addEventListener("touchstart", h, {capture:true, passive:false});
       content.addEventListener("click", h, true);
-      content.addEventListener("pointerdown", h, true);
     }
 
-    if(!dict.dataset.v132Leave){
-      dict.dataset.v132Leave = "1";
+    if(!dict.dataset.v134Leave){
+      dict.dataset.v134Leave = "1";
       const h = ()=>{
         document.body.classList.remove("mode-content");
         if(document.body.dataset.mode === "content") document.body.dataset.mode = "";
@@ -8377,12 +8279,12 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
         if(s) s.hidden = true;
         try { appMode = "dictionary"; if(typeof render === "function") render("flash"); } catch(e){}
       };
-      dict.addEventListener("click", h, true);
       dict.addEventListener("touchstart", h, {capture:true, passive:true});
+      dict.addEventListener("click", h, true);
     }
 
-    if(!card.dataset.v132Leave){
-      card.dataset.v132Leave = "1";
+    if(!card.dataset.v134Leave){
+      card.dataset.v134Leave = "1";
       const h = ()=>{
         document.body.classList.remove("mode-content");
         if(document.body.dataset.mode === "content") document.body.dataset.mode = "";
@@ -8390,55 +8292,36 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
         if(s) s.hidden = true;
         try { appMode = "cards"; if(typeof render === "function") render("flash"); } catch(e){}
       };
-      card.addEventListener("click", h, true);
       card.addEventListener("touchstart", h, {capture:true, passive:true});
+      card.addEventListener("click", h, true);
     }
   }
 
-  function stopUnderlying(ev){
-    if(!isContentMode()) return;
-
+  function bindScroll(){
     const s = screen();
-    const path = ev.composedPath ? ev.composedPath() : [];
-
-    if(s && path.includes(s)){
-      ev.stopPropagation();
-      ev.stopImmediatePropagation?.();
-      return;
-    }
-
-    const onTop = path.some(el=>{
-      if(!el || el.tagName !== "BUTTON") return false;
-      const t=(el.textContent||"").replace(/\s+/g,"").trim();
-      return ["辞書","カード","コンテンツ"].includes(t);
-    });
-    if(onTop) return;
-
-    ev.preventDefault();
-    ev.stopPropagation();
-    ev.stopImmediatePropagation?.();
+    if(!s || s.dataset.v134Scroll) return;
+    s.dataset.v134Scroll = "1";
+    s.addEventListener("scroll", ()=>{
+      scrolling = true;
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(()=>{ scrolling = false; }, 320);
+    }, {passive:true});
   }
 
   function boot(){
-    markModeButtons();
-    patchTopHandlers();
-    rebindContentCards();
-    patchContentScreenScroll();
-
-    document.addEventListener("touchstart", stopUnderlying, {capture:true, passive:false});
-    document.addEventListener("touchmove", stopUnderlying, {capture:true, passive:false});
-    document.addEventListener("click", stopUnderlying, true);
-    document.addEventListener("pointerdown", stopUnderlying, true);
+    bindTop();
+    bindCards();
+    bindScroll();
+    markContentActive();
 
     let n = 0;
     const timer = setInterval(()=>{
       n++;
-      markModeButtons();
-      patchTopHandlers();
-      rebindContentCards();
-      patchContentScreenScroll();
-      hideLeftovers();
-      if(n > 12) clearInterval(timer);
+      bindTop();
+      bindCards();
+      bindScroll();
+      markContentActive();
+      if(n > 10) clearInterval(timer);
     }, 250);
   }
 
