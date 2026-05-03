@@ -3937,3 +3937,86 @@ body.mode-content button {
     font-size: 26px;
   }
 }
+
+
+/* v128: コンテンツスクロール安定化 */
+body.mode-content #contentScreenV127 {
+  display: block !important;
+  position: fixed !important;
+  left: 50% !important;
+  top: 250px !important;
+  transform: translateX(-50%) !important;
+  width: min(84vw, 560px) !important;
+  height: calc(100vh - 330px) !important;
+  max-height: none !important;
+  z-index: 14000 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  padding: 0 0 110px !important;
+  pointer-events: auto !important;
+}
+
+body.mode-content #contentScreenV127,
+body.mode-content #contentScreenV127 * {
+  pointer-events: auto !important;
+}
+
+/* 裏側の辞書・カード操作面を完全停止 */
+body.mode-content #dictionaryView,
+body.mode-content #bugCardView,
+body.mode-content .hint,
+body.mode-content .controls,
+body.mode-content #favoriteBtn,
+body.mode-content .favorite-btn,
+body.mode-content [id*="favorite"],
+body.mode-content [class*="favorite"] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* コンテンツ表示中、既存のドラッグ対象は触らせない */
+body.mode-content .content {
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+  pointer-events: none !important;
+}
+
+body.mode-content .content.dragging,
+body.mode-content .content.snap-back {
+  transform: none !important;
+  animation: none !important;
+}
+
+/* ただしコンテンツ一覧だけは触れる */
+body.mode-content #contentScreenV127 {
+  pointer-events: auto !important;
+}
+
+/* 上下スワイプで裏のフレームが出るのを抑える */
+body.mode-content .deck-layer,
+body.mode-content #flowCard,
+body.mode-content .flow-card,
+body.mode-content .deck-layer-1,
+body.mode-content .deck-layer-2,
+body.mode-content .deck-layer-3 {
+  display: none !important;
+}
+
+/* スマホ高さ調整 */
+@media (max-height: 760px) {
+  body.mode-content #contentScreenV127 {
+    top: 230px !important;
+    height: calc(100vh - 300px) !important;
+  }
+}
+
+@media (max-width: 390px) {
+  body.mode-content #contentScreenV127 {
+    width: min(86vw, 560px) !important;
+    top: 238px !important;
+    height: calc(100vh - 312px) !important;
+  }
+}
