@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>メガネ辞書 MVP</title>
-  <link rel="stylesheet" href="./style.css?v=105" />
+  <link rel="stylesheet" href="./style.css?v=106" />
 </head>
 <body class="mode-dictionary">
   <main id="app" class="app">
@@ -127,7 +127,7 @@
     <div class="fullscreen-hint">上下:カード / 左右:めくる / タップで閉じる</div>
   </div>
 
-  <script src="./app.js?v=105"></script>
+  <script src="./app.js?v=106"></script>
   <audio id="mangaAudio" preload="metadata"></audio>
   <div id="mangaFullscreenOverlay" class="manga-fullscreen-overlay" hidden>
     <button id="mangaFullscreenClose" class="manga-fullscreen-close">← 戻る</button>
@@ -173,5 +173,12 @@ padding:20px;">
   <div id="binderGrid"></div>
 </div>
 
+
+<div id="binderViewer" class="binder-viewer" hidden>
+  <button id="binderViewerClose" class="binder-viewer-close">×</button>
+  <div id="binderViewerCard" class="binder-viewer-card"></div>
+  <div id="binderViewerTitle" class="binder-viewer-title"></div>
+  <div id="binderViewerCounter" class="binder-viewer-counter"></div>
+</div>
 </body>
 </html>

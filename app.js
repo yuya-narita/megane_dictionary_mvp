@@ -6161,3 +6161,227 @@ init();
     bootV105();
   }
 })();
+
+
+/* v106: binder internal swipe viewer */
+(function(){
+  const BINDER_KEY = "binderCardsV104";
+
+  let owned = [];
+  let viewerPos = 0;
+  let sx = 0;
+  let sy = 0;
+  let tracking = false;
+
+  function load(key, fallback){
+    try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}
+    catch(e){return fallback;}
+  }
+
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g,ch=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[ch]));
+  }
+
+  function getCards(){
+    try{
+      if(typeof cards !== "undefined" && Array.isArray(cards)) return cards;
+    }catch(e){}
+    return [];
+  }
+
+  function validIndex(idx){
+    const arr=getCards();
+    return typeof idx === "number" && idx >= 0 && idx < arr.length;
+  }
+
+  function getCard(idx){
+    const arr=getCards();
+    return validIndex(idx) ? arr[idx] : null;
+  }
+
+  function getCardTitle(idx){
+    const c=getCard(idx);
+    if(!c) return "CARD " + String(idx+1).padStart(3,"0");
+    return c.title || c.name || c.label || c.id || ("CARD " + String(idx+1).padStart(3,"0"));
+  }
+
+  function getCardImage(idx){
+    const c=getCard(idx);
+    if(!c) return "";
+    return c.image || c.img || c.src || c.url || c.front || c.frontImage || c.cardImage || "";
+  }
+
+  function reloadOwned(){
+    owned = load(BINDER_KEY, []).filter(validIndex).sort((a,b)=>a-b);
+  }
+
+  function viewerEls(){
+    return {
+      root: document.getElementById("binderViewer"),
+      card: document.getElementById("binderViewerCard"),
+      title: document.getElementById("binderViewerTitle"),
+      counter: document.getElementById("binderViewerCounter"),
+      close: document.getElementById("binderViewerClose")
+    };
+  }
+
+  function renderViewer(anim){
+    const {card,title,counter} = viewerEls();
+    if(!card || !title || !counter) return;
+
+    const idx = owned[viewerPos];
+    const cardTitle = getCardTitle(idx);
+    const img = getCardImage(idx);
+    const no = String(idx+1).padStart(3,"0");
+
+    card.classList.remove("slide-left","slide-right");
+    card.innerHTML = img
+      ? `<img src="${esc(img)}" alt="${esc(cardTitle)}">`
+      : `<div class="viewer-placeholder">No.${no}<br>${esc(cardTitle)}</div>`;
+
+    title.textContent = cardTitle;
+    counter.textContent = `${viewerPos+1} / ${owned.length}　No.${no}`;
+
+    if(anim){
+      void card.offsetWidth;
+      card.classList.add(anim === "next" ? "slide-left" : "slide-right");
+    }
+  }
+
+  function openViewerByIndex(idx){
+    reloadOwned();
+    if(!owned.length) return;
+
+    const pos = owned.indexOf(idx);
+    viewerPos = pos >= 0 ? pos : 0;
+
+    const {root} = viewerEls();
+    if(!root) return;
+
+    root.hidden = false;
+    renderViewer();
+  }
+
+  function closeViewer(){
+    const {root} = viewerEls();
+    if(root) root.hidden = true;
+  }
+
+  function moveViewer(dir){
+    if(!owned.length) return;
+
+    viewerPos += dir;
+
+    if(viewerPos < 0) viewerPos = owned.length - 1;
+    if(viewerPos >= owned.length) viewerPos = 0;
+
+    renderViewer(dir > 0 ? "next" : "prev");
+  }
+
+  function bindViewerSwipe(){
+    const {root,close} = viewerEls();
+    if(!root || root.dataset.v106Bound) return;
+    root.dataset.v106Bound = "1";
+
+    if(close && !close.dataset.v106Bound){
+      close.dataset.v106Bound = "1";
+      close.addEventListener("click", e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        closeViewer();
+      });
+    }
+
+    root.addEventListener("click", e=>{
+      if(e.target === root) closeViewer();
+    });
+
+    root.addEventListener("touchstart", e=>{
+      const t=e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+      sx=t.clientX;
+      sy=t.clientY;
+      tracking=true;
+    }, {passive:true});
+
+    root.addEventListener("touchend", e=>{
+      if(!tracking) return;
+      tracking=false;
+
+      const t=e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+
+      const dx=t.clientX-sx;
+      const dy=t.clientY-sy;
+
+      if(Math.abs(dx)>48 && Math.abs(dx)>Math.abs(dy)*1.25){
+        // 左スワイプで次、右スワイプで前
+        moveViewer(dx < 0 ? 1 : -1);
+      }
+    }, {passive:true});
+
+    // PC fallback
+    let down=false;
+    root.addEventListener("pointerdown", e=>{
+      if(e.pointerType === "touch") return;
+      down=true;
+      sx=e.clientX;
+      sy=e.clientY;
+    });
+
+    root.addEventListener("pointerup", e=>{
+      if(e.pointerType === "touch" || !down) return;
+      down=false;
+      const dx=e.clientX-sx;
+      const dy=e.clientY-sy;
+      if(Math.abs(dx)>48 && Math.abs(dx)>Math.abs(dy)*1.25){
+        moveViewer(dx < 0 ? 1 : -1);
+      }
+    });
+  }
+
+  // renderBinderの後に取得済みカードへviewer起動を追加
+  function hookBinderRender(){
+    if(typeof window.renderBinder !== "function" || window.renderBinder.__v106Hooked) return;
+
+    const original = window.renderBinder;
+    window.renderBinder = function(){
+      original.apply(this, arguments);
+
+      setTimeout(()=>{
+        bindViewerSwipe();
+
+        document.querySelectorAll(".binder-item.owned-card").forEach(el=>{
+          if(el.dataset.v106Viewer) return;
+          el.dataset.v106Viewer = "1";
+
+          el.addEventListener("click", e=>{
+            e.preventDefault();
+            e.stopPropagation();
+
+            const idx = Number(el.dataset.cardIndex ?? el.dataset.idx);
+            if(Number.isFinite(idx)){
+              openViewerByIndex(idx);
+            }
+          }, true);
+        });
+      },0);
+    };
+
+    window.renderBinder.__v106Hooked = true;
+  }
+
+  function boot(){
+    bindViewerSwipe();
+    hookBinderRender();
+    setInterval(()=>{
+      bindViewerSwipe();
+      hookBinderRender();
+    },700);
+  }
+
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();

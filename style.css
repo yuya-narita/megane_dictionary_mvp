@@ -2774,3 +2774,108 @@ body[data-mode="cards"] #openBinderBtn {
     height: 84% !important;
   }
 }
+
+
+/* v106: バインダー内カード閲覧モード */
+.binder-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  align-items: center;
+  justify-items: center;
+  padding: 54px 22px 34px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255,220,155,.12), transparent 34%),
+    rgba(0,0,0,.88);
+  backdrop-filter: blur(10px);
+}
+
+.binder-viewer[hidden] {
+  display: none !important;
+}
+
+.binder-viewer-close {
+  position: fixed;
+  right: 22px;
+  top: 48px;
+  z-index: 12002;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,238,198,.28);
+  background: rgba(255,238,198,.08);
+  color: rgba(255,238,198,.96);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.binder-viewer-card {
+  width: min(76vw, 360px);
+  aspect-ratio: 2 / 3;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255,230,170,.18), transparent 30%),
+    linear-gradient(160deg, rgba(110,63,31,.48), rgba(31,18,13,.94));
+  border: 1px solid rgba(255,231,176,.34);
+  box-shadow:
+    0 22px 70px rgba(0,0,0,.62),
+    0 0 0 1px rgba(255,255,255,.05) inset;
+  will-change: transform, opacity;
+}
+
+.binder-viewer-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.binder-viewer-card .viewer-placeholder {
+  padding: 18px;
+  text-align: center;
+  color: rgba(255,238,198,.95);
+  font-weight: 900;
+  letter-spacing: .06em;
+  line-height: 1.45;
+}
+
+.binder-viewer-title {
+  margin-top: 18px;
+  color: rgba(255,238,198,.96);
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: .06em;
+  text-align: center;
+  text-shadow: 0 2px 16px rgba(0,0,0,.7);
+}
+
+.binder-viewer-counter {
+  margin-top: 8px;
+  color: rgba(255,238,198,.58);
+  font-size: 13px;
+  letter-spacing: .08em;
+}
+
+.binder-viewer-card.slide-left {
+  animation: viewerSlideLeftV106 .28s cubic-bezier(.2,.9,.25,1);
+}
+
+.binder-viewer-card.slide-right {
+  animation: viewerSlideRightV106 .28s cubic-bezier(.2,.9,.25,1);
+}
+
+@keyframes viewerSlideLeftV106 {
+  0% { transform: translateX(18px); opacity: .45; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes viewerSlideRightV106 {
+  0% { transform: translateX(-18px); opacity: .45; }
+  100% { transform: translateX(0); opacity: 1; }
+}
