@@ -5186,348 +5186,77 @@ init();
   }
 })();
 
+/* v98 binder logic */
+(function(){
+ const KEY="binderV98";
 
-/* v93: stronger directional physical card flip */
-(function () {
-  let sx = 0;
-  let sy = 0;
-  let horizontal = false;
-  let lastFlipAt = 0;
+ function load(){
+  try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return []}
+ }
+ function save(arr){
+  localStorage.setItem(KEY,JSON.stringify(arr))
+ }
 
-  function isCardMode() {
-    return typeof appMode !== "undefined" && appMode === "cards";
+ function addCard(idx){
+  const arr=load();
+  if(!arr.includes(idx)){
+    arr.push(idx);
+    save(arr);
   }
+ }
 
-  function getCardTarget() {
-    // できるだけカード全体を掴む
-    return document.querySelector(".card") ||
-           document.querySelector(".flip-card") ||
-           document.querySelector(".card-inner") ||
-           document.querySelector(".card-face") ||
-           document.querySelector(".main-card");
-  }
-
-  function playPhysicalFlip(direction) {
-    const now = Date.now();
-    if (now - lastFlipAt < 420) return;
-    lastFlipAt = now;
-
-    const target = getCardTarget();
-    if (!target) return;
-
-    const cls = direction === "left" ? "card-physical-flip-left" : "card-physical-flip-right";
-
-    target.classList.remove(
-      "card-physical-flip-left",
-      "card-physical-flip-right",
-      "card-page-turn-left",
-      "card-page-turn-right"
-    );
-
-    void target.offsetWidth;
-    target.classList.add(cls);
-
-    setTimeout(() => {
-      target.classList.remove(cls);
-    }, 500);
-  }
-
-  function bindDirectionalFlipV93() {
-    document.addEventListener("touchstart", e => {
-      if (!isCardMode()) return;
-      const t = e.changedTouches && e.changedTouches[0];
-      if (!t) return;
-      sx = t.clientX;
-      sy = t.clientY;
-      horizontal = false;
-    }, { passive: true, capture: true });
-
-    document.addEventListener("touchmove", e => {
-      if (!isCardMode()) return;
-      const t = e.changedTouches && e.changedTouches[0];
-      if (!t) return;
-
-      const dx = t.clientX - sx;
-      const dy = t.clientY - sy;
-
-      if (Math.abs(dx) > 26 && Math.abs(dx) > Math.abs(dy) * 1.22) {
-        horizontal = true;
+ // hook daily card save
+ if(typeof flipCurrentCard==="function" && !flipCurrentCard.__binder){
+  const orig=flipCurrentCard;
+  flipCurrentCard=function(){
+    orig();
+    try{
+      if(typeof wordIndex!=="undefined"){
+        addCard(wordIndex);
       }
-    }, { passive: true, capture: true });
+    }catch(e){}
+  }
+  flipCurrentCard.__binder=true;
+ }
 
-    document.addEventListener("touchend", e => {
-      if (!isCardMode()) return;
-      const t = e.changedTouches && e.changedTouches[0];
-      if (!t) return;
+ function renderBinder(){
+  const grid=document.getElementById("binderGrid");
+  if(!grid)return;
+  const owned=load();
+  let html="";
+  const total=60; // 仮
+  for(let i=0;i<total;i++){
+    const has=owned.includes(i);
+    html+=`
+    <div class="binder-item ${has?"":"binder-locked"}">
+      ${has?("No."+String(i+1).padStart(3,"0")):"???"}
+    </div>`;
+  }
+  grid.innerHTML=html;
+ }
 
-      const dx = t.clientX - sx;
-      const dy = t.clientY - sy;
+ function bind(){
+  const btn=document.getElementById("openBinderBtn");
+  const modal=document.getElementById("binderModal");
+  if(!btn||btn.dataset.v98)return;
+  btn.dataset.v98=1;
 
-      if (horizontal && Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        // 左スワイプ：右端を軸に右から左へめくれる
-        // 右スワイプ：左端を軸に左から右へめくれる
-        playPhysicalFlip(dx < 0 ? "left" : "right");
-      }
-
-      horizontal = false;
-    }, { passive: true, capture: true });
-
-    // PC / trackpad fallback
-    let down = false;
-    document.addEventListener("pointerdown", e => {
-      if (!isCardMode() || e.pointerType === "touch") return;
-      down = true;
-      sx = e.clientX;
-      sy = e.clientY;
-    }, true);
-
-    document.addEventListener("pointerup", e => {
-      if (!isCardMode() || e.pointerType === "touch" || !down) return;
-      down = false;
-
-      const dx = e.clientX - sx;
-      const dy = e.clientY - sy;
-
-      if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        playPhysicalFlip(dx < 0 ? "left" : "right");
-      }
-    }, true);
+  btn.onclick=()=>{
+    modal.style.display="block";
+    renderBinder();
   }
 
-  function bootV93() {
-    bindDirectionalFlipV93();
+  modal.onclick=()=>{
+    modal.style.display="none";
   }
+ }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootV93);
-  } else {
-    bootV93();
-  }
-})();
+ function boot(){
+  bind();
+  setInterval(bind,500);
+ }
 
-
-/* v94: right swipe flip fallback */
-(function () {
-  let sx = 0;
-  let sy = 0;
-  let tracking = false;
-  let fired = false;
-  let lastRightFlipAt = 0;
-
-  function isCardMode() {
-    return typeof appMode !== "undefined" && appMode === "cards";
-  }
-
-  function getCardTarget() {
-    return document.querySelector(".card") ||
-           document.querySelector(".flip-card") ||
-           document.querySelector(".card-inner") ||
-           document.querySelector(".card-face") ||
-           document.querySelector(".main-card");
-  }
-
-  function playRightFlipForce() {
-    const now = Date.now();
-    if (now - lastRightFlipAt < 450) return;
-    lastRightFlipAt = now;
-
-    const target = getCardTarget();
-    if (!target) return;
-
-    target.classList.remove(
-      "card-physical-flip-left",
-      "card-physical-flip-right",
-      "card-physical-flip-right-force",
-      "card-page-turn-left",
-      "card-page-turn-right"
-    );
-
-    void target.offsetWidth;
-    target.classList.add("card-physical-flip-right-force");
-
-    setTimeout(() => {
-      target.classList.remove("card-physical-flip-right-force");
-    }, 520);
-  }
-
-  function start(x, y) {
-    if (!isCardMode()) return;
-    sx = x;
-    sy = y;
-    tracking = true;
-    fired = false;
-  }
-
-  function move(x, y) {
-    if (!tracking || fired || !isCardMode()) return;
-
-    const dx = x - sx;
-    const dy = y - sy;
-
-    // 右スワイプだけ早めに検出
-    if (dx > 34 && Math.abs(dx) > Math.abs(dy) * 1.15) {
-      fired = true;
-      playRightFlipForce();
-    }
-  }
-
-  function end() {
-    tracking = false;
-    fired = false;
-  }
-
-  // touch系：既存処理より前のcaptureで拾う
-  document.addEventListener("touchstart", e => {
-    const t = e.changedTouches && e.changedTouches[0];
-    if (!t) return;
-    start(t.clientX, t.clientY);
-  }, { passive: true, capture: true });
-
-  document.addEventListener("touchmove", e => {
-    const t = e.changedTouches && e.changedTouches[0];
-    if (!t) return;
-    move(t.clientX, t.clientY);
-  }, { passive: true, capture: true });
-
-  document.addEventListener("touchend", end, { passive: true, capture: true });
-  document.addEventListener("touchcancel", end, { passive: true, capture: true });
-
-  // pointer系 fallback
-  document.addEventListener("pointerdown", e => {
-    if (e.pointerType === "touch") return;
-    start(e.clientX, e.clientY);
-  }, true);
-
-  document.addEventListener("pointermove", e => {
-    if (e.pointerType === "touch") return;
-    move(e.clientX, e.clientY);
-  }, true);
-
-  document.addEventListener("pointerup", end, true);
-  document.addEventListener("pointercancel", end, true);
-})();
-
-
-
-
-/* v96: right swipe flip on release only */
-(function () {
-  let sx = 0;
-  let sy = 0;
-  let tracking = false;
-  let lastFlipAt = 0;
-
-  function isCardMode() {
-    return typeof appMode !== "undefined" && appMode === "cards";
-  }
-
-  function getCardTarget() {
-    return document.querySelector(".card") ||
-           document.querySelector(".flip-card") ||
-           document.querySelector(".card-inner") ||
-           document.querySelector(".card-face") ||
-           document.querySelector(".main-card");
-  }
-
-  function playRightAnim() {
-    const target = getCardTarget();
-    if (!target) return;
-
-    target.classList.remove(
-      "card-physical-flip-left",
-      "card-physical-flip-right",
-      "card-physical-flip-right-force",
-      "card-page-turn-left",
-      "card-page-turn-right"
-    );
-
-    void target.offsetWidth;
-    target.classList.add("card-physical-flip-right-force");
-
-    setTimeout(() => {
-      target.classList.remove("card-physical-flip-right-force");
-    }, 520);
-  }
-
-  function toggleCardFace() {
-    try {
-      // まず既存関数を使う
-      if (typeof flipCurrentCard === "function") {
-        flipCurrentCard();
-        return;
-      }
-
-      // だめなら直接トグル
-      if (typeof cardFlipped !== "undefined") {
-        cardFlipped = !cardFlipped;
-        if (typeof render === "function") render("flash");
-      }
-    } catch (e) {}
-  }
-
-  function forceRightFlipOnRelease() {
-    const now = Date.now();
-    if (now - lastFlipAt < 650) return;
-    lastFlipAt = now;
-
-    // 指が離れてから発火。追従処理とぶつけない。
-    playRightAnim();
-
-    setTimeout(() => {
-      toggleCardFace();
-    }, 120);
-  }
-
-  function start(x, y) {
-    if (!isCardMode()) return;
-    sx = x;
-    sy = y;
-    tracking = true;
-  }
-
-  function end(x, y, e) {
-    if (!tracking || !isCardMode()) {
-      tracking = false;
-      return;
-    }
-
-    const dx = x - sx;
-    const dy = y - sy;
-
-    // 右スワイプだけ補正。左は既存処理に任せる。
-    if (dx > 52 && Math.abs(dx) > Math.abs(dy) * 1.18) {
-      if (e && e.cancelable) e.preventDefault();
-      if (e) e.stopImmediatePropagation();
-      forceRightFlipOnRelease();
-    }
-
-    tracking = false;
-  }
-
-  document.addEventListener("touchstart", e => {
-    const t = e.changedTouches && e.changedTouches[0];
-    if (!t) return;
-    start(t.clientX, t.clientY);
-  }, { passive: true, capture: true });
-
-  document.addEventListener("touchend", e => {
-    const t = e.changedTouches && e.changedTouches[0];
-    if (!t) return;
-    end(t.clientX, t.clientY, e);
-  }, { passive: false, capture: true });
-
-  document.addEventListener("touchcancel", () => {
-    tracking = false;
-  }, { passive: true, capture: true });
-
-  // PC fallback
-  document.addEventListener("pointerdown", e => {
-    if (e.pointerType === "touch") return;
-    start(e.clientX, e.clientY);
-  }, true);
-
-  document.addEventListener("pointerup", e => {
-    if (e.pointerType === "touch") return;
-    end(e.clientX, e.clientY, e);
-  }, true);
+ if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded",boot);
+ }else{boot()}
 })();

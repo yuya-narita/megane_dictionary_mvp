@@ -2334,91 +2334,39 @@ body[data-glass-theme="default"] {
 }
 
 
-/* v93: カード左右スワイプの物理めくり演出 */
+/* v97: card stable rollback */
 .card-physical-flip-left,
-.card-physical-flip-right {
-  transform-style: preserve-3d;
-  will-change: transform, filter;
+.card-physical-flip-right,
+.card-physical-flip-right-force,
+.card-page-turn-left,
+.card-page-turn-right {
+  animation: none !important;
 }
 
-.card-physical-flip-left {
-  transform-origin: right center !important;
-  animation: physicalFlipLeftV93 .46s cubic-bezier(.18,.9,.24,1);
+/* チラつき防止。カード自体の描画を安定させる */
+.card,
+.flip-card,
+.card-inner,
+.card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
-.card-physical-flip-right {
-  transform-origin: left center !important;
-  animation: physicalFlipRightV93 .46s cubic-bezier(.18,.9,.24,1);
+/* v98 binder */
+#binderGrid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px;
 }
-
-@keyframes physicalFlipLeftV93 {
-  0% {
-    transform: perspective(1100px) rotateY(0deg) translateX(0) scale(1);
-    filter: brightness(1);
-  }
-  38% {
-    transform: perspective(1100px) rotateY(-58deg) translateX(-8px) scale(.985);
-    filter: brightness(.82);
-  }
-  62% {
-    transform: perspective(1100px) rotateY(-88deg) translateX(-14px) scale(.975);
-    filter: brightness(.74);
-  }
-  100% {
-    transform: perspective(1100px) rotateY(0deg) translateX(0) scale(1);
-    filter: brightness(1);
-  }
+.binder-item{
+aspect-ratio:1;
+border:1px solid rgba(255,255,255,.2);
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:12px;
+color:white;
 }
-
-@keyframes physicalFlipRightV93 {
-  0% {
-    transform: perspective(1100px) rotateY(0deg) translateX(0) scale(1);
-    filter: brightness(1);
-  }
-  38% {
-    transform: perspective(1100px) rotateY(58deg) translateX(8px) scale(.985);
-    filter: brightness(.82);
-  }
-  62% {
-    transform: perspective(1100px) rotateY(88deg) translateX(14px) scale(.975);
-    filter: brightness(.74);
-  }
-  100% {
-    transform: perspective(1100px) rotateY(0deg) translateX(0) scale(1);
-    filter: brightness(1);
-  }
-}
-
-/* 演出中は既存の軽い演出と競合しにくくする */
-.card-physical-flip-left.card-page-turn-left,
-.card-physical-flip-right.card-page-turn-right {
-  animation-duration: .46s;
-}
-
-
-/* v94: 右スワイプ専用補正 */
-.card-physical-flip-right-force {
-  transform-origin: left center !important;
-  animation: physicalFlipRightForceV94 .48s cubic-bezier(.18,.9,.24,1);
-  transform-style: preserve-3d;
-  will-change: transform, filter;
-}
-
-@keyframes physicalFlipRightForceV94 {
-  0% {
-    transform: perspective(1100px) rotateY(0deg) translateX(0) scale(1);
-    filter: brightness(1);
-  }
-  36% {
-    transform: perspective(1100px) rotateY(62deg) translateX(10px) scale(.985);
-    filter: brightness(.82);
-  }
-  62% {
-    transform: perspective(1100px) rotateY(92deg) translateX(16px) scale(.975);
-    filter: brightness(.74);
-  }
-  100% {
-    transform: perspective(1100px) rotateY(0deg) translateX(0) scale(1);
-    filter: brightness(1);
-  }
+.binder-locked{
+opacity:.2;
 }
