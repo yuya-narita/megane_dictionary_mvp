@@ -8639,3 +8639,213 @@ const CONTENTS_V118 = [
     boot();
   }
 })();
+
+
+
+/* v124: use native top mode buttons, robust touch/click */
+(function(){
+  const ITEMS = [
+    ["構文的イグノーベル賞","音声化予定","IG","くだらないけど深い観測シリーズ"],
+    ["細胞が綴る詩","音声化済み","CELL","生命・記憶・再生の詩的ログ"],
+    ["syntax frontier","音声化済み","SF","構文モデル×人工構文体の長編"],
+    ["syntax MBA","音声化済み","MBA","経営をλ→!→σ→Tで読む講義"],
+    ["詩の処方箋","音声化済み","POEM","言葉で状態を変える朗読シリーズ"],
+    ["H(x)∞origin","音声・マンガ化済み","H∞","意味バグの起源を観測する"],
+    ["貧乏メガネのシノ","テキストのみ","¥","貧しさと意味のズレを読む物語"],
+    ["syntax resonance","音声・マンガ化製作中","♪","音楽×言葉×構文バトル"],
+    ["ニクスのどうでもいい観測","音声化進行中","NXS","意味の手前の違和感を記録する"],
+    ["跳ねる前のこの感じ","音声作品製作中","!","発火直前の空気を聴く作品"],
+    ["ぴょこん日和","音声／紙芝居動画","PY","ゆるい音声と紙芝居的動画"]
+  ];
+
+  function ensureScreen(){
+    let screen = document.getElementById("contentScreenV120");
+    if(screen) return screen;
+
+    const host = document.getElementById("content") || document.querySelector(".content") || document.body;
+    screen = document.createElement("div");
+    screen.id = "contentScreenV120";
+    screen.className = "content-screen-v120";
+    screen.hidden = true;
+    screen.innerHTML = `
+      <div class="content-hero-v120">
+        <div class="hero-kicker-v120">おすすめ</div>
+        <div class="hero-title-v120">H(x)∞origin</div>
+        <div class="hero-meta-v120">音声・マンガ化済み</div>
+        <div class="hero-copy-v120">意味が生まれる瞬間を、カード・音声・マンガで観測する。</div>
+      </div>
+      <div class="content-section-head-v120">
+        <span>作品一覧</span>
+        <span id="contentCountV120">11作品</span>
+      </div>
+      <div id="contentGridV120" class="content-grid-v120"></div>
+    `;
+    host.appendChild(screen);
+    return screen;
+  }
+
+  function renderContent(){
+    ensureScreen();
+    const grid = document.getElementById("contentGridV120");
+    const count = document.getElementById("contentCountV120");
+    if(!grid) return;
+
+    if(count) count.textContent = `${ITEMS.length}作品`;
+
+    grid.innerHTML = ITEMS.map(([title,status,mark,desc])=>`
+      <div class="content-card-v120">
+        <div class="content-thumb-v120" data-mark="${mark}"></div>
+        <div class="content-info-v120">
+          <div class="content-title-v120">${title}</div>
+          <div class="content-status-v120">${status}</div>
+          <div class="content-desc-v120">${desc}</div>
+        </div>
+      </div>
+    `).join("");
+
+    grid.querySelectorAll(".content-card-v120").forEach((el,i)=>{
+      el.onclick = () => {
+        const [title,status] = ITEMS[i];
+        alert(`${title}\n${status}\n\n次：作品詳細画面を接続`);
+      };
+    });
+  }
+
+  function showContent(ev){
+    if(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    }
+
+    ensureScreen();
+    renderContent();
+
+    try { appMode = "content"; } catch(e) {}
+
+    document.body.classList.add("mode-content");
+    document.body.dataset.mode = "content";
+
+    const screen = document.getElementById("contentScreenV120");
+    if(screen) screen.hidden = false;
+
+    const lib = document.getElementById("libraryOverlayV116");
+    if(lib) lib.hidden = true;
+
+    markActive("コンテンツ");
+  }
+
+  function hideContent(){
+    document.body.classList.remove("mode-content");
+    if(document.body.dataset.mode === "content") document.body.dataset.mode = "";
+    const screen = document.getElementById("contentScreenV120");
+    if(screen) screen.hidden = true;
+  }
+
+  function markActive(label){
+    getNativeModeButtons().forEach(b=>{
+      b.classList.toggle("active", (b.textContent||"").trim() === label);
+      b.setAttribute("aria-pressed", (b.textContent||"").trim() === label ? "true" : "false");
+    });
+  }
+
+  function getNativeModeButtons(){
+    const buttons = Array.from(document.querySelectorAll("button"));
+    const candidates = buttons.filter(b=>{
+      if(b.closest("#mainNavV123")) return false;
+      const t=(b.textContent||"").replace(/\s+/g,"").trim();
+      return ["辞書","カード","マンガ","音声","コンテンツ"].includes(t);
+    });
+
+    // 画面上部にあるもの優先
+    return candidates
+      .filter(b => b.offsetParent !== null)
+      .sort((a,b)=>a.getBoundingClientRect().top - b.getBoundingClientRect().top)
+      .slice(0,3);
+  }
+
+  function setupNativeButtons(){
+    const btns = getNativeModeButtons();
+    if(btns.length < 3) return;
+
+    const dict = btns[0];
+    const card = btns[1];
+    const content = btns[2];
+
+    dict.textContent = "辞書";
+    card.textContent = "カード";
+    content.textContent = "コンテンツ";
+
+    btns.forEach(b=>{
+      b.style.pointerEvents = "auto";
+      b.style.opacity = "";
+      b.style.display = "";
+    });
+
+    if(!content.dataset.v124){
+      content.dataset.v124 = "1";
+
+      const handler = (ev)=>showContent(ev);
+
+      content.addEventListener("touchstart", handler, {capture:true, passive:false});
+      content.addEventListener("pointerdown", handler, true);
+      content.addEventListener("click", handler, true);
+    }
+
+    if(!dict.dataset.v124Leave){
+      dict.dataset.v124Leave = "1";
+      dict.addEventListener("click", ()=>{
+        hideContent();
+        try { appMode = "dictionary"; if(typeof render === "function") render("flash"); } catch(e){}
+        markActive("辞書");
+      }, true);
+      dict.addEventListener("touchstart", ()=>{
+        hideContent();
+        try { appMode = "dictionary"; if(typeof render === "function") render("flash"); } catch(e){}
+        markActive("辞書");
+      }, {capture:true, passive:true});
+    }
+
+    if(!card.dataset.v124Leave){
+      card.dataset.v124Leave = "1";
+      card.addEventListener("click", ()=>{
+        hideContent();
+        try { appMode = "cards"; if(typeof render === "function") render("flash"); } catch(e){}
+        markActive("カード");
+      }, true);
+      card.addEventListener("touchstart", ()=>{
+        hideContent();
+        try { appMode = "cards"; if(typeof render === "function") render("flash"); } catch(e){}
+        markActive("カード");
+      }, {capture:true, passive:true});
+    }
+  }
+
+  // 万一イベントが既存処理で消される場合、document captureでテキスト判定
+  function globalCaptureFallback(ev){
+    const path = ev.composedPath ? ev.composedPath() : [];
+    const hit = path.find(el => el && el.tagName === "BUTTON" && (el.textContent||"").replace(/\s+/g,"").trim() === "コンテンツ");
+    if(hit){
+      showContent(ev);
+    }
+  }
+
+  function boot(){
+    ensureScreen();
+    renderContent();
+    setupNativeButtons();
+
+    document.addEventListener("touchstart", globalCaptureFallback, {capture:true, passive:false});
+    document.addEventListener("click", globalCaptureFallback, true);
+
+    setInterval(()=>{
+      setupNativeButtons();
+    }, 500);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();

@@ -4237,3 +4237,40 @@ body.mode-content .content {
 body:not(.mode-content) #contentScreenV120 {
   display: none !important;
 }
+
+
+/* v124: 専用ナビを廃止し、既存上部ボタンを使う */
+#mainNavV123,
+.main-nav-v123,
+.force-content-btn-v122,
+#forceContentBtnV122,
+#audioModeBtn,
+[data-mode-button="audio"] {
+  display: none !important;
+}
+
+/* v123で旧ボタンを透明化した補正を打ち消す */
+button {
+  pointer-events: auto;
+}
+
+/* コンテンツ画面 */
+body.mode-content #contentScreenV120 {
+  display: block !important;
+}
+
+body.mode-content #dictionaryView,
+body.mode-content #bugCardView,
+body.mode-content .hint {
+  display: none !important;
+}
+
+body.mode-content .content {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+}
+
+body:not(.mode-content) #contentScreenV120 {
+  display: none !important;
+}
