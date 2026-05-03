@@ -8713,3 +8713,162 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     render.__v136MinimalHotfix = true;
   }
 })();
+
+/* v137: fix card-mode 📘 center button + temporary content tap popup */
+(function(){
+  let sx = 0;
+  let sy = 0;
+  let moved = false;
+  let startedAt = 0;
+  let lastPopupAt = 0;
+
+  function isCardMode(){
+    try { return appMode === "cards" || document.body.classList.contains("mode-cards") || document.body.dataset.mode === "cards"; }
+    catch(_) { return document.body.classList.contains("mode-cards") || document.body.dataset.mode === "cards"; }
+  }
+
+  function isContentMode(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function openBinderV137(ev){
+    if(!isCardMode()) return;
+    if(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    }
+    const modal = document.getElementById("binderModal");
+    if(!modal) return;
+    try { if(typeof window.renderBinder === "function") window.renderBinder(); } catch(_) {}
+    modal.style.display = "block";
+  }
+
+  function fixCardCenterButton(){
+    const btn = document.getElementById("randomWord");
+    if(!btn || !isCardMode()) return;
+    btn.textContent = "📘";
+    btn.setAttribute("aria-label", "バインダーを開く");
+    btn.dataset.v137Binder = "1";
+    if(!btn.__v137BinderClick){
+      btn.addEventListener("click", openBinderV137, true);
+      btn.addEventListener("touchend", openBinderV137, {capture:true, passive:false});
+      btn.__v137BinderClick = true;
+    }
+  }
+
+  function contentTitle(card){
+    return card.querySelector(".content-title-v127")?.textContent?.trim() ||
+      card.querySelector("h2,h3,strong")?.textContent?.trim() ||
+      "コンテンツカード";
+  }
+
+  function selectAndPopup(card, ev){
+    if(!card || !isContentMode()) return;
+    const now = Date.now();
+    if(now - lastPopupAt < 450) return;
+    lastPopupAt = now;
+
+    if(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    }
+
+    const screen = document.getElementById("contentScreenV127");
+    if(screen){
+      screen.querySelectorAll(".content-card-v127").forEach(el=>{
+        const selected = el === card;
+        el.classList.toggle("selected-v136", selected);
+        el.classList.toggle("selected-v137", selected);
+        el.setAttribute("aria-selected", selected ? "true" : "false");
+      });
+    }
+
+    const idx = Number(card.dataset.index || 0);
+    window.selectedContentIndex = idx;
+    window.selectedContentCard = card;
+
+    alert("コンテンツカードを選択しました\n" + contentTitle(card));
+  }
+
+  function bindContentCards(){
+    const screen = document.getElementById("contentScreenV127");
+    if(!screen) return;
+
+    screen.querySelectorAll(".content-card-v127").forEach(card=>{
+      if(card.__v137ContentPopup) return;
+      card.__v137ContentPopup = true;
+
+      card.addEventListener("touchstart", ev=>{
+        if(!isContentMode()) return;
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        sx = t.clientX;
+        sy = t.clientY;
+        moved = false;
+        startedAt = Date.now();
+      }, {capture:true, passive:true});
+
+      card.addEventListener("touchmove", ev=>{
+        if(!isContentMode()) return;
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        if(Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) moved = true;
+      }, {capture:true, passive:true});
+
+      card.addEventListener("touchend", ev=>{
+        if(!isContentMode()) return;
+        const duration = Date.now() - startedAt;
+        if(moved || duration > 700) return;
+        selectAndPopup(card, ev);
+      }, {capture:true, passive:false});
+
+      card.addEventListener("pointerdown", ev=>{
+        if(!isContentMode()) return;
+        sx = ev.clientX;
+        sy = ev.clientY;
+        moved = false;
+        startedAt = Date.now();
+      }, true);
+
+      card.addEventListener("pointermove", ev=>{
+        if(!isContentMode()) return;
+        if(Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10) moved = true;
+      }, true);
+
+      card.addEventListener("pointerup", ev=>{
+        if(!isContentMode()) return;
+        const duration = Date.now() - startedAt;
+        if(moved || duration > 700) return;
+        selectAndPopup(card, ev);
+      }, true);
+
+      card.addEventListener("click", ev=>{
+        if(!isContentMode()) return;
+        selectAndPopup(card, ev);
+      }, true);
+    });
+  }
+
+  function apply(){
+    fixCardCenterButton();
+    bindContentCards();
+  }
+
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", apply);
+  else apply();
+
+  setInterval(apply, 250);
+
+  if(typeof render === "function" && !render.__v137Fix){
+    const originalRender = render;
+    render = function(){
+      const result = originalRender.apply(this, arguments);
+      setTimeout(apply, 0);
+      setTimeout(apply, 80);
+      return result;
+    };
+    render.__v137Fix = true;
+  }
+})();
