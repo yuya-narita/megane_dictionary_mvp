@@ -7410,3 +7410,136 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+
+/* v114: binder replay double tap fullscreen */
+(function(){
+  let lastTap = 0;
+  let tapTimer = null;
+  let sx = 0;
+  let sy = 0;
+  let movedRecently = false;
+  let visualFlipped = false;
+
+  function els(){
+    return {
+      root: document.getElementById("binderReplayViewer"),
+      card: document.getElementById("binderReplayFlipCard"),
+      panel: document.getElementById("binderReplayTextPanel")
+    };
+  }
+
+  function pulse(card){
+    if(!card) return;
+    card.classList.remove("fullscreen-pulse");
+    void card.offsetWidth;
+    card.classList.add("fullscreen-pulse");
+    setTimeout(()=>card.classList.remove("fullscreen-pulse"), 280);
+  }
+
+  function toggleFullscreen(){
+    const {root, card} = els();
+    if(!root || !card) return;
+    root.classList.toggle("replay-fullscreen");
+    pulse(card);
+  }
+
+  function visualFlip(){
+    const {card} = els();
+    if(!card) return;
+    visualFlipped = !visualFlipped;
+    card.classList.toggle("flipped", visualFlipped);
+    card.classList.remove("flip-pop");
+    void card.offsetWidth;
+    card.classList.add("flip-pop");
+  }
+
+  function bindDoubleTap(){
+    const {root, card} = els();
+    if(!root || !card || card.dataset.v114DoubleTap) return;
+    card.dataset.v114DoubleTap = "1";
+
+    card.addEventListener("touchstart", e=>{
+      const t = e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+      sx = t.clientX;
+      sy = t.clientY;
+      movedRecently = false;
+    }, {passive:true, capture:true});
+
+    card.addEventListener("touchmove", e=>{
+      const t = e.changedTouches && e.changedTouches[0];
+      if(!t) return;
+      const dx = t.clientX - sx;
+      const dy = t.clientY - sy;
+      if(Math.abs(dx) > 14 || Math.abs(dy) > 14){
+        movedRecently = true;
+      }
+    }, {passive:true, capture:true});
+
+    // 既存のclick flipと衝突しないよう、clickをcaptureで握る。
+    card.addEventListener("click", e=>{
+      if(root.hidden) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      if(movedRecently){
+        movedRecently = false;
+        return;
+      }
+
+      const now = Date.now();
+      const isDouble = now - lastTap < 320;
+      lastTap = now;
+
+      clearTimeout(tapTimer);
+
+      if(isDouble){
+        toggleFullscreen();
+        return;
+      }
+
+      tapTimer = setTimeout(()=>{
+        visualFlip();
+      }, 230);
+    }, true);
+
+    // 全画面中に背景ダブルタップっぽくなっても暴発しないよう初期化
+    root.addEventListener("transitionend", ()=>{
+      movedRecently = false;
+    });
+  }
+
+  function hookOpenReset(){
+    const {root} = els();
+    if(!root || root.dataset.v114OpenReset) return;
+    root.dataset.v114OpenReset = "1";
+
+    const obs = new MutationObserver(()=>{
+      if(!root.hidden){
+        root.classList.remove("replay-fullscreen");
+        visualFlipped = false;
+        const {card} = els();
+        if(card) card.classList.remove("flipped");
+      }
+    });
+    obs.observe(root, {attributes:true, attributeFilter:["hidden"]});
+  }
+
+  function boot(){
+    bindDoubleTap();
+    hookOpenReset();
+    setInterval(()=>{
+      bindDoubleTap();
+      hookOpenReset();
+    }, 700);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();

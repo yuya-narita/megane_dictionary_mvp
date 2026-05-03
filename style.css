@@ -3709,3 +3709,46 @@ body[data-mode="cards"] #openBinderBtn {
     margin-top: 16px !important;
   }
 }
+
+
+/* v114: バインダー新ビュー ダブルタップ全画面 */
+.binder-replay-viewer.replay-fullscreen {
+  padding: 26px 10px !important;
+  justify-content: center !important;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.035), transparent 34%),
+    rgba(0,0,0,.97) !important;
+}
+
+.binder-replay-viewer.replay-fullscreen .binder-replay-flip-card {
+  width: min(94vw, 560px) !important;
+  max-height: calc(100vh - 72px) !important;
+  aspect-ratio: 2 / 3 !important;
+  box-shadow:
+    0 28px 88px rgba(0,0,0,.78),
+    0 0 0 1px rgba(255,255,255,.08) inset !important;
+}
+
+.binder-replay-viewer.replay-fullscreen .binder-replay-title,
+.binder-replay-viewer.replay-fullscreen .binder-replay-subtitle,
+.binder-replay-viewer.replay-fullscreen .binder-replay-caption,
+.binder-replay-viewer.replay-fullscreen .binder-replay-counter,
+.binder-replay-viewer.replay-fullscreen .binder-replay-text-panel {
+  display: none !important;
+}
+
+.binder-replay-viewer.replay-fullscreen .binder-replay-close {
+  top: 28px !important;
+  right: 18px !important;
+  z-index: 14010 !important;
+}
+
+.binder-replay-flip-card.fullscreen-pulse {
+  animation: replayFullscreenPulseV114 .24s cubic-bezier(.2,1.2,.3,1);
+}
+
+@keyframes replayFullscreenPulseV114 {
+  0% { transform: scale(.985); filter: brightness(.92); }
+  65% { transform: scale(1.018); filter: brightness(1.08); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
