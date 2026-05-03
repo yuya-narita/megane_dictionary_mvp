@@ -3217,3 +3217,105 @@ body[data-mode="cards"] #openBinderBtn {
     margin-top: 16px !important;
   }
 }
+
+
+/* v111: バインダー閲覧の裏面をカード裏風に戻す */
+.viewer-card-back {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 22px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255,220,150,.18), transparent 32%),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.05), transparent 26%),
+    linear-gradient(160deg, rgba(58,35,22,.98), rgba(16,10,7,.98)) !important;
+  color: rgba(255,238,198,.94);
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.viewer-card-back::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,230,170,.26);
+  box-shadow:
+    inset 0 0 30px rgba(255,230,170,.08),
+    0 0 20px rgba(0,0,0,.3);
+}
+
+.viewer-card-back-symbol {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 12px;
+  place-items: center;
+}
+
+.viewer-card-back-bear {
+  font-size: 34px;
+  opacity: .82;
+}
+
+.viewer-card-back-title {
+  font-size: 18px !important;
+  font-weight: 900;
+  letter-spacing: .08em;
+  line-height: 1.4;
+  color: rgba(255,238,198,.96) !important;
+}
+
+.viewer-card-back-sub {
+  margin-top: 4px;
+  font-size: 11px !important;
+  opacity: .68;
+  letter-spacing: .12em;
+  color: rgba(255,238,198,.72) !important;
+}
+
+/* v111: 下部テキストをカードモードに寄せる */
+.binder-viewer-text {
+  background:
+    linear-gradient(180deg, rgba(30,33,38,.68), rgba(10,12,15,.94)) !important;
+  border-top: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.92) !important;
+}
+
+.binder-viewer-text.expanded {
+  transform: translateY(0) !important;
+}
+
+.binder-viewer-text:not(.expanded) {
+  transform: translateY(70%) !important;
+}
+
+.text-handle {
+  background: rgba(255,255,255,.46) !important;
+}
+
+.text-inner {
+  color: rgba(255,255,255,.94) !important;
+  font-size: 15px !important;
+  line-height: 1.72 !important;
+}
+
+.text-inner h3 {
+  color: rgba(255,255,255,.98) !important;
+  font-size: 18px !important;
+  letter-spacing: .14em !important;
+}
+
+.text-inner .lead {
+  color: rgba(225,236,246,.95) !important;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.text-inner .section {
+  border-top: 1px solid rgba(255,255,255,.14) !important;
+}
