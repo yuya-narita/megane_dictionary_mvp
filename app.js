@@ -8580,3 +8580,345 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+
+
+/* v137: minimal recovery patch from v135 */
+(function(){
+  let sx = 0, sy = 0, startTime = 0;
+  let moved = false;
+  let scrolling = false;
+  let lastScrollAt = 0;
+  let scrollTimer = null;
+
+  function isContentMode(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function screen(){
+    return document.getElementById("contentScreenV127");
+  }
+
+  function restoreBinderInlineOnlyOutsideContent(){
+    if(isContentMode()) return;
+
+    Array.from(document.querySelectorAll("button,div")).forEach(el=>{
+      const txt = (el.textContent || "").trim();
+      const label = (el.getAttribute("aria-label") || "").toLowerCase();
+      const id = (el.id || "").toLowerCase();
+      const cls = (el.className || "").toString().toLowerCase();
+
+      const looksBinder = txt === "📘" || label.includes("binder") || label.includes("バインダー") || id.includes("binder") || cls.includes("binder");
+      if(looksBinder){
+        el.style.display = "";
+        el.style.visibility = "";
+        el.style.opacity = "";
+        el.style.pointerEvents = "";
+      }
+    });
+  }
+
+  function openDetail(el){
+    const title = el.querySelector(".content-title-v127")?.textContent || "作品";
+    const status = el.querySelector(".content-status-v127")?.textContent || "";
+    alert(`${title}\n${status}\n\n次：作品詳細画面を接続`);
+  }
+
+  function rebindCardsV137(){
+    const s = screen();
+    if(!s) return;
+
+    s.querySelectorAll(".content-card-v127").forEach(old=>{
+      if(old.dataset.v137Bound) return;
+
+      const el = old.cloneNode(true);
+      old.parentNode.replaceChild(el, old);
+      el.dataset.v137Bound = "1";
+      el.onclick = null;
+
+      el.addEventListener("touchstart", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        sx = t.clientX;
+        sy = t.clientY;
+        startTime = Date.now();
+        moved = false;
+      }, {capture:true, passive:true});
+
+      el.addEventListener("touchmove", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        const dx = Math.abs(t.clientX - sx);
+        const dy = Math.abs(t.clientY - sy);
+        if(dx > 10 || dy > 10){
+          moved = true;
+          scrolling = true;
+          lastScrollAt = Date.now();
+          clearTimeout(scrollTimer);
+          scrollTimer = setTimeout(()=>{ scrolling = false; }, 320);
+        }
+      }, {capture:true, passive:true});
+
+      el.addEventListener("touchend", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+
+        const dx = Math.abs(t.clientX - sx);
+        const dy = Math.abs(t.clientY - sy);
+        const duration = Date.now() - startTime;
+        const sinceScroll = Date.now() - lastScrollAt;
+
+        if(dx > 10 || dy > 10 || moved || scrolling || duration < 80 || sinceScroll < 280){
+          moved = false;
+          return;
+        }
+
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+        openDetail(el);
+      }, {capture:true, passive:false});
+
+      el.addEventListener("click", ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+      }, true);
+    });
+  }
+
+  function bindContentScroll(){
+    const s = screen();
+    if(!s || s.dataset.v137Scroll) return;
+    s.dataset.v137Scroll = "1";
+
+    s.addEventListener("scroll", ()=>{
+      scrolling = true;
+      lastScrollAt = Date.now();
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(()=>{ scrolling = false; }, 320);
+    }, {passive:true});
+  }
+
+  function topButtons(){
+    return Array.from(document.querySelectorAll("button"))
+      .filter(b=>{
+        const t=(b.textContent||"").replace(/\s+/g,"").trim();
+        return ["辞書","カード","コンテンツ"].includes(t);
+      })
+      .filter(b=>b.offsetParent !== null)
+      .sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top || a.getBoundingClientRect().left-b.getBoundingClientRect().left)
+      .slice(0,3);
+  }
+
+  function bindLeaveRestore(){
+    const btns = topButtons();
+    if(btns.length < 3) return;
+    const dict = btns[0], card = btns[1], content = btns[2];
+
+    if(!dict.dataset.v137Restore){
+      dict.dataset.v137Restore = "1";
+      const h = ()=>setTimeout(restoreBinderInlineOnlyOutsideContent, 120);
+      dict.addEventListener("click", h, true);
+      dict.addEventListener("touchstart", h, {capture:true, passive:true});
+    }
+
+    if(!card.dataset.v137Restore){
+      card.dataset.v137Restore = "1";
+      const h = ()=>setTimeout(restoreBinderInlineOnlyOutsideContent, 120);
+      card.addEventListener("click", h, true);
+      card.addEventListener("touchstart", h, {capture:true, passive:true});
+    }
+
+    if(!content.dataset.v137Content){
+      content.dataset.v137Content = "1";
+      const h = ()=>setTimeout(()=>{
+        rebindCardsV137();
+        bindContentScroll();
+      }, 120);
+      content.addEventListener("click", h, true);
+      content.addEventListener("touchstart", h, {capture:true, passive:true});
+    }
+  }
+
+  function boot(){
+    restoreBinderInlineOnlyOutsideContent();
+    rebindCardsV137();
+    bindContentScroll();
+    bindLeaveRestore();
+
+    let n = 0;
+    const timer = setInterval(()=>{
+      n++;
+      restoreBinderInlineOnlyOutsideContent();
+      rebindCardsV137();
+      bindContentScroll();
+      bindLeaveRestore();
+      if(n > 8) clearInterval(timer);
+    }, 300);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();
+
+
+
+/* v138: stop binder from auto-opening */
+(function(){
+  function isBinderOverlay(el){
+    if(!el || !el.classList) return false;
+    const id = (el.id || "").toLowerCase();
+    const cls = (el.className || "").toString().toLowerCase();
+    return (
+      id === "binderoverlay" ||
+      id === "bindermodal" ||
+      id === "binderview" ||
+      cls.includes("binder-overlay") ||
+      cls.includes("binder-modal") ||
+      cls.includes("binder-view")
+    );
+  }
+
+  function isBinderButton(el){
+    if(!el) return false;
+    const txt = (el.textContent || "").trim();
+    const label = (el.getAttribute && (el.getAttribute("aria-label") || "").toLowerCase()) || "";
+    const id = (el.id || "").toLowerCase();
+    const cls = (el.className || "").toString().toLowerCase();
+
+    if(isBinderOverlay(el)) return false;
+
+    return (
+      txt === "📘" ||
+      label.includes("binder") ||
+      label.includes("バインダー") ||
+      cls.includes("binder-button") ||
+      cls.includes("binder-btn") ||
+      id.includes("binderbutton") ||
+      id.includes("binderbtn")
+    );
+  }
+
+  function closeBinderOverlays(){
+    document.body.classList.remove("binder-open-v138");
+
+    Array.from(document.querySelectorAll("div,section,aside")).forEach(el=>{
+      if(!isBinderOverlay(el)) return;
+      el.hidden = true;
+      el.style.display = "none";
+      el.style.visibility = "hidden";
+      el.style.opacity = "0";
+      el.style.pointerEvents = "none";
+    });
+  }
+
+  function openBinderAllowed(){
+    document.body.classList.add("binder-open-v138");
+
+    Array.from(document.querySelectorAll("div,section,aside")).forEach(el=>{
+      if(!isBinderOverlay(el)) return;
+      el.hidden = false;
+      el.style.display = "";
+      el.style.visibility = "";
+      el.style.opacity = "";
+      el.style.pointerEvents = "";
+    });
+  }
+
+  function restoreOnlyBinderButtons(){
+    if(document.body.classList.contains("mode-content")) return;
+
+    Array.from(document.querySelectorAll("button")).forEach(el=>{
+      if(!isBinderButton(el)) return;
+      el.style.display = "";
+      el.style.visibility = "";
+      el.style.opacity = "";
+      el.style.pointerEvents = "";
+    });
+  }
+
+  function bindBinderButtons(){
+    Array.from(document.querySelectorAll("button")).forEach(btn=>{
+      if(!isBinderButton(btn)) return;
+      if(btn.dataset.v138Binder) return;
+      btn.dataset.v138Binder = "1";
+
+      const h = ()=>{
+        // 既存のバインダー開く処理の直後に表示許可
+        setTimeout(openBinderAllowed, 0);
+        setTimeout(openBinderAllowed, 80);
+      };
+
+      btn.addEventListener("click", h, true);
+      btn.addEventListener("touchstart", h, {capture:true, passive:true});
+    });
+  }
+
+  function bindCloseButtons(){
+    Array.from(document.querySelectorAll("button")).forEach(btn=>{
+      const txt = (btn.textContent || "").trim();
+      const label = (btn.getAttribute("aria-label") || "").toLowerCase();
+      if(!(txt === "×" || txt === "✕" || txt === "✖" || label.includes("close") || label.includes("閉じる"))) return;
+      if(btn.dataset.v138Close) return;
+      btn.dataset.v138Close = "1";
+
+      const h = ()=>setTimeout(closeBinderOverlays, 40);
+      btn.addEventListener("click", h, true);
+      btn.addEventListener("touchstart", h, {capture:true, passive:true});
+    });
+  }
+
+  function bindModeButtons(){
+    Array.from(document.querySelectorAll("button")).forEach(btn=>{
+      const txt = (btn.textContent || "").replace(/\s+/g,"").trim();
+      if(!["辞書","カード","コンテンツ"].includes(txt)) return;
+      if(btn.dataset.v138Mode) return;
+      btn.dataset.v138Mode = "1";
+
+      const h = ()=>{
+        // モード移動時は、勝手にバインダーを出さない
+        setTimeout(()=>{
+          if(!document.body.classList.contains("binder-open-v138")){
+            closeBinderOverlays();
+          }
+          restoreOnlyBinderButtons();
+        }, 100);
+      };
+
+      btn.addEventListener("click", h, true);
+      btn.addEventListener("touchstart", h, {capture:true, passive:true});
+    });
+  }
+
+  function boot(){
+    // 初期表示は必ず閉じる
+    closeBinderOverlays();
+    restoreOnlyBinderButtons();
+    bindBinderButtons();
+    bindCloseButtons();
+    bindModeButtons();
+
+    let n = 0;
+    const timer = setInterval(()=>{
+      n++;
+      if(!document.body.classList.contains("binder-open-v138")){
+        closeBinderOverlays();
+      }
+      restoreOnlyBinderButtons();
+      bindBinderButtons();
+      bindCloseButtons();
+      bindModeButtons();
+      if(n > 14) clearInterval(timer);
+    }, 250);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();

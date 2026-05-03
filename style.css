@@ -4282,3 +4282,82 @@ body.mode-content .content-card-v127 {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
+
+
+/* v137: v136崩れ回避。初期表示は触らない */
+body:not(.mode-content) .content-tab-v135,
+body:not(.mode-content) .dict-tab-v135,
+body:not(.mode-content) .card-tab-v135 {
+  background: revert !important;
+  border-color: revert !important;
+  color: revert !important;
+  box-shadow: revert !important;
+}
+
+/* コンテンツカード同士の余白だけ軽く調整 */
+body.mode-content .content-grid-v127 {
+  gap: 16px !important;
+}
+
+/* コンテンツ中だけ残骸を隠す。通常モードには影響させない */
+body.mode-content [id*="binder"],
+body.mode-content [class*="binder"],
+body.mode-content button[aria-label*="バインダー"],
+body.mode-content button[aria-label*="binder"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 通常/カードモードでは📘をCSSで殺さない */
+body:not(.mode-content) button[aria-label*="バインダー"],
+body:not(.mode-content) button[aria-label*="binder"] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+
+/* v138: バインダー自動表示防止 */
+body:not(.binder-open-v138) #binderOverlay,
+body:not(.binder-open-v138) #binderModal,
+body:not(.binder-open-v138) #binderView,
+body:not(.binder-open-v138) .binder-overlay,
+body:not(.binder-open-v138) .binder-modal,
+body:not(.binder-open-v138) .binder-view {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 📘ボタンそのものは通常/カードモードで表示可能 */
+body:not(.mode-content) .binder-button,
+body:not(.mode-content) .binder-btn,
+body:not(.mode-content) button.binder-button,
+body:not(.mode-content) button.binder-btn,
+body:not(.mode-content) button[aria-label*="バインダー"],
+body:not(.mode-content) button[aria-label*="binder"] {
+  display: revert !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* コンテンツ中はバインダー系はすべて非表示 */
+body.mode-content #binderOverlay,
+body.mode-content #binderModal,
+body.mode-content #binderView,
+body.mode-content .binder-overlay,
+body.mode-content .binder-modal,
+body.mode-content .binder-view,
+body.mode-content .binder-button,
+body.mode-content .binder-btn,
+body.mode-content button[aria-label*="バインダー"],
+body.mode-content button[aria-label*="binder"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
