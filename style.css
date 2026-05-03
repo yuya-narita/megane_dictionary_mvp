@@ -4219,3 +4219,66 @@ body.mode-content #contentScreenV127 {
 body.mode-content #contentScreenV127 * {
   touch-action: pan-y;
 }
+
+
+/* v135: コンテンツ状態の上部ボタン・残骸非表示・タップ安定 */
+body.mode-content .content-tab-v135 {
+  background: rgba(255,255,255,.18) !important;
+  border-color: rgba(255,255,255,.42) !important;
+  color: rgba(255,255,255,.96) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.12) inset,
+    0 0 24px rgba(255,255,255,.10) inset !important;
+}
+
+body.mode-content .dict-tab-v135,
+body.mode-content .card-tab-v135 {
+  background: rgba(255,255,255,.06) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.52) !important;
+  box-shadow: none !important;
+}
+
+/* コンテンツ中は📘・下部操作・ページャー残骸を完全に消す */
+body.mode-content .controls,
+body.mode-content #favoriteBtn,
+body.mode-content .favorite-btn,
+body.mode-content [id*="favorite"],
+body.mode-content [class*="favorite"],
+body.mode-content [id*="binder"],
+body.mode-content [class*="binder"],
+body.mode-content .counter,
+body.mode-content .pager,
+body.mode-content .page-counter,
+body.mode-content .card-counter,
+body.mode-content [id*="counter"],
+body.mode-content [class*="counter"],
+body.mode-content button[aria-label*="バインダー"],
+body.mode-content button[aria-label*="binder"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ただし上部ボタンとコンテンツ内部は表示 */
+body.mode-content .dict-tab-v135,
+body.mode-content .card-tab-v135,
+body.mode-content .content-tab-v135,
+body.mode-content #contentScreenV127,
+body.mode-content #contentScreenV127 * {
+  display: revert !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+body.mode-content #contentScreenV127 .content-card-v127 {
+  display: grid !important;
+}
+
+/* タップ中の余計な反応を消す */
+body.mode-content .content-card-v127 {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}

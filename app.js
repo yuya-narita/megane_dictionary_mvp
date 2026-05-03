@@ -8331,3 +8331,252 @@ ${sub ? `<div class="lead">${esc(sub)}</div>` : `<div class="lead">カードを�
     boot();
   }
 })();
+
+
+
+/* v135: safer content tap + active content tab + hide binder leftovers */
+(function(){
+  let sx = 0;
+  let sy = 0;
+  let startTime = 0;
+  let moved = false;
+  let scrolling = false;
+  let scrollTimer = null;
+  let lastScrollAt = 0;
+
+  function isContentMode(){
+    return document.body.classList.contains("mode-content") || document.body.dataset.mode === "content";
+  }
+
+  function screen(){
+    return document.getElementById("contentScreenV127");
+  }
+
+  function topButtons(){
+    return Array.from(document.querySelectorAll("button"))
+      .filter(b=>{
+        const t=(b.textContent||"").replace(/\s+/g,"").trim();
+        return ["辞書","カード","コンテンツ"].includes(t);
+      })
+      .filter(b=>b.offsetParent !== null)
+      .sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top || a.getBoundingClientRect().left-b.getBoundingClientRect().left)
+      .slice(0,3);
+  }
+
+  function markTabs(){
+    const btns = topButtons();
+    if(btns.length < 3) return;
+    const [dict, card, content] = btns;
+
+    dict.classList.add("dict-tab-v135");
+    card.classList.add("card-tab-v135");
+    content.classList.add("content-tab-v135");
+
+    dict.textContent = "辞書";
+    card.textContent = "カード";
+    content.textContent = "コンテンツ";
+
+    if(isContentMode()){
+      dict.classList.remove("active");
+      card.classList.remove("active");
+      content.classList.add("active");
+      dict.setAttribute("aria-pressed","false");
+      card.setAttribute("aria-pressed","false");
+      content.setAttribute("aria-pressed","true");
+    }else{
+      content.classList.remove("active");
+    }
+  }
+
+  function hideLeftovers(){
+    if(!isContentMode()) return;
+
+    Array.from(document.querySelectorAll("button,div,span,p")).forEach(el=>{
+      if(el.closest("#contentScreenV127")) return;
+      if(el.classList.contains("dict-tab-v135") || el.classList.contains("card-tab-v135") || el.classList.contains("content-tab-v135")) return;
+
+      const txt = (el.textContent||"").trim();
+      const label = (el.getAttribute("aria-label")||"").toLowerCase();
+      const id = (el.id||"").toLowerCase();
+      const cls = (el.className||"").toString().toLowerCase();
+
+      const looksPager = /^(\d+\/\d+\s*[・•]\s*)?\d+\/\d+$/.test(txt) || /^\d+\/\d+\s*[・•]\s*\d+\/\d+$/.test(txt);
+      const looksBinder = txt === "📘" || label.includes("binder") || label.includes("バインダー") || id.includes("binder") || cls.includes("binder");
+
+      if(looksPager || looksBinder){
+        el.style.display = "none";
+        el.style.visibility = "hidden";
+        el.style.opacity = "0";
+        el.style.pointerEvents = "none";
+      }
+    });
+  }
+
+  function openDetail(el){
+    const title = el.querySelector(".content-title-v127")?.textContent || "作品";
+    const status = el.querySelector(".content-status-v127")?.textContent || "";
+    alert(`${title}\n${status}\n\n次：作品詳細画面を接続`);
+  }
+
+  function bindCards(){
+    const s = screen();
+    if(!s) return;
+
+    s.querySelectorAll(".content-card-v127").forEach(old=>{
+      if(old.dataset.v135Bound) return;
+
+      const el = old.cloneNode(true);
+      old.parentNode.replaceChild(el, old);
+      el.dataset.v135Bound = "1";
+      el.onclick = null;
+
+      el.addEventListener("touchstart", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        sx = t.clientX;
+        sy = t.clientY;
+        startTime = Date.now();
+        moved = false;
+      }, {capture:true, passive:true});
+
+      el.addEventListener("touchmove", ev=>{
+        const t = ev.changedTouches && ev.changedTouches[0];
+        if(!t) return;
+        const dx = Math.abs(t.clientX - sx);
+        const dy = Math.abs(t.clientY - sy);
+        if(dx > 8 || dy > 8){
+          moved = true;
+          scrolling = true;
+          lastScrollAt = Date.now();
+          clearTimeout(scrollTimer);
+          scrollTimer = setTimeout(()=>{ scrolling = false; }, 450);
+        }
+      }, {capture:true, passive:true});
+
+      el.addEventListener("touchend", ev=>{
+        const duration = Date.now() - startTime;
+        const sinceScroll = Date.now() - lastScrollAt;
+
+        if(moved || scrolling || duration < 140 || duration > 650 || sinceScroll < 420){
+          moved = false;
+          return;
+        }
+
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+        openDetail(el);
+      }, {capture:true, passive:false});
+
+      el.addEventListener("click", ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+      }, true);
+    });
+  }
+
+  function bindScroll(){
+    const s = screen();
+    if(!s || s.dataset.v135Scroll) return;
+    s.dataset.v135Scroll = "1";
+
+    s.addEventListener("scroll", ()=>{
+      scrolling = true;
+      lastScrollAt = Date.now();
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(()=>{ scrolling = false; }, 450);
+    }, {passive:true});
+
+    s.addEventListener("touchmove", ev=>{
+      ev.stopPropagation();
+      ev.stopImmediatePropagation?.();
+    }, {capture:true, passive:true});
+  }
+
+  function bindTop(){
+    const btns = topButtons();
+    if(btns.length < 3) return;
+    const [dict, card, content] = btns;
+
+    if(!content.dataset.v135Content){
+      content.dataset.v135Content = "1";
+      const h = ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation?.();
+
+        document.body.classList.add("mode-content");
+        document.body.dataset.mode = "content";
+
+        const s = screen();
+        if(s){
+          s.hidden = false;
+          s.style.display = "block";
+        }
+
+        setTimeout(()=>{
+          markTabs();
+          hideLeftovers();
+          bindCards();
+          bindScroll();
+        }, 0);
+      };
+      content.addEventListener("touchstart", h, {capture:true, passive:false});
+      content.addEventListener("click", h, true);
+    }
+
+    if(!dict.dataset.v135Leave){
+      dict.dataset.v135Leave = "1";
+      const h = ()=>{
+        document.body.classList.remove("mode-content");
+        if(document.body.dataset.mode === "content") document.body.dataset.mode = "";
+        const s = screen();
+        if(s) s.hidden = true;
+        try { appMode = "dictionary"; if(typeof render === "function") render("flash"); } catch(e){}
+        setTimeout(markTabs, 0);
+      };
+      dict.addEventListener("touchstart", h, {capture:true, passive:true});
+      dict.addEventListener("click", h, true);
+    }
+
+    if(!card.dataset.v135Leave){
+      card.dataset.v135Leave = "1";
+      const h = ()=>{
+        document.body.classList.remove("mode-content");
+        if(document.body.dataset.mode === "content") document.body.dataset.mode = "";
+        const s = screen();
+        if(s) s.hidden = true;
+        try { appMode = "cards"; if(typeof render === "function") render("flash"); } catch(e){}
+        setTimeout(markTabs, 0);
+      };
+      card.addEventListener("touchstart", h, {capture:true, passive:true});
+      card.addEventListener("click", h, true);
+    }
+  }
+
+  function boot(){
+    bindTop();
+    bindCards();
+    bindScroll();
+    markTabs();
+    hideLeftovers();
+
+    let n = 0;
+    const timer = setInterval(()=>{
+      n++;
+      bindTop();
+      bindCards();
+      bindScroll();
+      markTabs();
+      hideLeftovers();
+      if(n > 12) clearInterval(timer);
+    }, 300);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();
