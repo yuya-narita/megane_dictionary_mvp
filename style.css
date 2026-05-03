@@ -3900,3 +3900,208 @@ body[data-mode="cards"] #openBinderBtn {
 .library-title-v116::after {
   content: "";
 }
+
+
+/* v120: コンテンツはモーダルではなく画面表示 */
+#libraryOverlayV116 {
+  display: none !important;
+}
+
+.content-screen-v120 {
+  width: min(92vw, 560px);
+  max-height: 74vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 0 92px;
+  box-sizing: border-box;
+}
+
+.content-screen-v120[hidden] {
+  display: none !important;
+}
+
+.content-hero-v120 {
+  min-height: 168px;
+  border-radius: 28px;
+  padding: 22px;
+  box-sizing: border-box;
+  color: white;
+  display: grid;
+  align-content: end;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255,255,255,.16);
+  background:
+    radial-gradient(circle at 82% 18%, rgba(255,228,95,.34), transparent 28%),
+    radial-gradient(circle at 16% 78%, rgba(130,190,255,.22), transparent 34%),
+    linear-gradient(135deg, rgba(80,38,120,.92), rgba(20,16,32,.96));
+  box-shadow:
+    0 18px 60px rgba(0,0,0,.42),
+    inset 0 0 0 1px rgba(255,255,255,.04);
+}
+
+.content-hero-v120::before {
+  content: "∞";
+  position: absolute;
+  right: 20px;
+  top: -18px;
+  font-size: 132px;
+  font-weight: 900;
+  opacity: .13;
+  line-height: 1;
+}
+
+.hero-kicker-v120 {
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.16);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  margin-bottom: 8px;
+}
+
+.hero-title-v120 {
+  font-size: 30px;
+  font-weight: 1000;
+  letter-spacing: .02em;
+  text-shadow: 0 2px 18px rgba(0,0,0,.38);
+}
+
+.hero-meta-v120 {
+  margin-top: 4px;
+  color: rgba(255,255,255,.78);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.hero-copy-v120 {
+  margin-top: 10px;
+  line-height: 1.55;
+  color: rgba(255,255,255,.88);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.content-section-head-v120 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 22px 4px 12px;
+  color: rgba(255,255,255,.94);
+  font-size: 22px;
+  font-weight: 1000;
+  letter-spacing: .03em;
+}
+
+.content-section-head-v120 span:last-child {
+  font-size: 12px;
+  opacity: .54;
+  font-weight: 800;
+}
+
+.content-grid-v120 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.content-card-v120 {
+  min-height: 190px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.13);
+  background: rgba(255,255,255,.055);
+  box-shadow: 0 12px 36px rgba(0,0,0,.28);
+  display: grid;
+  grid-template-rows: 118px auto;
+}
+
+.content-thumb-v120 {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 55% 32%, var(--accent, rgba(255,220,120,.38)), transparent 28%),
+    linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.02));
+}
+
+.content-thumb-v120::before {
+  content: attr(data-mark);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 42px;
+  font-weight: 1000;
+  color: rgba(255,255,255,.82);
+  text-shadow: 0 4px 24px rgba(0,0,0,.44);
+}
+
+.content-thumb-v120::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, transparent 0 58%, rgba(255,255,255,.10) 59%, transparent 60%),
+    radial-gradient(circle at 80% 20%, rgba(255,255,255,.18), transparent 22%);
+}
+
+.content-info-v120 {
+  padding: 12px 13px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.content-title-v120 {
+  color: rgba(255,255,255,.94);
+  font-size: 15px;
+  font-weight: 1000;
+  line-height: 1.35;
+  letter-spacing: .02em;
+}
+
+.content-status-v120 {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: rgba(255,255,255,.82);
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.12);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.content-desc-v120 {
+  color: rgba(255,255,255,.55);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+body.mode-content #dictionaryView,
+body.mode-content #bugCardView,
+body.mode-content .hint {
+  display: none !important;
+}
+
+body.mode-content #contentScreenV120 {
+  display: block !important;
+}
+
+body.mode-content .controls button {
+  opacity: .38;
+}
+
+@media (max-width: 390px) {
+  .content-grid-v120 {
+    gap: 12px;
+  }
+  .content-card-v120 {
+    min-height: 180px;
+    grid-template-rows: 108px auto;
+  }
+  .hero-title-v120 {
+    font-size: 26px;
+  }
+}

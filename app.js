@@ -8077,3 +8077,130 @@ const CONTENTS_V118 = [
     boot();
   }
 })();
+
+
+/* v120: content screen, no modal close */
+(function(){
+  const CONTENTS = [
+    { title: "構文的イグノーベル賞", status: "音声化予定", mark: "IG", desc: "くだらないけど深い観測シリーズ", accent: "rgba(255,210,90,.42)" },
+    { title: "細胞が綴る詩", status: "音声化済み", mark: "CELL", desc: "生命・記憶・再生の詩的ログ", accent: "rgba(120,220,190,.38)" },
+    { title: "syntax frontier", status: "音声化済み", mark: "SF", desc: "構文モデル×人工構文体の長編", accent: "rgba(100,160,255,.42)" },
+    { title: "syntax MBA", status: "音声化済み", mark: "MBA", desc: "経営をλ→!→σ→Tで読む講義", accent: "rgba(255,150,90,.38)" },
+    { title: "詩の処方箋", status: "音声化済み", mark: "POEM", desc: "言葉で状態を変える朗読シリーズ", accent: "rgba(210,140,255,.40)" },
+    { title: "H(x)∞origin", status: "音声・マンガ化済み", mark: "H∞", desc: "意味バグの起源を観測する", accent: "rgba(255,230,120,.46)" },
+    { title: "貧乏メガネのシノ", status: "テキストのみ", mark: "¥", desc: "貧しさと意味のズレを読む物語", accent: "rgba(150,210,120,.36)" },
+    { title: "syntax resonance", status: "音声・マンガ化製作中", mark: "♪", desc: "音楽×言葉×構文バトル", accent: "rgba(255,100,170,.42)" },
+    { title: "ニクスのどうでもいい観測", status: "音声化進行中", mark: "NXS", desc: "意味の手前の違和感を記録する", accent: "rgba(130,150,255,.40)" },
+    { title: "跳ねる前のこの感じ", status: "音声作品製作中", mark: "!", desc: "発火直前の空気を聴く作品", accent: "rgba(255,180,80,.42)" },
+    { title: "ぴょこん日和", status: "音声／紙芝居動画", mark: "PY", desc: "ゆるい音声と紙芝居的動画", accent: "rgba(110,230,255,.38)" }
+  ];
+
+  function renderContentScreen(){
+    const grid = document.getElementById("contentGridV120");
+    const count = document.getElementById("contentCountV120");
+    if(!grid) return;
+
+    if(count) count.textContent = `${CONTENTS.length}作品`;
+
+    grid.innerHTML = CONTENTS.map((c, i)=>`
+      <div class="content-card-v120" data-index="${i}">
+        <div class="content-thumb-v120" data-mark="${c.mark}" style="--accent:${c.accent}"></div>
+        <div class="content-info-v120">
+          <div class="content-title-v120">${c.title}</div>
+          <div class="content-status-v120">${c.status}</div>
+          <div class="content-desc-v120">${c.desc}</div>
+        </div>
+      </div>
+    `).join("");
+
+    grid.querySelectorAll(".content-card-v120").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const c = CONTENTS[Number(el.dataset.index)];
+        alert(`${c.title}\n${c.status}\n\n次：作品詳細画面を接続`);
+      });
+    });
+  }
+
+  function showContent(){
+    try { appMode = "content"; } catch(e) {}
+    document.body.classList.add("mode-content");
+    document.body.dataset.mode = "content";
+
+    const screen = document.getElementById("contentScreenV120");
+    if(screen) screen.hidden = false;
+
+    const lib = document.getElementById("libraryOverlayV116");
+    if(lib) lib.hidden = true;
+
+    renderContentScreen();
+  }
+
+  function leaveContent(){
+    document.body.classList.remove("mode-content");
+    if(document.body.dataset.mode === "content") {
+      document.body.dataset.mode = "";
+    }
+    const screen = document.getElementById("contentScreenV120");
+    if(screen) screen.hidden = true;
+  }
+
+  function bindTopButtons(){
+    const buttons = Array.from(document.querySelectorAll("button"));
+
+    buttons.forEach(btn=>{
+      const txt = (btn.textContent || "").trim();
+
+      if(txt === "コンテンツ" || txt === "マンガ" || txt === "音声"){
+        if(btn.dataset.v120Content) return;
+        btn.dataset.v120Content = "1";
+        btn.textContent = "コンテンツ";
+        btn.addEventListener("click", ev=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          ev.stopImmediatePropagation();
+          showContent();
+        }, true);
+      }
+
+      if(txt === "辞書" || txt === "カード"){
+        if(btn.dataset.v120LeaveContent) return;
+        btn.dataset.v120LeaveContent = "1";
+        btn.addEventListener("click", ()=>{
+          leaveContent();
+        }, true);
+      }
+    });
+  }
+
+  function hookRender(){
+    if(typeof render === "function" && !render.__v120Content){
+      const orig = render;
+      render = function(){
+        const r = orig.apply(this, arguments);
+        setTimeout(()=>{
+          if(document.body.classList.contains("mode-content")){
+            renderContentScreen();
+          }
+        },0);
+        return r;
+      };
+      render.__v120Content = true;
+    }
+  }
+
+  function boot(){
+    renderContentScreen();
+    bindTopButtons();
+    hookRender();
+    setInterval(()=>{
+      bindTopButtons();
+      hookRender();
+    }, 800);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  }else{
+    boot();
+  }
+})();
